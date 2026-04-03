@@ -1,0 +1,2169 @@
+<head><meta charset="utf-8"><title>Reverso Quick search</title><base href="./"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="styles.e680c5d9a565e256.css"><style>[_nghost-yge-c85] .pop-up[_ngcontent-yge-c85] {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--background-base-primary)
+}
+
+[_nghost-yge-c85] .pop-up_cookies-disabled[_ngcontent-yge-c85] {
+    color: var(--text-color-base-base-invert);
+    background: var(--feedback-warning-warning-quaternary);
+    display: flex;
+    margin: auto;
+    padding: 10px;
+    border-radius: 10px
+}
+
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] pp-button-favorites,
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] .header__settings,
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] .footer__button_flashcards,
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] .header__writer,
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] .definitions-footer__icon_flashcards,
+[_nghost-yge-c85] .pop-up_is-corporate[_ngcontent-yge-c85] .definitions-list__def-item-button-favorite {
+    display: none !important
+}
+
+</style><style>[_nghost-yge-c52] {
+    position: relative
+}
+
+[_nghost-yge-c52] .header[_ngcontent-yge-c52] {
+    min-height: 36px;
+    max-height: 36px;
+    padding: 8px 8px 8px 10px;
+    color: var(--text-color-base-base-placeholder);
+    font-weight: 400;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 16px;
+    line-height: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    background-color: var(--background-base-header)
+}
+
+[_nghost-yge-c52] .header[_ngcontent-yge-c52]:after {
+    content: "";
+    height: 1px;
+    width: 100%;
+    background: var(--line-gray-gray-tertiary);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    pointer-events: none
+}
+
+[_nghost-yge-c52] .header__section[_ngcontent-yge-c52] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c52] .header__section__close[_ngcontent-yge-c52] {
+    margin-left: 10px;
+    height: 20px;
+    width: 20px;
+    border-radius: 6px
+}
+
+[_nghost-yge-c52] .header__section__close[_ngcontent-yge-c52] {
+    max-height: 32px
+}
+
+[_nghost-yge-c52] .header__section__close[_ngcontent-yge-c52] svg path {
+    fill: var(--text-color-base-base-placeholder) !important
+}
+
+[_nghost-yge-c52] .header__section__close[_ngcontent-yge-c52]:hover {
+    background: var(--action-secondary-secondary-hovered-1) !important;
+    cursor: pointer
+}
+
+[_nghost-yge-c52] .header__section__close[_ngcontent-yge-c52]:hover svg path {
+    fill: var(--text-color-base-base-tertiary-hovered) !important
+}
+
+[_nghost-yge-c52] .header__section_definitions[_ngcontent-yge-c52] .language-selection__button.swap,
+[_nghost-yge-c52] .header__section_definitions[_ngcontent-yge-c52] .language-selection__button.target {
+    display: none
+}
+
+[_nghost-yge-c52] .header__section_definitions[_ngcontent-yge-c52] .language-selection__button.source {
+    pointer-events: none;
+    color: var(--text-color-base-base-placeholder) !important
+}
+
+[_nghost-yge-c52] .header__section_definitions[_ngcontent-yge-c52] .language-selection__button.source svg {
+    display: none
+}
+
+[_nghost-yge-c52] .header__settings[_ngcontent-yge-c52] {
+    margin-left: 10px;
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none !important;
+    border-radius: 6px;
+    padding: 0;
+    height: 20px;
+    width: 20px;
+    background-color: var(--background-base-header)
+}
+
+[_nghost-yge-c52] .header__settings[_ngcontent-yge-c52]:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c52] .header__settings[_ngcontent-yge-c52]:hover svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52] {
+    fill: var(--text-color-base-base-tertiary-hovered);
+    stroke: transparent
+}
+
+[_nghost-yge-c52] .header__logo[_ngcontent-yge-c52] {
+    display: flex;
+    align-items: center;
+    cursor: pointer
+}
+
+[_nghost-yge-c52] .header__logo[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] {
+    margin-right: 12px
+}
+
+[_nghost-yge-c52] .header__links[_ngcontent-yge-c52] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c52] .header__links[_ngcontent-yge-c52] a[_ngcontent-yge-c52] {
+    display: flex;
+    margin-right: 16px;
+    position: relative;
+    cursor: pointer;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 13px
+}
+
+[_nghost-yge-c52] .header__links[_ngcontent-yge-c52] a[disabled][_ngcontent-yge-c52] {
+    color: var(--text-color-base-base-disabled);
+    pointer-events: none;
+    cursor: none;
+    opacity: .5
+}
+
+[_nghost-yge-c52] .header__links[_ngcontent-yge-c52] a[_ngcontent-yge-c52]:last-child {
+    margin-right: 0
+}
+
+[_nghost-yge-c52] .header__back[_ngcontent-yge-c52] {
+    min-width: 20px;
+    min-height: 20px;
+    margin-left: -2px;
+    padding-right: 6px;
+    cursor: pointer
+}
+
+[_nghost-yge-c52] .header__back[_ngcontent-yge-c52]:hover {
+    opacity: .7
+}
+
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52] {
+    color: var(--text-color-base-base-placeholder);
+    gap: 4px
+}
+
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] {
+    width: 16px;
+    height: 16px
+}
+
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52]:hover,
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52]:focus {
+    color: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52]:hover svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52],
+[_nghost-yge-c52] .header__translate[_ngcontent-yge-c52]:focus svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52] {
+    fill: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52] {
+    color: var(--text-color-base-base-placeholder);
+    font-weight: 400;
+    display: flex;
+    align-items: center !important;
+    gap: 3px
+}
+
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] {
+    margin-right: 3px
+}
+
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52] {
+    fill: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52]:hover,
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52]:focus {
+    color: var(--text-color-purple-purple-primary)
+}
+
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52]:hover svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52],
+[_nghost-yge-c52] .header__writer[_ngcontent-yge-c52]:focus svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52] {
+    fill: var(--text-color-purple-purple-primary)
+}
+
+[_nghost-yge-c52] .header__synonyms[_ngcontent-yge-c52] {
+    color: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c52] .header__synonyms[_ngcontent-yge-c52]:hover,
+[_nghost-yge-c52] .header__synonyms[_ngcontent-yge-c52]:focus {
+    color: var(--text-color-purple-purple-primary)
+}
+
+[_nghost-yge-c52] .header__definitions[_ngcontent-yge-c52] {
+    color: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c52] .header__definitions[_ngcontent-yge-c52]:hover,
+[_nghost-yge-c52] .header__definitions[_ngcontent-yge-c52]:focus {
+    color: var(--text-color-blue-blue-primary) !important
+}
+
+[_nghost-yge-c52] .header[_ngcontent-yge-c52] language-selection[_ngcontent-yge-c52] .swap {
+    padding: 1px 0;
+    margin: 0 2px;
+    border-radius: 4px
+}
+
+[_nghost-yge-c52] .header[_ngcontent-yge-c52] language-selection[_ngcontent-yge-c52] .language-selection__button {
+    background-color: var(--background-base-header);
+    color: var(--text-color-blue-blue-primary);
+    border: none
+}
+
+[_nghost-yge-c52] .header[_ngcontent-yge-c52] language-selection[_ngcontent-yge-c52] .language-selection__button:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c52] .header__writer-selector[_ngcontent-yge-c52] {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    width: 32px;
+    gap: 2px;
+    box-sizing: border-box;
+    background-color: var(--background-base-header);
+    border-radius: 4px;
+    border: none;
+    padding: 0;
+    color: var(--text-color-blue-blue-primary);
+    font-weight: 500;
+    transition: .2s;
+    cursor: pointer
+}
+
+[_nghost-yge-c52] .header__writer-selector[_ngcontent-yge-c52]:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c52] .header_extension[_ngcontent-yge-c52] {
+    padding: 8px 8px 8px 10px
+}
+
+[_nghost-yge-c52] .header__extended-buttons[_ngcontent-yge-c52] .header__settings[_ngcontent-yge-c52],
+[_nghost-yge-c52] .header__extended-buttons[_ngcontent-yge-c52] .header__section__close[_ngcontent-yge-c52] {
+    z-index: 99
+}
+
+[_nghost-yge-c52] .header__link_is-disabled[_ngcontent-yge-c52] {
+    opacity: .7;
+    pointer-events: none;
+    cursor: not-allowed
+}
+
+[_nghost-yge-c52] .translate-active[_ngcontent-yge-c52]:before,
+[_nghost-yge-c52] .definitions-active[_ngcontent-yge-c52]:before,
+[_nghost-yge-c52] .synonyms-active[_ngcontent-yge-c52]:before,
+[_nghost-yge-c52] .writer-active[_ngcontent-yge-c52]:before {
+    position: absolute;
+    content: "";
+    height: 2px;
+    width: 100%;
+    bottom: -7px;
+    left: 0
+}
+
+[_nghost-yge-c52] .translate-active[_ngcontent-yge-c52],
+[_nghost-yge-c52] .definitions-active[_ngcontent-yge-c52] {
+    font-weight: 500 !important;
+    color: var(--text-color-blue-blue-secondary) !important
+}
+
+[_nghost-yge-c52] .translate-active[_ngcontent-yge-c52]:before,
+[_nghost-yge-c52] .definitions-active[_ngcontent-yge-c52]:before {
+    background-color: var(--text-color-blue-blue-secondary)
+}
+
+[_nghost-yge-c52] .synonyms-active[_ngcontent-yge-c52],
+[_nghost-yge-c52] .writer-active[_ngcontent-yge-c52] {
+    font-weight: 500 !important;
+    color: var(--text-color-purple-purple-primary) !important
+}
+
+[_nghost-yge-c52] .synonyms-active[_ngcontent-yge-c52]:before,
+[_nghost-yge-c52] .writer-active[_ngcontent-yge-c52]:before {
+    background-color: var(--text-color-purple-purple-primary)
+}
+
+[_nghost-yge-c52] .synonyms-active[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52]:nth-of-type(1),
+[_nghost-yge-c52] .writer-active[_ngcontent-yge-c52] svg[_ngcontent-yge-c52] path[_ngcontent-yge-c52]:nth-of-type(1) {
+    fill: var(--text-color-purple-purple-primary) !important
+}
+
+[_nghost-yge-c52] .writer-active_rephrase-clicked[_ngcontent-yge-c52]:before {
+    content: none
+}
+
+[_nghost-yge-c52] sl-progress-bar[_ngcontent-yge-c52] {
+    position: absolute;
+    width: 100%
+}
+
+[_nghost-yge-c52] sl-progress-bar[_ngcontent-yge-c52] .progress-bar {
+    position: relative;
+    top: auto;
+    bottom: 1px
+}
+
+[_nghost-yge-c52] .favorites-onboarding-cdk {
+    background: white;
+    width: 100%;
+    height: 100%
+}
+
+</style><style>[_nghost-yge-c15] {
+    display: inline-flex;
+    min-height: 20px;
+    max-height: 30px;
+    justify-content: center;
+    align-items: center
+}
+
+[_nghost-yge-c15] .icon[_ngcontent-yge-c15] {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center
+}
+
+[_nghost-yge-c15] .icon_size_fully-small-xs[_ngcontent-yge-c15] {
+    max-width: 7px;
+    max-height: 7px
+}
+
+[_nghost-yge-c15] .icon_size_fully-small[_ngcontent-yge-c15] {
+    max-width: 8px;
+    max-height: 8px
+}
+
+[_nghost-yge-c15] .icon_size_very-small[_ngcontent-yge-c15] {
+    max-width: 10px;
+    max-height: 10px
+}
+
+[_nghost-yge-c15] .icon_size_small[_ngcontent-yge-c15] {
+    max-width: 12px;
+    max-height: 12px
+}
+
+[_nghost-yge-c15] .icon_size_medium-small[_ngcontent-yge-c15] {
+    max-width: 14px;
+    max-height: 14px
+}
+
+[_nghost-yge-c15] .icon_size_medium-small-1[_ngcontent-yge-c15] {
+    max-width: 15px;
+    max-height: 15px
+}
+
+[_nghost-yge-c15] .icon_size_medium-small-2[_ngcontent-yge-c15] {
+    max-width: 16px;
+    max-height: 16px
+}
+
+[_nghost-yge-c15] .icon_size_medium[_ngcontent-yge-c15] {
+    max-width: 20px;
+    max-height: 20px
+}
+
+[_nghost-yge-c15] .icon_size_medium-22[_ngcontent-yge-c15] {
+    max-width: 22px;
+    max-height: 22px
+}
+
+[_nghost-yge-c15] .icon_size_medium-big[_ngcontent-yge-c15] {
+    max-width: 24px;
+    max-height: 24px
+}
+
+[_nghost-yge-c15] .icon_size_big[_ngcontent-yge-c15] {
+    max-width: 30px;
+    max-height: 30px
+}
+
+[_nghost-yge-c15] .icon_size_bigger[_ngcontent-yge-c15] {
+    max-width: 34px;
+    max-height: 34px
+}
+
+[_nghost-yge-c15] .icon_size_more_bigger[_ngcontent-yge-c15] {
+    height: 36px
+}
+
+[_nghost-yge-c15] .icon_size_medium_very-big[_ngcontent-yge-c15] {
+    max-width: 40px;
+    max-height: 40px
+}
+
+[_nghost-yge-c15] .icon_size_medium_x-big[_ngcontent-yge-c15] {
+    max-width: 44px;
+    max-height: 44px
+}
+
+[_nghost-yge-c15] .icon_size_medium_xl-big[_ngcontent-yge-c15] {
+    max-width: 48px;
+    max-height: 48px
+}
+
+[_nghost-yge-c15] .icon_size_very-big[_ngcontent-yge-c15] {
+    max-width: 50px;
+    max-height: 50px
+}
+
+[_nghost-yge-c15] .icon_size_real-size[_ngcontent-yge-c15] {
+    max-width: 90%;
+    max-height: 90%
+}
+
+[_nghost-yge-c15] .icon_size_full-size[_ngcontent-yge-c15] {
+    height: 100%;
+    width: 100%
+}
+
+[_nghost-yge-c15] .icon-grammar-mistake[_ngcontent-yge-c15],
+[_nghost-yge-c15] .icon-spelling-mistake[_ngcontent-yge-c15],
+[_nghost-yge-c15] .icon-unknown-word[_ngcontent-yge-c15] {
+    max-width: 10px
+}
+
+[_nghost-yge-c15] .icon_replace[_ngcontent-yge-c15] path[_ngcontent-yge-c15] {
+    fill: child
+}
+
+[_nghost-yge-c15] .icon-chevron[_ngcontent-yge-c15] path[_ngcontent-yge-c15] {
+    stroke: child
+}
+
+[_nghost-yge-c15] .icon[_ngcontent-yge-c15]>svg[_ngcontent-yge-c15] {
+    height: 100%
+}
+
+[_nghost-yge-c15] .icon-loading[_ngcontent-yge-c15] {
+    animation: circle 2.5s linear infinite
+}
+
+[_nghost-yge-c15] .icon-loading-addin[_ngcontent-yge-c15] {
+    animation: circle 2.5s linear infinite
+}
+
+[_nghost-yge-c15] .color-fill--white[_ngcontent-yge-c15] svg[_ngcontent-yge-c15] path[_ngcontent-yge-c15] {
+    fill: var(--text-color-base-base-invert) !important
+}
+
+[_nghost-yge-c15] .color-fill--purple-17[_ngcontent-yge-c15] svg[_ngcontent-yge-c15] path[_ngcontent-yge-c15] {
+    fill: var(--text-color-purple-purple-primary)
+}
+
+@keyframes circle {
+    0% {
+        transform: rotate(0)
+    }
+
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+</style><style>[_nghost-yge-c56] .language-selection[_ngcontent-yge-c56] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row
+}
+
+[_nghost-yge-c56] .language-selection__button[_ngcontent-yge-c56] {
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 16px;
+    color: var(--text-color-blue-blue-primary);
+    background-color: var(--background-base-tertiary);
+    position: relative;
+    transition: .2s;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none !important;
+    margin: 0;
+    padding-left: 2px
+}
+
+[_nghost-yge-c56] .language-selection__button_active[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection__button[_ngcontent-yge-c56]:hover,
+[_nghost-yge-c56] .language-selection__button[_ngcontent-yge-c56]:focus {
+    background-color: var(--action-secondary-secondary-hovered-1) !important
+}
+
+[_nghost-yge-c56] .language-selection__button.source[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection__button.target[_ngcontent-yge-c56] {
+    padding: 0;
+    gap: 1px;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    height: 24px;
+    width: 31px;
+    border-radius: 4px;
+    box-sizing: border-box
+}
+
+[_nghost-yge-c56] .language-selection__button.source[_ngcontent-yge-c56] svg[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection__button.target[_ngcontent-yge-c56] svg[_ngcontent-yge-c56] {
+    margin-left: 2px
+}
+
+[_nghost-yge-c56] .language-selection__button.source[_ngcontent-yge-c56] svg[_ngcontent-yge-c56] path[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection__button.target[_ngcontent-yge-c56] svg[_ngcontent-yge-c56] path[_ngcontent-yge-c56] {
+    fill: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c56] .language-selection__button.swap[_ngcontent-yge-c56] {
+    padding-left: 6px
+}
+
+[_nghost-yge-c56] .language-selection__button.swap[_ngcontent-yge-c56] svg[_ngcontent-yge-c56] path[_ngcontent-yge-c56] {
+    fill: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c56] .language-selection__beta-label[_ngcontent-yge-c56] {
+    font-size: 12px;
+    color: var(--text-color-base-base-placeholder);
+    margin-left: 5px;
+    align-self: flex-start;
+    display: inline-flex;
+    line-height: 12px
+}
+
+[_nghost-yge-c56] .language-selection_one-selector-mode[_ngcontent-yge-c56] .language-selection__button.swap[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection_one-selector-mode[_ngcontent-yge-c56] .language-selection__button.target[_ngcontent-yge-c56] {
+    display: none
+}
+
+[_nghost-yge-c56] .language-selection_one-selector-mode[_ngcontent-yge-c56] .language-selection__button.swap[_ngcontent-yge-c56],
+[_nghost-yge-c56] .language-selection_one-selector-mode[_ngcontent-yge-c56] .language-selection__button.target[_ngcontent-yge-c56] {
+    pointer-events: none;
+    color: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c56] .language-selection_one-selector-mode[_ngcontent-yge-c56] .language-selection__beta-label[_ngcontent-yge-c56] {
+    color: var(--text-color-base-base-placeholder)
+}
+
+[_nghost-yge-c56] .disabled[_ngcontent-yge-c56] button[_ngcontent-yge-c56] {
+    display: none
+}
+
+</style><style>[_nghost-yge-c54] {
+    max-height: 48px;
+    box-sizing: border-box;
+    background: var(--background-base-primary);
+    margin-top: auto;
+    bottom: 0;
+    width: 100%;
+    position: relative
+}
+
+[_nghost-yge-c54] .footer[_ngcontent-yge-c54] {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 8px 12px
+}
+
+[_nghost-yge-c54] .footer__section[_ngcontent-yge-c54] {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden
+}
+
+[_nghost-yge-c54] .footer__section_right[_ngcontent-yge-c54] {
+    flex: 1;
+    justify-content: flex-end
+}
+
+[_nghost-yge-c54] .footer__button[_ngcontent-yge-c54] {
+    margin-right: 8px;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 400;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    height: 32px;
+    padding: 6px 8px 6px 6px;
+    box-sizing: border-box
+}
+
+[_nghost-yge-c54] .footer__button_copy-extension[_ngcontent-yge-c54] {
+    color: var(--text-color-base-base-tertiary);
+    width: unset !important;
+    gap: 4px;
+    padding: 4px 10px 4px 4px !important
+}
+
+[_nghost-yge-c54] .footer__button_copy[_ngcontent-yge-c54],
+[_nghost-yge-c54] .footer__button_pronounce[_ngcontent-yge-c54] {
+    background-color: var(--action-secondary-secondary-default-1);
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    transition: .2s;
+    margin-right: 4px
+}
+
+[_nghost-yge-c54] .footer__button_copy[_ngcontent-yge-c54]:hover,
+[_nghost-yge-c54] .footer__button_pronounce[_ngcontent-yge-c54]:hover {
+    background-color: var(--background-base-tertiary);
+    border-radius: 4px
+}
+
+[_nghost-yge-c54] .footer__button_open-app[_ngcontent-yge-c54] {
+    color: var(--text-color-base-base-secondary);
+    background-color: var(--action-secondary-secondary-default-1);
+    border: 1px solid var(--line-gray-gray-tertiary);
+    gap: 6px;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 8px;
+    overflow: hidden;
+    white-space: nowrap
+}
+
+[_nghost-yge-c54] .footer__button_open-app[_ngcontent-yge-c54] span[_ngcontent-yge-c54] {
+    text-overflow: ellipsis;
+    overflow: hidden
+}
+
+[_nghost-yge-c54] .footer__button_open-app[_ngcontent-yge-c54] em {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--text-color-base-base-tertiary);
+    font-style: normal
+}
+
+[_nghost-yge-c54] .footer__button_open-app[_ngcontent-yge-c54]:hover {
+    color: var(--action-primary-primary-hovered)
+}
+
+[_nghost-yge-c54] .footer__button_open-app[_ngcontent-yge-c54] svg[_ngcontent-yge-c54] {
+    min-height: 16px;
+    min-width: 16px
+}
+
+[_nghost-yge-c54] .footer__button_flashcards[_ngcontent-yge-c54] {
+    gap: 6px;
+    padding: 8px 8px 8px 6px;
+    margin-left: auto;
+    margin-right: 0;
+    font-weight: 500;
+    color: var(--text-color-blue-blue-secondary);
+    background-color: var(--background-base-define)
+}
+
+[_nghost-yge-c54] .footer__button_flashcards[_ngcontent-yge-c54]:hover {
+    background-color: var(--background-base-define-hover)
+}
+
+[_nghost-yge-c54] .footer__right-section[_ngcontent-yge-c54] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 2px
+}
+
+[_nghost-yge-c54] .footer__smart-sug-loading[_ngcontent-yge-c54] {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    background-color: var(--background-base-primary)
+}
+
+[_nghost-yge-c54] .footer__loading-spinner[_ngcontent-yge-c54] {
+    animation: circle 2s linear infinite
+}
+
+[_nghost-yge-c54] .footer__rephrase-copy[_ngcontent-yge-c54] {
+    display: flex;
+    flex-flow: row nowrap
+}
+
+[_nghost-yge-c54] .footer__rephrase-copy_reverse[_ngcontent-yge-c54] {
+    flex-flow: row-reverse nowrap
+}
+
+@keyframes circle {
+    0% {
+        transform: rotate(0)
+    }
+
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+</style><style>@keyframes text-appear {
+    0% {
+        opacity: 0
+    }
+
+    to {
+        opacity: 1
+    }
+}
+
+[_nghost-yge-c97] {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    height: 100%
+}
+
+[_nghost-yge-c97] .translate[_ngcontent-yge-c97] {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100%
+}
+
+[_nghost-yge-c97] .translate__simple[_ngcontent-yge-c97] sl-translit-text .translit-text {
+    padding: 10px 10px 6px
+}
+
+[_nghost-yge-c97] .translate__error[_ngcontent-yge-c97] {
+    color: var(--feedback-error-error-tertiary);
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    padding: 12px;
+    display: flex;
+    flex-wrap: wrap
+}
+
+[_nghost-yge-c97] .translate__error_no-result[_ngcontent-yge-c97] {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-color-base-base-tertiary)
+}
+
+[_nghost-yge-c97] .translate__error[_ngcontent-yge-c97] mark {
+    color: inherit;
+    background: var(--background-base-primary);
+    font-weight: 600
+}
+
+[_nghost-yge-c97] .translate__text[_ngcontent-yge-c97] {
+    padding: 10px 12px 12px;
+    color: var(--text-color-base-base-primary);
+    animation: text-appear;
+    animation-duration: .1s;
+    white-space: pre-wrap;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px
+}
+
+[_nghost-yge-c97] .translate__text_no-translit[_ngcontent-yge-c97] {
+    padding-top: 16px
+}
+
+[_nghost-yge-c97] .translate__context[_ngcontent-yge-c97] {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative
+}
+
+[_nghost-yge-c97] .translate__heading[_ngcontent-yge-c97] {
+    display: flex;
+    align-items: center;
+    padding-bottom: 6px
+}
+
+[_nghost-yge-c97] .translate__source[_ngcontent-yge-c97] {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 28px;
+    color: var(--text-color-base-base-primary)
+}
+
+[_nghost-yge-c97] .translate__wrapper[_ngcontent-yge-c97] {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column
+}
+
+[_nghost-yge-c97] .translate__context-item[_ngcontent-yge-c97] {
+    height: 32px;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-color-base-base-primary);
+    padding: 4px 8px;
+    background: var(--decorative-bg-chips);
+    border: 1px solid var(--decorative-line-chips);
+    box-sizing: border-box;
+    border-radius: 4px;
+    margin: 0 6px 8px 0;
+    cursor: pointer;
+    position: relative
+}
+
+[_nghost-yge-c97] .translate__context-item_no-border-top[_ngcontent-yge-c97] {
+    border-top: 0
+}
+
+[_nghost-yge-c97] .translate__context-item_is_grayed[_ngcontent-yge-c97] {
+    border: 1px solid var(--decorative-line-chips);
+    background-color: var(--background-base-tertiary);
+    color: var(--text-color-base-base-tertiary)
+}
+
+[_nghost-yge-c97] .translate__context-item_is_active[_ngcontent-yge-c97] {
+    border: 1px solid var(--decorative-line-chips) !important;
+    background: var(--decorative-bg-chips)
+}
+
+[_nghost-yge-c97] .translate__context-item[_ngcontent-yge-c97]:hover,
+[_nghost-yge-c97] .translate__context-item_active[_ngcontent-yge-c97] {
+    background: var(--action-secondary-secondary-hovered-2)
+}
+
+[_nghost-yge-c97] .translate__context-item__label-slang[_ngcontent-yge-c97] {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 0 solid transparent;
+    border-left: 8px solid var(--feedback-warning-warning-quaternary)
+}
+
+[_nghost-yge-c97] .translate__context-item__label-slang_is-rude[_ngcontent-yge-c97] {
+    border-left: 8px solid var(--feedback-error-error-quaternary)
+}
+
+[_nghost-yge-c97] .translate__context-item_is-active[_ngcontent-yge-c97] {
+    background-color: var(--decorative-bg-chips)
+}
+
+[_nghost-yge-c97] .translate__context-item_is-active[_ngcontent-yge-c97] .translate__context-examples[_ngcontent-yge-c97] {
+    display: flex
+}
+
+[_nghost-yge-c97] .translate__context-item_is-active[_ngcontent-yge-c97] .translate__context-title[_ngcontent-yge-c97] svg[_ngcontent-yge-c97] {
+    transform: rotate(90deg)
+}
+
+[_nghost-yge-c97] .translate__context-item[_ngcontent-yge-c97] sl-pos-line[_ngcontent-yge-c97] {
+    height: 4px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 1;
+    border-radius: 6px 6px 0 0;
+    overflow: hidden
+}
+
+[_nghost-yge-c97] .translate__context-item_show-more-on-reverso[_ngcontent-yge-c97] {
+    width: 28px;
+    background-color: var(--background-base-primary);
+    color: var(--text-color-base-base-tertiary);
+    padding: 0;
+    text-align: center
+}
+
+[_nghost-yge-c97] .translate__offline[_ngcontent-yge-c97] {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    color: var(--feedback-error-error-tertiary);
+    padding: 12px 12px 4px
+}
+
+[_nghost-yge-c97] .translate__dym[_ngcontent-yge-c97] {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    color: var(--text-color-base-base-placeholder);
+    display: flex;
+    gap: 4px
+}
+
+[_nghost-yge-c97] .translate__baseform[_ngcontent-yge-c97] {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: var(--text-color-base-base-tertiary);
+    background-color: var(--background-base-primary);
+    display: flex;
+    align-items: center;
+    word-wrap: break-word;
+    box-sizing: border-box;
+    white-space: nowrap;
+    padding: 8px 12px;
+    height: 48px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1
+}
+
+[_nghost-yge-c97] .translate__baseform_single-sug[_ngcontent-yge-c97] {
+    word-wrap: normal;
+    overflow: hidden;
+    white-space: nowrap
+}
+
+[_nghost-yge-c97] .translate__baseform_link[_ngcontent-yge-c97] {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    color: var(--text-color-blue-blue-primary);
+    font-weight: 500;
+    cursor: pointer;
+    margin-right: 7px;
+    position: relative;
+    display: inline;
+    line-height: 14px
+}
+
+[_nghost-yge-c97] .translate__baseform_link_arabic[_ngcontent-yge-c97] {
+    padding-bottom: 3px
+}
+
+[_nghost-yge-c97] .translate__baseform_link[_ngcontent-yge-c97]:hover {
+    text-decoration: none
+}
+
+[_nghost-yge-c97] .translate__baseform_definition[_ngcontent-yge-c97] {
+    padding: 4px 12px 4px 4px
+}
+
+[_nghost-yge-c97] .translate__baseform-link-container[_ngcontent-yge-c97] {
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden
+}
+
+[_nghost-yge-c97] .translate__baseform-see-also[_ngcontent-yge-c97] {
+    margin-right: 7px
+}
+
+[_nghost-yge-c97] .translate__sparkle[_ngcontent-yge-c97] {
+    margin-right: 4px
+}
+
+[_nghost-yge-c97] .translate__chevron[_ngcontent-yge-c97] {
+    transform: rotate(180deg);
+    margin: 0 5px 0 7px
+}
+
+[_nghost-yge-c97] .translate__chevron[_ngcontent-yge-c97] .icon-chevron {
+    width: 8px
+}
+
+[_nghost-yge-c97] .translate__chevron_right[_ngcontent-yge-c97] {
+    margin: 4px 4px 4px auto
+}
+
+[_nghost-yge-c97] .translate__smart-sug[_ngcontent-yge-c97] {
+    padding: 8px 4px 8px 12px;
+    height: 48px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background-color: var(--background-base-define);
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 2
+}
+
+[_nghost-yge-c97] .translate__smart-sug[_ngcontent-yge-c97]:hover {
+    background-color: var(--background-base-define-hover);
+    cursor: pointer
+}
+
+[_nghost-yge-c97] .translate__smart-sug__container[_ngcontent-yge-c97] {
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin-left: 4px
+}
+
+[_nghost-yge-c97] .translate__smart-sug__main[_ngcontent-yge-c97] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c97] .translate__smart-sug__main[_ngcontent-yge-c97] img[_ngcontent-yge-c97] {
+    margin-right: 10px;
+    width: 22px;
+    height: 22px
+}
+
+[_nghost-yge-c97] .translate__smart-sug__main__title[_ngcontent-yge-c97] {
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--text-color-blue-blue-primary);
+    border-bottom: 1px dashed var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c97] .translate__smart-sug__main__title[_ngcontent-yge-c97]:hover {
+    color: var(--action-primary-primary-hovered);
+    border-bottom: 1px solid var(--action-primary-primary-hovered);
+    opacity: 1 !important
+}
+
+[_nghost-yge-c97] .translate__smart-sug__translation[_ngcontent-yge-c97] {
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--text-color-base-base-secondary);
+    margin-right: 4px
+}
+
+[_nghost-yge-c97] .translate__smart-sug[_ngcontent-yge-c97]:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis
+}
+
+[_nghost-yge-c97] .translate__smart-sug[_ngcontent-yge-c97] a[_ngcontent-yge-c97] {
+    cursor: pointer
+}
+
+[_nghost-yge-c97] .translate__smart-sug[_ngcontent-yge-c97] a[_ngcontent-yge-c97]:hover {
+    opacity: .8
+}
+
+[_nghost-yge-c97] .translate__three-row-boundary[_ngcontent-yge-c97] {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: hidden;
+    max-height: 120px
+}
+
+[_nghost-yge-c97] .translate__definition[_ngcontent-yge-c97] {
+    cursor: pointer;
+    border-radius: 4px;
+    border-left: 3px solid var(--decorative-define);
+    background: linear-gradient(90deg, var(--background-base-quick-define) 60.56%, var(--background-base-primary) 97.96%);
+    display: flex;
+    padding: 10px 16px 10px 8px;
+    gap: 4px;
+    align-items: center;
+    flex: 1 0 0;
+    color: var(--text-color-base-base-primary);
+    line-height: 16px;
+    overflow: hidden
+}
+
+[_nghost-yge-c97] .translate__definition[_ngcontent-yge-c97]:hover {
+    background: linear-gradient(90deg, var(--background-base-quick-define-hover) 60.56%, var(--background-base-primary) 97.96%)
+}
+
+[_nghost-yge-c97] .translate__definition[_ngcontent-yge-c97] sl-icon[_ngcontent-yge-c97] {
+    width: 13px;
+    height: 20px
+}
+
+[_nghost-yge-c97] .translate__definition[_ngcontent-yge-c97] span[_ngcontent-yge-c97] {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap
+}
+
+__open-app[_nghost-yge-c97] {
+    padding: 6px;
+    margin-left: 12px
+}
+
+</style><style>[_nghost-yge-c16] .progress-bar[_ngcontent-yge-c16] {
+    width: 100%;
+    height: 3px;
+    position: fixed;
+    top: 0;
+    z-index: 99
+}
+
+[_nghost-yge-c16] .progress-bar__slider[_ngcontent-yge-c16] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden
+}
+
+[_nghost-yge-c16] .progress-bar__slider-line[_ngcontent-yge-c16] {
+    position: absolute;
+    opacity: .4;
+    width: 150%;
+    height: 100%
+}
+
+[_nghost-yge-c16] .progress-bar__slider-subline[_ngcontent-yge-c16] {
+    position: absolute;
+    height: 100%
+}
+
+[_nghost-yge-c16] .progress-bar__slider-subline_type_inc[_ngcontent-yge-c16] {
+    animation: increase 2s infinite
+}
+
+[_nghost-yge-c16] .progress-bar__slider-subline_type_dec[_ngcontent-yge-c16] {
+    animation: decrease 2s .5s infinite
+}
+
+@keyframes increase {
+    0% {
+        left: -5%;
+        width: 5%
+    }
+
+    to {
+        left: 130%;
+        width: 100%
+    }
+}
+
+@keyframes decrease {
+    0% {
+        left: -80%;
+        width: 80%
+    }
+
+    to {
+        left: 110%;
+        width: 10%
+    }
+}
+
+</style><style>.button-favorites_hidden[_nghost-yge-c58] {
+    display: none !important;
+    pointer-events: none
+}
+
+[_nghost-yge-c58] .button[_ngcontent-yge-c58] {
+    background-color: transparent;
+    border: none;
+    display: flex;
+    padding: 0;
+    align-items: center;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    border-radius: 4px;
+    transition: .2s all
+}
+
+[_nghost-yge-c58] .button_is-disabled[_ngcontent-yge-c58] {
+    cursor: not-allowed
+}
+
+[_nghost-yge-c58] .button[_ngcontent-yge-c58]:hover {
+    background: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c58] .button[_ngcontent-yge-c58]:hover svg.icon-favorites path {
+    fill: var(--text-color-base-base-tertiary-hovered) !important
+}
+
+[_nghost-yge-c58] .button_size_xx-small[_ngcontent-yge-c58] {
+    height: 20px;
+    width: 20px
+}
+
+[_nghost-yge-c58] .button_size_x-small[_ngcontent-yge-c58] {
+    height: 24px;
+    width: 24px
+}
+
+[_nghost-yge-c58] .button_size_smaller[_ngcontent-yge-c58] {
+    height: 30px;
+    width: 30px
+}
+
+[_nghost-yge-c58] .button_size_smaller-32[_ngcontent-yge-c58] {
+    height: 32px;
+    width: 32px
+}
+
+[_nghost-yge-c58] .button_size_medium[_ngcontent-yge-c58] {
+    height: 34px;
+    width: 34px
+}
+
+[_nghost-yge-c58] .button_size_large[_ngcontent-yge-c58] {
+    height: 38px;
+    width: 38px
+}
+
+</style><style>.pronounce_display-none[_nghost-yge-c55] {
+    display: none !important
+}
+
+[_nghost-yge-c55] {
+    align-self: center;
+    margin-left: 6px;
+    position: relative
+}
+
+[_nghost-yge-c55] .pronounce[_ngcontent-yge-c55] {
+    background-color: transparent;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%
+}
+
+[_nghost-yge-c55] .pronounce[_ngcontent-yge-c55]:hover {
+    background: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c55] .pronounce[_ngcontent-yge-c55]:hover:not(.pronounce_extension) sl-icon[name=icon-pronounce][_ngcontent-yge-c55] svg path {
+    fill: var(--text-color-base-base-tertiary-hovered)
+}
+
+[_nghost-yge-c55] .pronounce__button[_ngcontent-yge-c55] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    background-color: transparent;
+    border-radius: 4px
+}
+
+[_nghost-yge-c55] .pronounce__button_is-disabled[_ngcontent-yge-c55] {
+    opacity: .5;
+    cursor: not-allowed
+}
+
+[_nghost-yge-c55] .pronounce__button_size_100[_ngcontent-yge-c55] {
+    width: 100%;
+    height: 100%
+}
+
+[_nghost-yge-c55] .pronounce__button_size_xx-small[_ngcontent-yge-c55] {
+    height: 20px;
+    width: 20px
+}
+
+[_nghost-yge-c55] .pronounce__button_size_x-small[_ngcontent-yge-c55] {
+    height: 24px;
+    width: 24px
+}
+
+[_nghost-yge-c55] .pronounce__button_size_smaller[_ngcontent-yge-c55] {
+    height: 30px;
+    width: 30px
+}
+
+[_nghost-yge-c55] .pronounce__button_size_smaller-32[_ngcontent-yge-c55] {
+    height: 32px;
+    width: 32px
+}
+
+[_nghost-yge-c55] .pronounce__button_size_medium[_ngcontent-yge-c55] {
+    height: 34px;
+    width: 34px
+}
+
+[_nghost-yge-c55] .pronounce__button_size_large[_ngcontent-yge-c55] {
+    height: 38px;
+    width: 38px
+}
+
+[_nghost-yge-c55] .pronounce__button__play-round[_ngcontent-yge-c55]>span>svg {
+    width: 17px;
+    height: 18px;
+    margin-left: 4px
+}
+
+</style><style>[_nghost-yge-c14] {
+    display: flex;
+    margin: 0;
+    border-radius: 6px
+}
+
+[_nghost-yge-c14] .button[_ngcontent-yge-c14] {
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    border-radius: 6px;
+    background-color: inherit;
+    color: inherit;
+    font-style: normal;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    font-family: Roboto, Helvetica, Arial, sans-serif;
+    outline: none !important;
+    margin: 0
+}
+
+[_nghost-yge-c14] .button_cursor_default[_ngcontent-yge-c14] {
+    cursor: default
+}
+
+[_nghost-yge-c14] .button[_ngcontent-yge-c14]:disabled {
+    cursor: not-allowed
+}
+
+[_nghost-yge-c14] .button_size_small[_ngcontent-yge-c14] {
+    height: 30px;
+    padding: 5px 8px
+}
+
+[_nghost-yge-c14] .button_size_smaller[_ngcontent-yge-c14] {
+    height: 24px;
+    padding: 5px 8px
+}
+
+[_nghost-yge-c14] .button_size_large[_ngcontent-yge-c14] {
+    padding: 10px 32px
+}
+
+[_nghost-yge-c14] .button_size_medium-big[_ngcontent-yge-c14] {
+    min-height: 40px;
+    max-height: 70px;
+    width: 90px
+}
+
+[_nghost-yge-c14] .button_size_spec1[_ngcontent-yge-c14] {
+    height: 30px;
+    width: 35px
+}
+
+[_nghost-yge-c14] .button_size_spec2[_ngcontent-yge-c14] {
+    height: 30px;
+    width: 48px
+}
+
+[_nghost-yge-c14] .button_size_spec3[_ngcontent-yge-c14] {
+    height: 30px;
+    width: 30px
+}
+
+[_nghost-yge-c14] .button_size_spec4[_ngcontent-yge-c14] {
+    height: 34px;
+    width: 34px
+}
+
+[_nghost-yge-c14] .button_size_sign-up[_ngcontent-yge-c14] {
+    border-radius: 8px
+}
+
+[_nghost-yge-c14] .button__icon[_ngcontent-yge-c14] {
+    display: inline-flex;
+    margin-right: 6px
+}
+
+[_nghost-yge-c14] .button[_ngcontent-yge-c14] sl-spinner {
+    display: inline-flex;
+    margin-right: 6px
+}
+
+[_nghost-yge-c14] .button_border[_ngcontent-yge-c14] {
+    border: solid 1.5px
+}
+
+[_nghost-yge-c14] .button_sharped[_ngcontent-yge-c14] {
+    border-radius: 0 !important
+}
+
+[_nghost-yge-c14] .button_only-icon[_ngcontent-yge-c14] {
+    padding: 0
+}
+
+[_nghost-yge-c14] .button_only-icon[_ngcontent-yge-c14] .button__icon[_ngcontent-yge-c14] {
+    margin-right: 0
+}
+
+[_nghost-yge-c14] .button_icon-on-the-right[_ngcontent-yge-c14] .button__icon[_ngcontent-yge-c14] {
+    order: 1;
+    margin-right: auto;
+    margin-left: 6px
+}
+
+[_nghost-yge-c14] .button_icon-on-top[_ngcontent-yge-c14] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    line-height: 27px
+}
+
+[_nghost-yge-c14] .button_icon-on-top[_ngcontent-yge-c14] .button__icon[_ngcontent-yge-c14] {
+    margin: auto
+}
+
+[_nghost-yge-c14] .button_round[_ngcontent-yge-c14] {
+    border-radius: 25px
+}
+
+</style><style>[_nghost-yge-c22] .pos-line[_ngcontent-yge-c22] {
+    display: block;
+    width: 100%;
+    height: 2px
+}
+
+[_nghost-yge-c22] .pos-line_noun[_ngcontent-yge-c22] {
+    background: var(--decorative-noun)
+}
+
+[_nghost-yge-c22] .pos-line_noun-pron[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_noun-verb[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-noun) 0%, var(--decorative-noun) 50%, var(--decorative-verb) 50%, var(--decorative-verb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adv-verb[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%, var(--decorative-verb) 50%, var(--decorative-verb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-verb[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-verb) 50%, var(--decorative-verb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-det[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%)
+}
+
+[_nghost-yge-c22] .pos-line_verb[_ngcontent-yge-c22] {
+    background: var(--decorative-verb)
+}
+
+[_nghost-yge-c22] .pos-line_adj[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_prtp[_ngcontent-yge-c22] {
+    background: var(--decorative-adjective)
+}
+
+[_nghost-yge-c22] .pos-line_adj-noun[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-adv-noun[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 33.3%, var(--decorative-adverb) 33.3%, var(--decorative-adverb) 66.6%, var(--decorative-noun) 66.6%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-adv-num[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-adv[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-pron[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adv[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_prep[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_pron[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_conj[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_det[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_num-num[_ngcontent-yge-c22],
+[_nghost-yge-c22] .pos-line_art[_ngcontent-yge-c22] {
+    background: var(--decorative-adverb)
+}
+
+[_nghost-yge-c22] .pos-line_adv-noun[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_num[_ngcontent-yge-c22] {
+    background: var(--decorative-adverb)
+}
+
+[_nghost-yge-c22] .pos-line_pp[_ngcontent-yge-c22] {
+    background: var(--decorative-adjective)
+}
+
+[_nghost-yge-c22] .pos-line_adj-adv-det-pron[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-adv-det-noun[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 33.3%, var(--decorative-adverb) 33.3%, var(--decorative-adverb) 66.6%, var(--decorative-noun) 66.6%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-det-noun-pron[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adj-conj-det[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_nn-pron[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-noun) 0%, var(--decorative-noun) 50%, var(--decorative-adverb) 50%, var(--decorative-adverb) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adv-nm[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adverb) 0%, var(--decorative-adverb) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+[_nghost-yge-c22] .pos-line_adv-pron[_ngcontent-yge-c22] {
+    background: var(--decorative-adverb)
+}
+
+[_nghost-yge-c22] .pos-line_adj-n-inv[_ngcontent-yge-c22] {
+    background: linear-gradient(90deg, var(--decorative-adjective) 0%, var(--decorative-adjective) 50%, var(--decorative-noun) 50%, var(--decorative-noun) 100%)
+}
+
+</style><style>[_nghost-yge-c96] .open-app-button[_ngcontent-yge-c96] {
+    display: flex;
+    height: 32px;
+    padding: 6px 8px;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line-gray-gray-tertiary);
+    background-color: var(--background-base-primary);
+    color: var(--text-color-base-base-secondary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    cursor: pointer;
+    transition: .2s
+}
+
+[_nghost-yge-c96] .open-app-button[_ngcontent-yge-c96]:hover {
+    color: var(--action-primary-primary-hovered)
+}
+
+[_nghost-yge-c96] .open-app-button_only-icon[_ngcontent-yge-c96] {
+    border: none
+}
+
+[_nghost-yge-c96] .open-app-button_only-icon[_ngcontent-yge-c96] span[_ngcontent-yge-c96] {
+    display: none
+}
+
+[_nghost-yge-c96] .open-app-button_only-icon[_ngcontent-yge-c96] sl-icon[_ngcontent-yge-c96] svg {
+    width: 20px;
+    height: 20px
+}
+
+</style><style>[_nghost-yge-c19] .sl-tooltip-view[_ngcontent-yge-c19] {
+    padding: 5px 10px;
+    background-color: var(--background-base-block);
+    border-radius: 4px;
+    border: .5px solid var(--line-gray-gray-tertiary);
+    box-sizing: border-box;
+    box-shadow: 0 2px 3px 0 var(--background-base-quaternary);
+    color: var(--text-color-base-base-primary);
+    font-size: 13px;
+    text-align: left
+}
+
+[_nghost-yge-c19] .sl-tooltip-view_shortcut[_ngcontent-yge-c19] {
+    padding-right: 6px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__text-shortcut[_ngcontent-yge-c19] {
+    padding: 4px 7px 2px 6px;
+    border-radius: 3px;
+    background-color: var(--action-secondary-secondary-hovered-2);
+    box-shadow: 0 2px 0 0 var(--text-color-base-base-placeholder);
+    color: var(--text-color-base-base-primary);
+    text-align: center;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__text-shortcut_icon-space[_ngcontent-yge-c19] {
+    padding: 4px 4px 2px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__text-shortcut_icon-enter[_ngcontent-yge-c19] {
+    padding: 4px 8px 2px 4px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__text-shortcut_icon-esc[_ngcontent-yge-c19] {
+    padding: 4px 4px 2px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view[_ngcontent-yge-c19] span {
+    color: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode[_ngcontent-yge-c19] {
+    border: .5px solid var(--line-gray-gray-tertiary);
+    box-shadow: 0 20px 60px 0 var(--background-base-quaternary);
+    background: var(--background-base-popup);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    max-width: 200px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode[_ngcontent-yge-c19] span[_ngcontent-yge-c19] {
+    display: block;
+    text-align: center
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode__text[_ngcontent-yge-c19] {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-color-base-base-secondary)
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode__alt-text[_ngcontent-yge-c19] {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-color-blue-blue-primary);
+    margin-top: 10px;
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode__alt-text__block[_ngcontent-yge-c19] {
+    background: var(--background-base-secondary);
+    padding: 4px 7px;
+    border-radius: 5px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode__alt-text__block[_ngcontent-yge-c19]:last-child {
+    padding: 4px 9px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view__header-mode__alt-text__separator[_ngcontent-yge-c19] {
+    margin: 0 5px
+}
+
+[_nghost-yge-c19] .sl-tooltip-view[_ngcontent-yge-c19] .tahoma {
+    font-size: 14px !important
+}
+
+</style><style>[_nghost-yge-c53] {
+    min-width: 100%;
+    padding: 0;
+    box-sizing: border-box
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer[_ngcontent-yge-c53] {
+    position: relative;
+    height: 48px;
+    font-size: 14px;
+    line-height: 20px;
+    background: var(--background-base-overlay);
+    color: var(--text-color-base-base-white);
+    min-width: 100vw;
+    border-radius: 0 0 4px 4px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: flex-end;
+    gap: 20px;
+    align-items: center;
+    cursor: default
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer__text[_ngcontent-yge-c53] {
+    margin-right: auto;
+    font-weight: 500
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer__link[_ngcontent-yge-c53] {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--text-color-blue-blue-quaternary);
+    text-decoration: underline;
+    cursor: pointer
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer__link[_ngcontent-yge-c53]:hover {
+    text-decoration: none
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer__link_flashcards[_ngcontent-yge-c53] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--text-color-base-base-invert);
+    text-decoration: none;
+    background-color: var(--action-primary-primary-default);
+    border-radius: 4px
+}
+
+[_nghost-yge-c53] .favorites-onboarding-footer__link_flashcards[_ngcontent-yge-c53]:hover {
+    background-color: var(--action-primary-primary-hovered)
+}
+
+</style><style>[_nghost-yge-c59] {
+    position: relative
+}
+
+[_nghost-yge-c59] .header[_ngcontent-yge-c59] {
+    min-height: 36px;
+    max-height: 36px;
+    padding: 8px 8px 8px 10px;
+    color: var(--text-color-base-base-placeholder);
+    background-color: var(--background-base-tertiary);
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 16px;
+    line-height: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 1px solid var(--line-gray-gray-secondary)
+}
+
+[_nghost-yge-c59] .header__section[_ngcontent-yge-c59] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c59] .header__section__block[_ngcontent-yge-c59] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-pronounce .icon-pronounce path {
+    fill: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-copy-clipboard .copy-clipboard:hover {
+    background-color: transparent
+}
+
+[_nghost-yge-c59] .header__section__block[_ngcontent-yge-c59] a[_ngcontent-yge-c59] {
+    height: 34px;
+    width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center
+}
+
+[_nghost-yge-c59] .header__section__block[_ngcontent-yge-c59] a[_ngcontent-yge-c59]:hover {
+    cursor: pointer
+}
+
+[_nghost-yge-c59] .header__section__close[_ngcontent-yge-c59] {
+    margin-left: 10px;
+    height: 20px;
+    width: 20px
+}
+
+[_nghost-yge-c59] .header__section__close[_ngcontent-yge-c59] svg path {
+    fill: var(--text-color-base-base-placeholder) !important
+}
+
+[_nghost-yge-c59] .header__section__close[_ngcontent-yge-c59]:hover {
+    cursor: pointer
+}
+
+[_nghost-yge-c59] .header__section_right[_ngcontent-yge-c59] {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1
+}
+
+[_nghost-yge-c59] .header__logo[_ngcontent-yge-c59] {
+    display: flex;
+    align-items: center;
+    cursor: pointer
+}
+
+[_nghost-yge-c59] .header__logo[_ngcontent-yge-c59] svg[_ngcontent-yge-c59] {
+    margin-right: 12px
+}
+
+[_nghost-yge-c59] .header__links[_ngcontent-yge-c59] {
+    display: flex
+}
+
+[_nghost-yge-c59] .header__links__context[_ngcontent-yge-c59] {
+    display: flex;
+    align-items: center
+}
+
+[_nghost-yge-c59] .header__links__context__back[_ngcontent-yge-c59] {
+    cursor: pointer
+}
+
+[_nghost-yge-c59] .header__links__context__back[_ngcontent-yge-c59] sl-icon svg {
+    height: 10px !important
+}
+
+[_nghost-yge-c59] .header__links__context__word[_ngcontent-yge-c59] {
+    margin-left: 11px;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-color-base-base-primary)
+}
+
+[_nghost-yge-c59] .header__links__context__pos[_ngcontent-yge-c59] {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 24px;
+    color: var(--text-color-blue-blue-primary);
+    margin-left: 4px;
+    margin-top: 2px
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] {
+    padding: 8px !important
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] .header__links__context__word[_ngcontent-yge-c59] {
+    font-weight: 400
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-copy-clipboard svg path {
+    fill: var(--text-color-base-base-tertiary) !important
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-copy-clipboard button {
+    height: 32px !important;
+    width: 32px !important;
+    border-radius: 4px
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-copy-clipboard button:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c59] .header__sug[_ngcontent-yge-c59] .header__section__block[_ngcontent-yge-c59] pp-button-copy-clipboard button:hover svg path {
+    fill: var(--text-color-base-base-tertiary-hovered) !important
+}
+
+[_nghost-yge-c59] .header__ext[_ngcontent-yge-c59] {
+    justify-content: space-between
+}
+
+[_nghost-yge-c59] .header__settings[_ngcontent-yge-c59] {
+    margin-left: 10px;
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none !important;
+    border-radius: 6px;
+    padding: 0;
+    height: 20px;
+    width: 20px;
+    background-color: var(--background-base-header)
+}
+
+[_nghost-yge-c59] sl-progress-bar[_ngcontent-yge-c59] {
+    position: absolute;
+    width: 100%
+}
+
+[_nghost-yge-c59] sl-progress-bar[_ngcontent-yge-c59] .progress-bar {
+    position: relative;
+    top: auto;
+    bottom: 1px
+}
+
+</style><style>[_nghost-yge-c60] .copy-clipboard[_ngcontent-yge-c60] {
+    background-color: transparent;
+    border-radius: 4px
+}
+
+[_nghost-yge-c60] .copy-clipboard[_ngcontent-yge-c60] sl-icon[_ngcontent-yge-c60] path {
+    fill: var(--text-color-base-base-tertiary)
+}
+
+[_nghost-yge-c60] .copy-clipboard[_ngcontent-yge-c60]:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c60] .copy-clipboard__button[_ngcontent-yge-c60] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    background-color: transparent
+}
+
+[_nghost-yge-c60] .copy-clipboard__button[_ngcontent-yge-c60]:disabled {
+    cursor: not-allowed
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_size_x-small[_ngcontent-yge-c60] {
+    height: 24px;
+    width: 24px
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_size_smaller[_ngcontent-yge-c60] {
+    height: 30px;
+    width: 30px
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_size_small[_ngcontent-yge-c60] {
+    height: 32px;
+    width: 32px
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_size_medium[_ngcontent-yge-c60] {
+    height: 34px;
+    width: 34px
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_size_large[_ngcontent-yge-c60] {
+    height: 38px;
+    width: 38px
+}
+
+[_nghost-yge-c60] .copy-clipboard__button_is-clear[_ngcontent-yge-c60] {
+    background-color: transparent
+}
+
+[_nghost-yge-c60] .copy-clipboard__button__input[_ngcontent-yge-c60] {
+    position: absolute;
+    z-index: -9999;
+    height: 0;
+    width: 0;
+    opacity: 0
+}
+
+[_nghost-yge-c60] .copy-clipboard_isRephraser[_ngcontent-yge-c60]:hover {
+    background-color: var(--line-purple-purple-secondary)
+}
+
+[_nghost-yge-c60] .copy-clipboard_isRephraser[_ngcontent-yge-c60] sl-icon[_ngcontent-yge-c60] path {
+    fill: var(--action-purple-purple-primary-default)
+}
+
+</style><style>[_nghost-yge-c93] {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden
+}
+
+[_nghost-yge-c93] .translate-context-list__list[_ngcontent-yge-c93] {
+    margin: 0;
+    padding: 0
+}
+
+[_nghost-yge-c93] .translate-context-list__item[_ngcontent-yge-c93] {
+    position: relative;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    display: flex;
+    flex-direction: column
+}
+
+[_nghost-yge-c93] .translate-context-list__item[_ngcontent-yge-c93]:first-child {
+    border-bottom: .5px solid var(--line-gray-gray-tertiary)
+}
+
+[_nghost-yge-c93] .translate-context-list__item[_ngcontent-yge-c93] em {
+    color: var(--text-color-base-base-primary);
+    background: var(--decorative-word-highlight);
+    font-weight: 400;
+    font-style: normal
+}
+
+[_nghost-yge-c93] .translate-context-list__item-content[_ngcontent-yge-c93] {
+    display: flex;
+    flex-direction: row
+}
+
+[_nghost-yge-c93] .translate-context-list__source-and-target[_ngcontent-yge-c93] {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1
+}
+
+[_nghost-yge-c93] .translate-context-list__item-source[_ngcontent-yge-c93] {
+    position: relative;
+    margin: 12px 45px 3px 14px;
+    color: var(--text-color-blue-blue-tertiary)
+}
+
+[_nghost-yge-c93] .translate-context-list__item-source[dir=rtl][_ngcontent-yge-c93] {
+    margin-right: 30px
+}
+
+[_nghost-yge-c93] .translate-context-list[_ngcontent-yge-c93] [dir=ltr][_ngcontent-yge-c93] {
+    text-align: left;
+    direction: ltr
+}
+
+[_nghost-yge-c93] .translate-context-list[_ngcontent-yge-c93] [dir=rtl][_ngcontent-yge-c93] {
+    text-align: right;
+    direction: rtl
+}
+
+[_nghost-yge-c93] .translate-context-list__item-target[_ngcontent-yge-c93] {
+    position: relative;
+    padding: 0 45px 6px 15px;
+    color: var(--text-color-base-base-primary)
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar[_ngcontent-yge-c93] {
+    opacity: 1;
+    padding: 8px 3px 6px 0;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 4px
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar_favorite-added[_ngcontent-yge-c93] {
+    opacity: 1 !important
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar[_ngcontent-yge-c93] pp-button-pronounce {
+    margin-left: 0
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar[_ngcontent-yge-c93] pp-button-pronounce button {
+    height: 30px !important;
+    width: 30px !important;
+    border-radius: 4px
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar[_ngcontent-yge-c93] pp-button-pronounce button:hover {
+    background-color: var(--action-secondary-secondary-hovered-1)
+}
+
+[_nghost-yge-c93] .translate-context-list__item-sidebar[_ngcontent-yge-c93] pp-button-pronounce .icon-pronounce path {
+    fill: var(--text-color-blue-blue-primary)
+}
+
+[_nghost-yge-c93] .translate-context-list__item-other-result[_ngcontent-yge-c93] {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 25px;
+    background: var(--action-secondary-secondary-hovered-2);
+    color: var(--text-color-blue-blue-secondary);
+    font-size: 15px
+}
+
+</style></head>

@@ -1,0 +1,24 @@
+/*icon-font*/
+@font-face {
+  font-family: app-icon;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./app-icon.woff') format('woff');
+}
+
+@font-face {
+  font-family: app-icon-flag;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./app-icon-flag.woff') format('woff');
+}
+
+@font-face {
+  font-family: app-icon-context;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./app-icon-context.woff') format('woff');
+}
