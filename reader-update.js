@@ -12,7 +12,11 @@
     isTranslating: false,
     lastJobId: 0,
     isOpen: false,
+    hoverToggleButton: null,
     inlineWrap: null,
+    singleModeTokenized: false,
+    singleRowByIndex: null,
+    singleModeHoverListenerAttached: false,
     sourceNodes: [],
     rowMap: new WeakMap(),
     activeHighlight: null,
@@ -48,11 +52,11 @@
       console.info(
         [
           "[dual-translation] Help",
-          "- Word hover popovers work on the tokenized text after dual translation is ON.",
+          "- Word hover works in single-column reading and in dual mode (tokenized text).",
           "  Use the sparkle button (next to dark mode) to enable/disable hover hints.",
           "  Or: window.DUAL_TRANSLATION_HOVER_WORD_MAP = true|false",
-          "- Toggle auto-open dual mode on load (default: true for file:// only):",
-          "  window.DUAL_TRANSLATION_AUTO_OPEN = true|false",
+          "- Auto-open dual mode on load is off by default. To enable:",
+          "  window.DUAL_TRANSLATION_AUTO_OPEN = true",
           "- Current hover flag:",
           "  window.DUAL_TRANSLATION_HOVER_WORD_MAP = " + String(window[HOVER_FEATURE_FLAG]),
           "- More commands can be added here later."
@@ -70,11 +74,7 @@
     if (typeof window.DUAL_TRANSLATION_AUTO_OPEN !== "undefined") {
       return Boolean(window.DUAL_TRANSLATION_AUTO_OPEN);
     }
-    try {
-      return window.location.protocol === "file:";
-    } catch (_e) {
-      return false;
-    }
+    return false;
   }
 
   function ensureStyles() {
@@ -169,52 +169,6 @@
     return Boolean(window.Translator && typeof window.Translator.create === "function");
   }
 
-  async function translateTextMyMemory(text) {
-    var q = String(text || "").trim();
-    if (!q) return "";
-    var url =
-      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(q) + "&langpair=en|fr";
-    var res = await fetch(url);
-    if (!res.ok) throw new Error("mymemory_http");
-    var data = await res.json();
-    var out = data && data.responseData && data.responseData.translatedText;
-    return typeof out === "string" ? out : "";
-  }
-
-  function chunkTextForMyMemory(s, maxLen) {
-    var t = String(s || "").trim();
-    if (!t) return [];
-    if (t.length <= maxLen) return [t];
-    var out = [];
-    while (t.length > maxLen) {
-      var slice = t.slice(0, maxLen);
-      var breakAt = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf(" "), slice.lastIndexOf("\n"));
-      if (breakAt < Math.floor(maxLen * 0.45)) breakAt = maxLen;
-      out.push(t.slice(0, breakAt).trim());
-      t = t.slice(breakAt).trim();
-    }
-    if (t) out.push(t);
-    return out;
-  }
-
-  async function translateParagraphMyMemory(paragraph) {
-    var parts = chunkTextForMyMemory(paragraph, 420);
-    if (!parts.length) return "";
-    var bits = [];
-    for (var i = 0; i < parts.length; i++) {
-      bits.push(await withTimeout(translateTextMyMemory(parts[i]), 12000));
-    }
-    return bits.join(" ").replace(/\s+/g, " ").trim();
-  }
-
-  async function buildTranslatedParagraphsMyMemory(paragraphs) {
-    var out = [];
-    for (var i = 0; i < paragraphs.length; i++) {
-      out.push(await translateParagraphMyMemory(paragraphs[i]));
-    }
-    return out;
-  }
-
   function normalizeWord(word) {
     return (word || "")
       .toLowerCase()
@@ -270,32 +224,25 @@
       logDebug("hover_translate_cache_hit", { rawWord: rawWord, normalized: key, cached: cached });
       return cached;
     }
-    if (supportsTranslatorApi()) {
-      try {
-        var translator = await getTranslator();
-        var translated = await withTimeout(translator.translate(rawWord), 1200);
-        var normalized = normalizeWord(translated);
-        var payload = { display: String(translated || "").trim(), normalized: normalized };
-        state.hoverTranslationCache.set(key, payload);
-        logDebug("hover_translate_ok", {
-          rawWord: rawWord,
-          normalized: key,
-          translatedRaw: translated,
-          translatedNormalized: normalized
-        });
-        return payload;
-      } catch (_e) {
-        logDebug("hover_translate_chrome_fallback_mymemory", { rawWord: rawWord, normalized: key });
-      }
+    if (!supportsTranslatorApi()) {
+      state.hoverTranslationCache.set(key, empty);
+      logWarn("hover_translate_api_unavailable", { rawWord: rawWord, normalized: key });
+      return empty;
     }
     try {
-      var mem = await withTimeout(translateTextMyMemory(rawWord), 3500);
-      var n2 = normalizeWord(mem);
-      var payloadMem = { display: String(mem || "").trim(), normalized: n2 };
-      state.hoverTranslationCache.set(key, payloadMem);
-      logDebug("hover_translate_mymemory_ok", { rawWord: rawWord, normalized: key });
-      return payloadMem;
-    } catch (_e2) {
+      var translator = await getTranslator();
+      var translated = await withTimeout(translator.translate(rawWord), 1200);
+      var normalized = normalizeWord(translated);
+      var payload = { display: String(translated || "").trim(), normalized: normalized };
+      state.hoverTranslationCache.set(key, payload);
+      logDebug("hover_translate_ok", {
+        rawWord: rawWord,
+        normalized: key,
+        translatedRaw: translated,
+        translatedNormalized: normalized
+      });
+      return payload;
+    } catch (_e) {
       state.hoverTranslationCache.set(key, empty);
       logWarn("hover_translate_error", { rawWord: rawWord, normalized: key });
       return empty;
@@ -450,6 +397,77 @@
       }
     }
     return tokens;
+  }
+
+  function getReadingHoverRoot() {
+    var nodes = sourceNodes();
+    if (!nodes.length) return null;
+    return (
+      nodes[0].closest(".reading-text__content") ||
+      nodes[0].closest("app-reader-view-content") ||
+      nodes[0].closest(".reader-view-page__view") ||
+      nodes[0].parentElement
+    );
+  }
+
+  function ensureSingleModeTokenization() {
+    if (state.singleModeTokenized) return;
+    state.sourceNodes = [];
+    state.singleRowByIndex = Object.create(null);
+    var nodes = sourceNodes();
+    for (var i = 0; i < nodes.length; i += 1) {
+      var p = nodes[i];
+      var text = (p.textContent || "").trim();
+      p.classList.add("translation-inline-orig");
+      var sourceTokens = renderTokenizedParagraph(p, text, "source", i);
+      state.singleRowByIndex[String(i)] = {
+        sourceP: p,
+        targetP: null,
+        sourceTokens: sourceTokens,
+        targetTokens: []
+      };
+    }
+    state.singleModeTokenized = true;
+  }
+
+  function getRowDataForToken(tokenEl) {
+    var rowEl = tokenEl.closest(".translation-inline-row");
+    if (rowEl && state.rowMap.has(rowEl)) {
+      return state.rowMap.get(rowEl);
+    }
+    var idx = tokenEl.getAttribute("data-row-index");
+    if (idx != null && state.singleRowByIndex && state.singleRowByIndex[idx]) {
+      return state.singleRowByIndex[idx];
+    }
+    return null;
+  }
+
+  function onSingleReadingHoverMouseover(event) {
+    if (!isHoverWordMappingEnabled()) return;
+    if (state.isOpen) return;
+    var root = getReadingHoverRoot();
+    if (!root || !root.contains(event.target)) return;
+    var tokenEl = event.target.closest(".translation-token");
+    if (!tokenEl || !root.contains(tokenEl)) return;
+    if (tokenEl.closest(".translation-inline-wrap")) return;
+    clearActiveHighlight();
+    applyHighlight(tokenEl);
+  }
+
+  function onSingleReadingHoverMouseleave() {
+    if (!isHoverWordMappingEnabled()) return;
+    if (state.isOpen) return;
+    clearActiveHighlight();
+  }
+
+  function attachSingleModeHoverHandlers() {
+    if (state.singleModeHoverListenerAttached) return;
+    ensureSingleModeTokenization();
+    var root = getReadingHoverRoot();
+    if (!root) return;
+    state.singleModeHoverListenerAttached = true;
+    root.addEventListener("mouseover", onSingleReadingHoverMouseover);
+    root.addEventListener("mouseleave", onSingleReadingHoverMouseleave);
   }
 
   function withTimeout(promise, timeoutMs) {
@@ -740,10 +758,11 @@
   }
 
   function syncHoverToggleUi(hoverBtn) {
-    if (!hoverBtn) return;
+    var btn = hoverBtn || state.hoverToggleButton;
+    if (!btn) return;
     var on = isHoverWordMappingEnabled();
-    hoverBtn.setAttribute("aria-pressed", on ? "true" : "false");
-    hoverBtn.classList.toggle("translation-mode-button_active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("translation-mode-button_active", on);
     document.body.classList.toggle("translation-hover-disabled", !on);
   }
 
@@ -824,9 +843,11 @@
     if (!isOpen) {
       clearActiveHighlight();
     }
-    if (!state.inlineWrap) return;
-    state.inlineWrap.classList.toggle("translation-inline-wrap_open", isOpen);
-    setSourceVisibility(isOpen);
+    if (state.inlineWrap) {
+      state.inlineWrap.classList.toggle("translation-inline-wrap_open", isOpen);
+      setSourceVisibility(isOpen);
+    }
+    syncHoverToggleUi();
   }
 
   function renderRightColumn(paragraphs) {
@@ -905,9 +926,7 @@
 
   async function applyHighlight(tokenEl) {
     if (!isHoverWordMappingEnabled()) return;
-    var rowEl = tokenEl.closest(".translation-inline-row");
-    if (!rowEl) return;
-    var rowData = state.rowMap.get(rowEl);
+    var rowData = getRowDataForToken(tokenEl);
     if (!rowData) return;
     var side = tokenEl.getAttribute("data-side");
     var tokenIndex = Number(tokenEl.getAttribute("data-token-index"));
@@ -938,7 +957,10 @@
       targetMatchIdx = findBestMatchIndex(sourceToken.norm, rowData.targetTokens, translatedNorm);
       tokenEl.classList.add("translation-token_src");
       var defPrimary =
-        translated.display || "No quick translation available for this word (offline or API limit).";
+        translated.display ||
+        (!supportsTranslatorApi()
+          ? "Translation unavailable in this browser."
+          : "No quick translation returned for this word.");
       var title2 = "";
       var def2 = "";
       if (targetMatchIdx >= 0 && rowData.targetTokens[targetMatchIdx]) {
@@ -963,7 +985,7 @@
           targetIndex: targetMatchIdx
         });
         state.activeHighlight = { sourceEl: tokenEl, targetEl: rowData.targetTokens[targetMatchIdx].el };
-      } else {
+      } else if (rowData.targetP) {
         rowData.targetP.classList.add("translation-sentence_tgt");
         logWarn("hover_match_fallback_sentence", {
           sourceRaw: sourceToken.raw,
@@ -971,6 +993,8 @@
           translatedNorm: translatedNorm
         });
         state.activeHighlight = { sourceEl: tokenEl, targetSentenceEl: rowData.targetP };
+      } else {
+        state.activeHighlight = { sourceEl: tokenEl };
       }
     } else {
       var targetToken = rowData.targetTokens[tokenIndex];
@@ -1040,22 +1064,14 @@
     var jobId = ++state.lastJobId;
     try {
       if (!supportsTranslatorApi()) {
-        var viaMem = await buildTranslatedParagraphsMyMemory(originals);
-        if (jobId !== state.lastJobId) return;
-        renderRightColumn(viaMem.length ? viaMem : originals);
+        renderRightColumn(originals);
         return;
       }
       var translated = await buildTranslatedParagraphs();
       if (jobId !== state.lastJobId) return;
       renderRightColumn(translated);
     } catch (_err) {
-      try {
-        var fallback = await buildTranslatedParagraphsMyMemory(originals);
-        if (jobId === state.lastJobId && fallback.length) renderRightColumn(fallback);
-        else if (jobId === state.lastJobId) renderRightColumn(originals);
-      } catch (_e2) {
-        if (jobId === state.lastJobId) renderRightColumn(originals);
-      }
+      renderRightColumn(originals);
     } finally {
       if (jobId === state.lastJobId) state.isTranslating = false;
     }
@@ -1149,11 +1165,12 @@
       }
     }
 
-    syncHoverToggleUi(hoverBtn);
+    state.hoverToggleButton = hoverBtn;
+    syncHoverToggleUi();
 
     hoverBtn.addEventListener("click", function () {
       window[HOVER_FEATURE_FLAG] = !isHoverWordMappingEnabled();
-      syncHoverToggleUi(hoverBtn);
+      syncHoverToggleUi();
       clearActiveHighlight();
       logDebug("hover_toggle_click", { enabled: isHoverWordMappingEnabled() });
     });
@@ -1169,6 +1186,7 @@
 
     installHistoryToggleFix();
     installListenButtonAudioWatcher();
+    attachSingleModeHoverHandlers();
 
     if (shouldAutoOpenDualOnLoad()) {
       requestAnimationFrame(function () {
