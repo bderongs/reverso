@@ -169,6 +169,52 @@
     return Boolean(window.Translator && typeof window.Translator.create === "function");
   }
 
+  async function translateTextMyMemory(text) {
+    var q = String(text || "").trim();
+    if (!q) return "";
+    var url =
+      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(q) + "&langpair=en|fr";
+    var res = await fetch(url);
+    if (!res.ok) throw new Error("mymemory_http");
+    var data = await res.json();
+    var out = data && data.responseData && data.responseData.translatedText;
+    return typeof out === "string" ? out : "";
+  }
+
+  function chunkTextForMyMemory(s, maxLen) {
+    var t = String(s || "").trim();
+    if (!t) return [];
+    if (t.length <= maxLen) return [t];
+    var out = [];
+    while (t.length > maxLen) {
+      var slice = t.slice(0, maxLen);
+      var breakAt = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf(" "), slice.lastIndexOf("\n"));
+      if (breakAt < Math.floor(maxLen * 0.45)) breakAt = maxLen;
+      out.push(t.slice(0, breakAt).trim());
+      t = t.slice(breakAt).trim();
+    }
+    if (t) out.push(t);
+    return out;
+  }
+
+  async function translateParagraphMyMemory(paragraph) {
+    var parts = chunkTextForMyMemory(paragraph, 420);
+    if (!parts.length) return "";
+    var bits = [];
+    for (var i = 0; i < parts.length; i++) {
+      bits.push(await withTimeout(translateTextMyMemory(parts[i]), 12000));
+    }
+    return bits.join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  async function buildTranslatedParagraphsMyMemory(paragraphs) {
+    var out = [];
+    for (var i = 0; i < paragraphs.length; i++) {
+      out.push(await translateParagraphMyMemory(paragraphs[i]));
+    }
+    return out;
+  }
+
   function normalizeWord(word) {
     return (word || "")
       .toLowerCase()
@@ -224,25 +270,32 @@
       logDebug("hover_translate_cache_hit", { rawWord: rawWord, normalized: key, cached: cached });
       return cached;
     }
-    if (!supportsTranslatorApi()) {
-      state.hoverTranslationCache.set(key, empty);
-      logWarn("hover_translate_api_unavailable", { rawWord: rawWord, normalized: key });
-      return empty;
+    if (supportsTranslatorApi()) {
+      try {
+        var translator = await getTranslator();
+        var translated = await withTimeout(translator.translate(rawWord), 1200);
+        var normalized = normalizeWord(translated);
+        var payload = { display: String(translated || "").trim(), normalized: normalized };
+        state.hoverTranslationCache.set(key, payload);
+        logDebug("hover_translate_ok", {
+          rawWord: rawWord,
+          normalized: key,
+          translatedRaw: translated,
+          translatedNormalized: normalized
+        });
+        return payload;
+      } catch (_e) {
+        logDebug("hover_translate_chrome_fallback_mymemory", { rawWord: rawWord, normalized: key });
+      }
     }
     try {
-      var translator = await getTranslator();
-      var translated = await withTimeout(translator.translate(rawWord), 1200);
-      var normalized = normalizeWord(translated);
-      var payload = { display: String(translated || "").trim(), normalized: normalized };
-      state.hoverTranslationCache.set(key, payload);
-      logDebug("hover_translate_ok", {
-        rawWord: rawWord,
-        normalized: key,
-        translatedRaw: translated,
-        translatedNormalized: normalized
-      });
-      return payload;
-    } catch (_e) {
+      var mem = await withTimeout(translateTextMyMemory(rawWord), 3500);
+      var n2 = normalizeWord(mem);
+      var payloadMem = { display: String(mem || "").trim(), normalized: n2 };
+      state.hoverTranslationCache.set(key, payloadMem);
+      logDebug("hover_translate_mymemory_ok", { rawWord: rawWord, normalized: key });
+      return payloadMem;
+    } catch (_e2) {
       state.hoverTranslationCache.set(key, empty);
       logWarn("hover_translate_error", { rawWord: rawWord, normalized: key });
       return empty;
@@ -885,10 +938,7 @@
       targetMatchIdx = findBestMatchIndex(sourceToken.norm, rowData.targetTokens, translatedNorm);
       tokenEl.classList.add("translation-token_src");
       var defPrimary =
-        translated.display ||
-        (!supportsTranslatorApi()
-          ? "Translation unavailable in this browser."
-          : "No quick translation returned for this word.");
+        translated.display || "No quick translation available for this word (offline or API limit).";
       var title2 = "";
       var def2 = "";
       if (targetMatchIdx >= 0 && rowData.targetTokens[targetMatchIdx]) {
@@ -990,14 +1040,22 @@
     var jobId = ++state.lastJobId;
     try {
       if (!supportsTranslatorApi()) {
-        renderRightColumn(originals);
+        var viaMem = await buildTranslatedParagraphsMyMemory(originals);
+        if (jobId !== state.lastJobId) return;
+        renderRightColumn(viaMem.length ? viaMem : originals);
         return;
       }
       var translated = await buildTranslatedParagraphs();
       if (jobId !== state.lastJobId) return;
       renderRightColumn(translated);
     } catch (_err) {
-      renderRightColumn(originals);
+      try {
+        var fallback = await buildTranslatedParagraphsMyMemory(originals);
+        if (jobId === state.lastJobId && fallback.length) renderRightColumn(fallback);
+        else if (jobId === state.lastJobId) renderRightColumn(originals);
+      } catch (_e2) {
+        if (jobId === state.lastJobId) renderRightColumn(originals);
+      }
     } finally {
       if (jobId === state.lastJobId) state.isTranslating = false;
     }
