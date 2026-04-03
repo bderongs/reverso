@@ -3,6 +3,8 @@
   const EXISTING_ID = "reverso_mock_root";
   document.getElementById(EXISTING_ID)?.remove();
   document.getElementById("reverso-context-block")?.remove();
+  document.getElementById("reverso-saved-hint")?.remove();
+  document.getElementById("reverso-mock-saved-hint-styles")?.remove();
   if (window.__reversoMockCleanup) {
     try {
       window.__reversoMockCleanup();
@@ -118,7 +120,28 @@
       .quick-control-panel_expanded .quick-control-panel__item{transform:translateY(0);opacity:1}
       .quick-control-panel_expanded .quick-control-panel__item:nth-child(1){transition-delay:.1s}
       .quick-control-panel_expanded .quick-control-panel__item:nth-child(2){transition-delay:.15s}
-      .quick-control-panel_expanded .quick-control-panel__item:nth-child(3){transition-delay:.2s}
+      .quick-control-panel_expanded .quick-control-panel__item:nth-child(3){transition-delay:.18s}
+      .quick-control-panel_expanded .quick-control-panel__item:nth-child(4){transition-delay:.2s}
+      .quick-control-panel__item_reading-list.quick-control-panel__item_saved svg path.reverso-save-icon__bg{
+        fill:var(--text-blue-blue-secondary);
+      }
+      .quick-control-panel__item_reading-list.quick-control-panel__item_saved svg path.reverso-save-icon__fg{
+        fill:var(--color-black-0);
+      }
+      .quick-control-panel__item_reading-list.quick-control-panel__item_saved svg path.reverso-save-icon__edge{
+        fill:none;
+        stroke:var(--text-blue-blue-secondary);
+        stroke-width:1.2;
+        stroke-linejoin:round;
+        stroke-linecap:round;
+      }
+      .quick-control-panel__item.quick-control-panel__item_reading-list.quick-control-panel__item_saved:hover svg.filled path.reverso-save-icon__fg{
+        fill:var(--color-black-0);
+      }
+      .quick-control-panel__item.quick-control-panel__item_reading-list.quick-control-panel__item_saved:hover svg.filled path.reverso-save-icon__edge{
+        fill:none;
+        stroke:var(--text-blue-blue-secondary);
+      }
     </style>
 
     <div class="quick-control-panel">
@@ -181,11 +204,198 @@
     </div>
   `;
 
+  /* Saved hint must live in light DOM: #reverso_mock_root uses transform, which breaks position:fixed inside shadow. */
+  const hintStyleEl = document.createElement("style");
+  hintStyleEl.id = "reverso-mock-saved-hint-styles";
+  hintStyleEl.textContent = `
+    #reverso-saved-hint.reverso-saved-hint{
+      position:fixed;
+      z-index:2147483648;
+      max-width:260px;
+      padding:12px 14px 12px 16px;
+      background:#1c2023;
+      border-radius:8px;
+      box-shadow:0 8px 24px rgba(0,0,0,.28);
+      pointer-events:none;
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .22s ease,visibility .22s ease;
+    }
+    #reverso-saved-hint.reverso-saved-hint.reverso-saved-hint--visible{
+      opacity:1;
+      visibility:visible;
+    }
+    #reverso-saved-hint.reverso-saved-hint::after{
+      content:"";
+      position:absolute;
+      left:100%;
+      top:50%;
+      transform:translateY(-50%);
+      border:7px solid transparent;
+      border-left-color:#1c2023;
+    }
+    #reverso-saved-hint .reverso-saved-hint__title{
+      color:#fff;
+      font-family:system-ui,-apple-system,sans-serif;
+      font-size:14px;
+      font-weight:700;
+      line-height:1.3;
+      margin:0 0 6px;
+    }
+    #reverso-saved-hint .reverso-saved-hint__desc{
+      color:rgba(255,255,255,.72);
+      font-family:system-ui,-apple-system,sans-serif;
+      font-size:12px;
+      font-weight:400;
+      line-height:1.45;
+      margin:0;
+    }
+  `;
+  document.head.appendChild(hintStyleEl);
+
+  const savedHintEl = document.createElement("div");
+  savedHintEl.id = "reverso-saved-hint";
+  savedHintEl.className = "reverso-saved-hint";
+  savedHintEl.setAttribute("role", "status");
+  savedHintEl.setAttribute("aria-live", "polite");
+  savedHintEl.innerHTML =
+    '<p class="reverso-saved-hint__title">You\'ve already saved this article.</p>' +
+    '<p class="reverso-saved-hint__desc">Open it in the reader for more features.</p>';
+  document.documentElement.appendChild(savedHintEl);
+
+  const SAVED_URLS_KEY = "reverso_mock_saved_urls";
+  const READING_LIST_ICON_UNSAVED = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" class="filled">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M11 8C10.7348 8 10.4804 8.10536 10.2929 8.29289C10.1054 8.48043 10 8.73478 10 9V23.2768L15.5039 20.1318C15.8113 19.9561 16.1887 19.9561 16.4961 20.1318L22 23.2768V9C22 8.73478 21.8946 8.48043 21.7071 8.29289C21.5196 8.10536 21.2652 8 21 8H11ZM8.87868 6.87868C9.44129 6.31607 10.2044 6 11 6H21C21.7956 6 22.5587 6.31607 23.1213 6.87868C23.6839 7.44129 24 8.20435 24 9V25C24 25.3565 23.8102 25.686 23.5019 25.8649C23.1936 26.0438 22.8134 26.0451 22.5039 25.8682L16 22.1518L9.49614 25.8682C9.18664 26.0451 8.80639 26.0438 8.49807 25.8649C8.18976 25.686 8 25.3565 8 25V9C8 8.20435 8.31607 7.44129 8.87868 6.87868ZM16 10C16.5523 10 17 10.4477 17 11V13H19C19.5523 13 20 13.4477 20 14C20 14.5523 19.5523 15 19 15H17V17C17 17.5523 16.5523 18 16 18C15.4477 18 15 17.5523 15 17V15H13C12.4477 15 12 14.5523 12 14C12 13.4477 12.4477 13 13 13H15V11C15 10.4477 15.4477 10 16 10Z" fill="#607D8B"></path>
+            </svg>`;
+  const READING_LIST_ICON_SAVED = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" class="filled">
+              <path class="reverso-save-icon__bg" fill-rule="evenodd" clip-rule="evenodd" d="M8.87868 6.87868C9.44129 6.31607 10.2044 6 11 6H21C21.7956 6 22.5587 6.31607 23.1213 6.87868C23.6839 7.44129 24 8.20435 24 9V25C24 25.3565 23.8102 25.686 23.5019 25.8649C23.1936 26.0438 22.8134 26.0451 22.5039 25.8682L16 22.1518L9.49614 25.8682C9.18664 26.0451 8.80639 26.0438 8.49807 25.8649C8.18976 25.686 8 25.3565 8 25V9C8 8.20435 8.31607 7.44129 8.87868 6.87868Z"></path>
+              <path class="reverso-save-icon__fg" fill-rule="evenodd" clip-rule="evenodd" d="M11 8C10.7348 8 10.4804 8.10536 10.2929 8.29289C10.1054 8.48043 10 8.73478 10 9V23.2768L15.5039 20.1318C15.8113 19.9561 16.1887 19.9561 16.4961 20.1318L22 23.2768V9C22 8.73478 21.8946 8.48043 21.7071 8.29289C21.5196 8.10536 21.2652 8 21 8H11ZM8.87868 6.87868C9.44129 6.31607 10.2044 6 11 6H21C21.7956 6 22.5587 6.31607 23.1213 6.87868C23.6839 7.44129 24 8.20435 24 9V25C24 25.3565 23.8102 25.686 23.5019 25.8649C23.1936 26.0438 22.8134 26.0451 22.5039 25.8682L16 22.1518L9.49614 25.8682C9.18664 26.0451 8.80639 26.0438 8.49807 25.8649C8.18976 25.686 8 25.3565 8 25V9C8 8.20435 8.31607 7.44129 8.87868 6.87868ZM16 10C16.5523 10 17 10.4477 17 11V13H19C19.5523 13 20 13.4477 20 14C20 14.5523 19.5523 15 19 15H17V17C17 17.5523 16.5523 18 16 18C15.4477 18 15 17.5523 15 17V15H13C12.4477 15 12 14.5523 12 14C12 13.4477 12.4477 13 13 13H15V11C15 10.4477 15.4477 10 16 10Z"></path>
+              <path class="reverso-save-icon__edge" fill="none" stroke="var(--text-blue-blue-secondary)" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" d="M8.87868 6.87868C9.44129 6.31607 10.2044 6 11 6H21C21.7956 6 22.5587 6.31607 23.1213 6.87868C23.6839 7.44129 24 8.20435 24 9V25C24 25.3565 23.8102 25.686 23.5019 25.8649C23.1936 26.0438 22.8134 26.0451 22.5039 25.8682L16 22.1518L9.49614 25.8682C9.18664 26.0451 8.80639 26.0438 8.49807 25.8649C8.18976 25.686 8 25.3565 8 25V9C8 8.20435 8.31607 7.44129 8.87868 6.87868Z"></path>
+            </svg>`;
+
   const $ = (sel) => shadow.querySelector(sel);
   const panelEl = $(".quick-control-panel");
   const mainBtn = $(".quick-control-panel__main-button");
   const menu = $(".quick-control-panel__menu-items");
   const oneClickBtn = $(".quick-control-panel__item_one-click");
+  const readingListBtn = $(".quick-control-panel__item_reading-list");
+
+  const normalizeArticleUrl = (href) => {
+    try {
+      const u = new URL(href, location.href);
+      u.hash = "";
+      let s = u.toString();
+      if (s.endsWith("/")) s = s.slice(0, -1);
+      return s;
+    } catch {
+      return href.replace(/#.*$/, "").replace(/\/$/, "");
+    }
+  };
+
+  const loadSavedUrlSet = () => {
+    try {
+      const raw = localStorage.getItem(SAVED_URLS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(arr) ? arr.map(String) : []);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const persistSavedUrlSet = (set) => {
+    try {
+      localStorage.setItem(SAVED_URLS_KEY, JSON.stringify([...set]));
+    } catch {}
+  };
+
+  const isCurrentArticleSaved = () => {
+    const key = normalizeArticleUrl(location.href);
+    const set = loadSavedUrlSet();
+    const inLibrary = set.has(key);
+    console.log("[reverso-mock] saved-article check", {
+      normalizedKey: key,
+      locationHref: location.href,
+      inLibrary,
+      libraryCount: set.size,
+      libraryUrls: [...set],
+    });
+    if (inLibrary) {
+      console.log("[reverso-mock] saved-article check → true (URL in reverso_mock_saved_urls)");
+      return true;
+    }
+    try {
+      const sp = new URLSearchParams(location.search);
+      const revParam = sp.get("reverso_saved");
+      if (revParam === "1") {
+        set.add(key);
+        persistSavedUrlSet(set);
+        sp.delete("reverso_saved");
+        const next =
+          location.pathname + (sp.toString() ? `?${sp.toString()}` : "") + location.hash;
+        history.replaceState(null, "", next);
+        console.log("[reverso-mock] saved-article check → true (reverso_saved=1, persisted to library)");
+        return true;
+      }
+      console.log("[reverso-mock] saved-article check: no ?reverso_saved=1", { reverso_saved: revParam });
+    } catch (err) {
+      console.log("[reverso-mock] saved-article check: query parse failed", err);
+    }
+    console.log("[reverso-mock] saved-article check → false");
+    return false;
+  };
+
+  const setReadingListSavedUi = (saved) => {
+    readingListBtn.classList.toggle("quick-control-panel__item_saved", saved);
+    readingListBtn.innerHTML = saved ? READING_LIST_ICON_SAVED : READING_LIST_ICON_UNSAVED;
+    readingListBtn.title = saved ? "Saved to reading list" : "Reading list";
+  };
+
+  let savedHintVisible = false;
+  const positionSavedHint = () => {
+    if (!savedHintVisible) return;
+    const pr = panelEl.getBoundingClientRect();
+    const br = readingListBtn.getBoundingClientRect();
+    savedHintEl.style.left = "0";
+    savedHintEl.style.top = "0";
+    const h = savedHintEl.offsetHeight;
+    const left = Math.max(8, pr.left - savedHintEl.offsetWidth - 12);
+    const top = Math.min(
+      Math.max(8, br.top + br.height / 2 - h / 2),
+      innerHeight - h - 8
+    );
+    savedHintEl.style.left = `${left}px`;
+    savedHintEl.style.top = `${top}px`;
+    console.log("[reverso-mock] saved-hint position", {
+      left,
+      top,
+      hintW: savedHintEl.offsetWidth,
+      hintH: savedHintEl.offsetHeight,
+      panelLeft: pr.left,
+      bookmarkTop: br.top,
+      hasVisibleClass: savedHintEl.classList.contains("reverso-saved-hint--visible"),
+    });
+  };
+
+  const showSavedArticleHint = () => {
+    console.log("[reverso-mock] saved-hint: show()", {
+      hintElement: Boolean(savedHintEl),
+      inLightDom: savedHintEl?.parentNode === document.documentElement,
+    });
+    savedHintVisible = true;
+    savedHintEl.classList.add("reverso-saved-hint--visible");
+    requestAnimationFrame(() => {
+      positionSavedHint();
+      requestAnimationFrame(positionSavedHint);
+    });
+  };
+
+  const hideSavedArticleHint = () => {
+    if (savedHintVisible) console.log("[reverso-mock] saved-hint: hide()");
+    savedHintVisible = false;
+    savedHintEl.classList.remove("reverso-saved-hint--visible");
+  };
 
   // Context iframe block (matches extension's UX container shape/positioning; uses saved popup html)
   const contextBlock = document.createElement("div");
@@ -315,6 +525,13 @@
     expanded = v;
     panelEl.classList.toggle("quick-control-panel_expanded", expanded);
     menu.setAttribute("aria-hidden", String(!expanded));
+    if (!expanded) hideSavedArticleHint();
+    else if (savedHintVisible) {
+      requestAnimationFrame(() => {
+        positionSavedHint();
+        requestAnimationFrame(positionSavedHint);
+      });
+    }
   };
   const setOneClick = (v) => {
     oneClickEnabled = v;
@@ -347,6 +564,18 @@
     if (!btn) return;
     const action = btn.dataset.action || "";
     if (action === "oneclick") setOneClick(!oneClickEnabled);
+    if (action === "reading") {
+      const key = normalizeArticleUrl(location.href);
+      const set = loadSavedUrlSet();
+      if (set.has(key)) {
+        set.delete(key);
+        hideSavedArticleHint();
+      } else {
+        set.add(key);
+      }
+      persistSavedUrlSet(set);
+      setReadingListSavedUi(set.has(key));
+    }
     btn.animate(
       [{ transform: "scale(1)" }, { transform: "scale(0.92)" }, { transform: "scale(1)" }],
       { duration: 140 }
@@ -474,6 +703,13 @@
   );
 
   addEventListener("resize", clamp, { passive: true });
+  addEventListener(
+    "resize",
+    () => {
+      if (savedHintVisible) positionSavedHint();
+    },
+    { passive: true }
+  );
 
   // Selection popup (UX only)
   const onKeyDown = (e) => {
@@ -568,6 +804,15 @@
   // Default mimic: start with menu collapsed and one-click OFF
   setExpanded(false);
   setOneClick(false);
+  const bootArticleSaved = isCurrentArticleSaved();
+  if (bootArticleSaved) {
+    console.log("[reverso-mock] boot: opening drawer + filled save icon + saved-hint");
+    setReadingListSavedUi(true);
+    setExpanded(true);
+    showSavedArticleHint();
+  } else {
+    console.log("[reverso-mock] boot: drawer stays closed (article not considered saved)");
+  }
 
   // Expose cleanup for easier iteration
   window.__reversoMockCleanup = () => {
@@ -577,6 +822,8 @@
     Object.values(cornerZones).forEach((el) => el.remove());
     selectionButton.remove();
     contextBlock.remove();
+    savedHintEl.remove();
+    hintStyleEl.remove();
     root.remove();
   };
 

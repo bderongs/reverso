@@ -6,12 +6,28 @@
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
   var HOVER_POPOVER_ID = "translation-hover-popover-root";
+  var READER_GRADIO_TTS_KEY = "READER_GRADIO_TTS";
+  var GRADIO_TTS_LEGACY_KEY = "DUAL_TRANSLATION_GRADIO_TTS";
+  var DEFAULT_GRADIO_TTS = {
+    baseUrl: "http://98.82.178.165:8080",
+    endpoint: "run_instruct",
+    langDisp: "Auto",
+    spkDisp: "Vivian"
+  };
+  var listenInstallInfoLogged = { noConfig: false, noButton: false };
+  /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
+  var MOBILE_DUAL_MAX_WIDTH = 900;
+  var mobileDualMql =
+    typeof window.matchMedia === "function"
+      ? window.matchMedia("(max-width: " + MOBILE_DUAL_MAX_WIDTH + "px)")
+      : null;
   var state = {
     translator: null,
     translatedParagraphs: null,
     isTranslating: false,
     lastJobId: 0,
     isOpen: false,
+    dualToggleButton: null,
     hoverToggleButton: null,
     inlineWrap: null,
     singleModeTokenized: false,
@@ -19,6 +35,8 @@
     singleModeHoverListenerAttached: false,
     sourceNodes: [],
     rowMap: new WeakMap(),
+    /** Row data by index when target tokens are not under `.translation-inline-row` (side-by-side stack). */
+    dualRowByIndex: null,
     activeHighlight: null,
     hoverTranslationCache: new Map(),
     hoverRequestId: 0,
@@ -31,7 +49,12 @@
       isPaused: false,
       rate: 1,
       lang: "en-US",
-      ui: null
+      ui: null,
+      backend: null,
+      remoteEl: null,
+      remoteDuration: 0,
+      gradioAbort: null,
+      listenRequestGen: 0
     }
   };
 
@@ -59,6 +82,9 @@
           "  window.DUAL_TRANSLATION_AUTO_OPEN = true",
           "- Current hover flag:",
           "  window.DUAL_TRANSLATION_HOVER_WORD_MAP = " + String(window[HOVER_FEATURE_FLAG]),
+          "- Gradio TTS for Listen uses defaults in this file; override with:",
+          "  window.READER_GRADIO_TTS = { baseUrl?, endpoint?, langDisp?, spkDisp?, instruct? }",
+          "  (legacy: window.DUAL_TRANSLATION_GRADIO_TTS)  Set window.READER_GRADIO_TTS = false to disable.",
           "- More commands can be added here later."
         ].join("\n")
       );
@@ -77,6 +103,16 @@
     return false;
   }
 
+  function isMobileViewport() {
+    if (mobileDualMql) return mobileDualMql.matches;
+    return window.innerWidth <= MOBILE_DUAL_MAX_WIDTH;
+  }
+
+  function closeDualIfMobileViewport() {
+    if (!isMobileViewport() || !state.isOpen) return;
+    closeMode(state.dualToggleButton);
+  }
+
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) return;
     var style = document.createElement("style");
@@ -90,9 +126,8 @@
       ".translation-source-hidden{display:none!important}" +
       ".translation-inline-wrap{display:none!important;margin:0}" +
       ".translation-inline-wrap.translation-inline-wrap_open{display:block!important}" +
-      ".translation-inline-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0fr);column-gap:24px;align-items:start;transition:grid-template-columns .28s ease}" +
-      ".translation-inline-row+.translation-inline-row{margin-top:12px}" +
-      ".translation-inline-wrap_open .translation-inline-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}" +
+      ".translation-inline-bisect{display:grid;grid-template-columns:minmax(0,1fr);row-gap:12px;width:100%;box-sizing:border-box;align-items:start}" +
+      ".translation-inline-row{display:contents}" +
       ".translation-inline-col{min-width:0}" +
       ".translation-inline-col p{margin:0;line-height:1.65;text-align:start;white-space:pre-wrap;overflow-wrap:anywhere}" +
       ".translation-token{border-radius:4px;padding:0 1px;transition:background-color .12s ease}" +
@@ -113,8 +148,47 @@
       ".translation-hover-popover__loading{opacity:.85}" +
       ".translation-sentence_tgt{background:rgba(255,190,92,.16);border-radius:6px;padding:1px 2px}" +
       ".translation-inline-trans{overflow:hidden}" +
-      ".translation-inline-trans p{opacity:0;transform:translateX(24px);transition:transform .28s ease,opacity .24s ease}" +
-      ".translation-inline-wrap_open .translation-inline-trans p{opacity:1;transform:translateX(0)}" +
+      ".translation-inline-trans__title{" +
+      "margin:0;padding:0 0 6px;line-height:1.3;" +
+      "font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;" +
+      "color:var(--text-base-secondary,#64748b)" +
+      "}" +
+      ".translation-inline-wrap_open .translation-inline-trans{" +
+      "position:relative;z-index:1;box-sizing:border-box;" +
+      "padding:2px 0 2px 18px;" +
+      "border-left:3px solid rgba(148,124,91,.55);border-radius:0;" +
+      "background:rgba(241,236,228,.55)!important" +
+      "}" +
+      ".translation-inline-wrap_open .translation-inline-trans p{" +
+      "color:var(--text-base-primary,#1a1a1a)" +
+      "}" +
+      "@media (prefers-color-scheme:dark){" +
+      ".translation-inline-wrap_open .translation-inline-trans{" +
+      "border-left-color:rgba(212,176,122,.75);" +
+      "background:rgba(251,191,36,.06)!important" +
+      "}" +
+      ".translation-inline-wrap_open .translation-inline-trans p{" +
+      "color:var(--text-base-primary,rgba(250,250,250,.95))" +
+      "}" +
+      ".translation-inline-trans__title{color:var(--text-base-secondary,#94a3b8)}" +
+      "}" +
+      ".translation-inline-bisect>.translation-inline-trans__title,.translation-inline-trans p{" +
+      "opacity:0;transform:translateX(24px);transition:transform .28s ease,opacity .24s ease" +
+      "}" +
+      ".translation-inline-wrap_open .translation-inline-bisect>.translation-inline-trans__title," +
+      ".translation-inline-wrap_open .translation-inline-trans p{" +
+      "opacity:1;transform:translateX(0)" +
+      "}" +
+      "@media (min-width:" +
+      (MOBILE_DUAL_MAX_WIDTH + 1) +
+      "px){.translation-inline-bisect{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:24px;row-gap:0}" +
+      ".translation-inline-wrap_open .translation-inline-bisect>.translation-inline-trans__title{margin-bottom:12px}" +
+      ".translation-inline-wrap_open .translation-inline-orig,.translation-inline-wrap_open .translation-inline-trans{padding-bottom:12px}" +
+      ".translation-inline-bisect .translation-inline-orig:last-of-type,.translation-inline-bisect .translation-inline-trans:last-of-type{padding-bottom:0}" +
+      ".translation-inline-wrap_open .translation-inline-bisect>.translation-inline-trans__title{" +
+      "grid-column:2;grid-row:1;padding-left:21px;align-self:start" +
+      "}" +
+      "}" +
       ".translation-audio-player{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--bg-primary,#fff);border-top:1px solid var(--line-gray-primary,#d4d9e3);box-shadow:0 -6px 20px rgba(0,0,0,.08);padding:10px 14px;display:none}" +
       ".translation-audio-player_visible{display:block}" +
       ".translation-audio-player__row{display:flex;align-items:center;gap:10px;max-width:1080px;margin:0 auto}" +
@@ -122,6 +196,10 @@
       ".translation-audio-player__btn:hover{background:var(--surface-elevated,#f7f9fc)}" +
       ".translation-audio-player__time{min-width:46px;font:12px/1.2 sans-serif;color:var(--text-base-secondary,#5a6175)}" +
       ".translation-audio-player__seek{flex:1;accent-color:var(--new-blue-700,#2a8bdf)}" +
+      ".translation-listen-spinner{display:inline-flex;align-items:center;vertical-align:middle;flex-shrink:0;margin-left:6px;width:18px;height:18px;opacity:0;pointer-events:none;transition:opacity .15s ease}" +
+      ".translation-listen-spinner_visible{opacity:1}" +
+      ".translation-listen-spinner__ring{width:16px;height:16px;border:2px solid var(--line-gray-primary,#d4d9e3);border-top-color:var(--new-blue-700,#2a8bdf);border-radius:50%;box-sizing:border-box;animation:translation-listen-spin .65s linear infinite}" +
+      "@keyframes translation-listen-spin{to{transform:rotate(360deg)}}" +
       "body.translation-dual-open{overflow-x:hidden!important}" +
       "body.translation-dual-open .main-content_full-width,body.translation-dual-open .reading-list__container,body.translation-dual-open app-reader-view-content{max-width:100%!important;width:100%!important;box-sizing:border-box!important}" +
       "body.translation-dual-open .reader-view-page__main-container{max-width:none!important;width:100%!important;display:flex!important;align-items:stretch;gap:0}" +
@@ -129,7 +207,22 @@
       "body.translation-dual-open .reader-view-page__view_with-sidebar,body.translation-dual-open .reader-view-page__view,body.translation-dual-open .main-content_full-width{flex:1 1 auto;min-width:0}" +
       "body.translation-dual-open .reader-view-page__history-sidebar,body.translation-dual-open app-reader-view-word-sidebar{flex:0 0 clamp(320px,28vw,420px)!important;width:clamp(320px,28vw,420px)!important;min-width:320px!important;max-width:420px!important}" +
       "body.translation-dual-open .reader-view-page__history-sidebar_hidden{display:none!important}" +
-      "@media (max-width:900px){.translation-inline-row,.translation-inline-wrap_open .translation-inline-row{grid-template-columns:1fr}}";
+      "@media (max-width:" +
+      MOBILE_DUAL_MAX_WIDTH +
+      "px){" +
+      ".translation-inline-bisect .translation-inline-orig,.translation-inline-bisect .translation-inline-trans," +
+      ".translation-inline-bisect>.translation-inline-trans__title{grid-column:1!important;grid-row:auto!important}" +
+      ".translation-inline-wrap_open .translation-inline-trans{" +
+      "border-left:none!important;border-top:3px solid rgba(148,124,91,.55)!important;" +
+      "padding:14px 0 2px!important;background:rgba(241,236,228,.55)!important" +
+      "}" +
+      ".translation-inline-wrap_open .translation-inline-trans_first{margin-top:12px}" +
+      ".translation-mode-button_dual{display:none!important}}" +
+      "@media (max-width:" +
+      MOBILE_DUAL_MAX_WIDTH +
+      "px) and (prefers-color-scheme:dark){" +
+      ".translation-inline-wrap_open .translation-inline-trans{border-top-color:rgba(212,176,122,.75)!important;background:rgba(251,191,36,.06)!important}" +
+      "}";
     document.head.appendChild(style);
   }
 
@@ -435,6 +528,12 @@
     if (rowEl && state.rowMap.has(rowEl)) {
       return state.rowMap.get(rowEl);
     }
+    if (tokenEl.closest(".translation-inline-wrap")) {
+      var idxDual = tokenEl.getAttribute("data-row-index");
+      if (idxDual != null && state.dualRowByIndex && state.dualRowByIndex[idxDual]) {
+        return state.dualRowByIndex[idxDual];
+      }
+    }
     var idx = tokenEl.getAttribute("data-row-index");
     if (idx != null && state.singleRowByIndex && state.singleRowByIndex[idx]) {
       return state.singleRowByIndex[idx];
@@ -481,16 +580,174 @@
     ]);
   }
 
-  function supportsChromeTts() {
-    return Boolean(window.chrome && chrome.tts && typeof chrome.tts.speak === "function");
-  }
-
   function getListenButton() {
     return (
       document.querySelector("app-listen-button button") ||
       document.querySelector(".listen-button button") ||
       document.querySelector(".listen-service button")
     );
+  }
+
+  function ensureListenSpinnerBesideButton(listenBtn) {
+    var next = listenBtn.nextElementSibling;
+    if (next && next.classList && next.classList.contains("translation-listen-spinner")) return next;
+    var sp = document.createElement("span");
+    sp.className = "translation-listen-spinner";
+    sp.setAttribute("role", "status");
+    sp.setAttribute("aria-live", "polite");
+    sp.setAttribute("aria-label", "Loading speech");
+    var ring = document.createElement("span");
+    ring.className = "translation-listen-spinner__ring";
+    sp.appendChild(ring);
+    listenBtn.insertAdjacentElement("afterend", sp);
+    return sp;
+  }
+
+  function setListenLoading(listenBtn, on) {
+    if (!listenBtn) return;
+    var sp = ensureListenSpinnerBesideButton(listenBtn);
+    if (on) {
+      sp.classList.add("translation-listen-spinner_visible");
+      listenBtn.setAttribute("aria-busy", "true");
+    } else {
+      sp.classList.remove("translation-listen-spinner_visible");
+      listenBtn.removeAttribute("aria-busy");
+    }
+  }
+
+  function getGradioConfig() {
+    var c = window[READER_GRADIO_TTS_KEY];
+    if (c === false) return null;
+    if (c == null || typeof c !== "object") c = window[GRADIO_TTS_LEGACY_KEY];
+    if (c === false) return null;
+    var fromWindow = c && typeof c === "object" ? c : {};
+    var base = fromWindow.baseUrl || fromWindow.base || DEFAULT_GRADIO_TTS.baseUrl;
+    if (!base || typeof base !== "string") return null;
+    return {
+      baseUrl: String(base).replace(/\/$/, ""),
+      endpoint: fromWindow.endpoint || DEFAULT_GRADIO_TTS.endpoint,
+      langDisp:
+        fromWindow.langDisp != null ? String(fromWindow.langDisp) : DEFAULT_GRADIO_TTS.langDisp,
+      spkDisp: fromWindow.spkDisp != null ? String(fromWindow.spkDisp) : DEFAULT_GRADIO_TTS.spkDisp,
+      instruct: fromWindow.instruct
+    };
+  }
+
+  function isGradioTtsEnabled() {
+    return getGradioConfig() !== null;
+  }
+
+  /**
+   * Gradio SSE consumer matching the early-return behavior of a known-good client:
+   * return on first `data:` JSON where `!Array.isArray(parsed) || parsed.length > 0`.
+   * Buffers across chunk boundaries so `data: …` lines are not split incorrectly.
+   */
+  async function gradioSseReadUntilFirstPayload(url, signal) {
+    var sseRes = await fetch(url, { signal: signal });
+    if (!sseRes.ok) throw new Error("SSE open failed: " + sseRes.status);
+    if (!sseRes.body || !sseRes.body.getReader) throw new Error("SSE body unreadable");
+    var reader = sseRes.body.getReader();
+    var decoder = new TextDecoder();
+    var carry = "";
+
+    function processLine(line) {
+      if (line.indexOf("event: ") === 0) {
+        try {
+          console.log(LOG_PREFIX + " Gradio SSE event type:", line.slice(7).trim());
+        } catch (_e) {}
+        return null;
+      }
+      if (line.indexOf("data: ") !== 0) return null;
+      var raw = line.slice(6).trim();
+      if (!raw || raw === "[DONE]") return null;
+      try {
+        var parsed = JSON.parse(raw);
+        try {
+          console.log(LOG_PREFIX + " Gradio SSE parsed data:", parsed);
+        } catch (_e2) {}
+        if (!Array.isArray(parsed) || parsed.length > 0) {
+          return parsed;
+        }
+      } catch (_parse) {}
+      return null;
+    }
+
+    while (true) {
+      var read = await reader.read();
+      if (read.done) break;
+      var chunk = decoder.decode(read.value, { stream: true });
+      try {
+        console.log(LOG_PREFIX + " Gradio SSE raw chunk:", chunk);
+      } catch (_e3) {}
+      carry += chunk;
+      var lines = carry.split("\n");
+      carry = lines.pop() || "";
+      for (var i = 0; i < lines.length; i++) {
+        var out = processLine(lines[i]);
+        if (out !== null) return out;
+      }
+    }
+    if (carry.trim()) {
+      var tail = processLine(carry);
+      if (tail !== null) return tail;
+    }
+    throw new Error("Gradio SSE stream ended without a usable data payload");
+  }
+
+  async function gradioPredict(baseUrl, endpoint, data, signal) {
+    var base = String(baseUrl).replace(/\/$/, "");
+    var submitUrl = base + "/gradio_api/call/" + endpoint;
+    try {
+      console.log(
+        LOG_PREFIX + " Gradio TTS request →",
+        submitUrl,
+        "(string field lengths: " +
+          data.map(function (x) {
+            return typeof x === "string" ? x.length : "-";
+          }) +
+          ")"
+      );
+    } catch (_logE) {}
+    var postRes = await fetch(submitUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: data }),
+      signal: signal
+    });
+    if (!postRes.ok) {
+      throw new Error("Submit failed: " + postRes.status + " " + (await postRes.text()));
+    }
+    var submitJson = await postRes.json();
+    var event_id = submitJson.event_id;
+    if (event_id == null) throw new Error("Missing event_id from Gradio");
+    try {
+      console.log(LOG_PREFIX + " Gradio event_id:", event_id);
+    } catch (_eLog) {}
+    var result = await gradioSseReadUntilFirstPayload(
+      base + "/gradio_api/call/" + endpoint + "/" + event_id,
+      signal
+    );
+    try {
+      console.log(LOG_PREFIX + " Gradio TTS response ←", result);
+    } catch (_logE2) {}
+    return result;
+  }
+
+  function audioUrlFromGradioResult(baseUrl, result) {
+    if (!result || !Array.isArray(result) || !result.length) return "";
+    var first = result[0];
+    var base = String(baseUrl).replace(/\/$/, "");
+    if (typeof first === "string") {
+      if (/^https?:\/\//i.test(first)) return first;
+      if (first.charAt(0) === "/") return base + first;
+      return base + "/file=" + encodeURIComponent(first);
+    }
+    if (first && typeof first === "object") {
+      if (typeof first.url === "string" && /^https?:\/\//i.test(first.url)) return first.url;
+      if (typeof first.url === "string" && first.url.charAt(0) === "/") return base + first.url;
+      if (typeof first.path === "string") return base + "/file=" + encodeURIComponent(first.path);
+    }
+    return "";
   }
 
   function formatTime(seconds) {
@@ -501,12 +758,18 @@
   }
 
   function getEstimatedTotalSeconds() {
+    if (state.audio.backend === "remote" && state.audio.remoteDuration > 0) {
+      return state.audio.remoteDuration;
+    }
     var cps = 13 * (state.audio.rate || 1);
     if (!state.audio.totalChars || cps <= 0) return 0;
     return state.audio.totalChars / cps;
   }
 
   function getEstimatedCurrentSeconds() {
+    if (state.audio.backend === "remote" && state.audio.remoteDuration > 0 && state.audio.totalChars > 0) {
+      return (state.audio.currentChar / state.audio.totalChars) * state.audio.remoteDuration;
+    }
     var total = getEstimatedTotalSeconds();
     if (!state.audio.totalChars) return 0;
     return (state.audio.currentChar / state.audio.totalChars) * total;
@@ -537,87 +800,139 @@
     state.audio.ui.root.classList.add("translation-audio-player_visible");
   }
 
-  function stopAudioPlayback() {
-    if (supportsChromeTts() && typeof chrome.tts.stop === "function") {
-      try {
-        chrome.tts.stop();
-      } catch (_e) {}
-    }
+  function onRemoteAudioTimeUpdate() {
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl) return;
+    var el = state.audio.remoteEl;
+    var d = el.duration;
+    if (!state.audio.totalChars || !isFinite(d) || d <= 0) return;
+    state.audio.currentChar = Math.min(
+      state.audio.totalChars,
+      Math.round((el.currentTime / d) * state.audio.totalChars)
+    );
+    updateAudioUi();
+  }
+
+  function onRemoteAudioLoadedMetadata() {
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl) return;
+    var d = state.audio.remoteEl.duration;
+    if (isFinite(d) && d > 0) state.audio.remoteDuration = d;
+    updateAudioUi();
+  }
+
+  function onRemoteAudioEnded() {
+    if (state.audio.backend !== "remote") return;
+    state.audio.currentChar = state.audio.totalChars;
     state.audio.isPlaying = false;
     state.audio.isPaused = false;
     updateAudioUi();
   }
 
-  function speakFrom(charIndex) {
-    var text = ensureAudioText();
-    if (!text.length || !supportsChromeTts()) return;
-    var start = Math.max(0, Math.min(charIndex || 0, text.length));
-    state.audio.currentChar = start;
-    if (typeof chrome.tts.stop === "function") {
+  function ensureRemoteAudioEl() {
+    if (state.audio.remoteEl) return state.audio.remoteEl;
+    var el = new Audio();
+    el.preload = "auto";
+    el.addEventListener("timeupdate", onRemoteAudioTimeUpdate);
+    el.addEventListener("loadedmetadata", onRemoteAudioLoadedMetadata);
+    el.addEventListener("ended", onRemoteAudioEnded);
+    state.audio.remoteEl = el;
+    return el;
+  }
+
+  function stopAudioPlayback() {
+    if (state.audio.gradioAbort) {
       try {
-        chrome.tts.stop();
+        state.audio.gradioAbort.abort();
+      } catch (_e) {}
+      state.audio.gradioAbort = null;
+    }
+    if (state.audio.remoteEl) {
+      try {
+        state.audio.remoteEl.pause();
+        state.audio.remoteEl.removeAttribute("src");
+        state.audio.remoteEl.load();
       } catch (_e) {}
     }
+    state.audio.backend = null;
+    state.audio.remoteDuration = 0;
+    state.audio.isPlaying = false;
+    state.audio.isPaused = false;
+    updateAudioUi();
+  }
+
+  async function playGradioTtsFromListen(signal) {
+    var cfg = getGradioConfig();
+    if (!cfg) throw new Error("Gradio TTS disabled (window.READER_GRADIO_TTS = false)");
+    var text = ensureAudioText();
+    if (!text.length) throw new Error("No text to read");
+    var instruct = cfg.instruct != null ? String(cfg.instruct) : text;
+    var data = [text, cfg.langDisp, cfg.spkDisp, instruct];
+    var result = await gradioPredict(cfg.baseUrl, cfg.endpoint, data, signal);
+    logDebug("gradio_tts_result", { result: result });
+    var url = audioUrlFromGradioResult(cfg.baseUrl, result);
+    if (!url) {
+      logWarn("gradio_tts_no_audio_url", { result: result });
+      throw new Error("Gradio returned no playable audio URL");
+    }
+    if (signal.aborted) return;
+    var el = ensureRemoteAudioEl();
+    state.audio.backend = "remote";
+    state.audio.currentChar = 0;
+    state.audio.remoteDuration = 0;
     state.audio.isPlaying = true;
     state.audio.isPaused = false;
     updateAudioUi();
-    chrome.tts.speak(text.slice(start), {
-      lang: state.audio.lang,
-      rate: state.audio.rate,
-      enqueue: false,
-      onEvent: function (event) {
-        if (event && typeof event.charIndex === "number") {
-          state.audio.currentChar = Math.min(state.audio.totalChars, start + event.charIndex);
-          updateAudioUi();
-        }
-        if (!event || !event.type) return;
-        if (event.type === "end") {
-          state.audio.currentChar = state.audio.totalChars;
-          state.audio.isPlaying = false;
-          state.audio.isPaused = false;
-          updateAudioUi();
-        } else if (
-          event.type === "interrupted" ||
-          event.type === "cancelled" ||
-          event.type === "error"
-        ) {
-          state.audio.isPlaying = false;
-          state.audio.isPaused = false;
-          updateAudioUi();
-        } else if (event.type === "pause") {
-          state.audio.isPaused = true;
-          updateAudioUi();
-        } else if (event.type === "resume") {
-          state.audio.isPaused = false;
-          state.audio.isPlaying = true;
-          updateAudioUi();
-        }
-      }
-    });
+    el.src = url;
+    el.load();
+    try {
+      await el.play();
+    } catch (e) {
+      var msg = e && e.message ? String(e.message) : String(e);
+      logWarn("gradio_tts_play_failed", { message: msg });
+      state.audio.isPlaying = false;
+      state.audio.isPaused = false;
+      state.audio.backend = null;
+      updateAudioUi();
+      throw e;
+    }
   }
 
   function pauseOrResumeAudio() {
-    if (!supportsChromeTts()) return;
-    if (state.audio.isPlaying && !state.audio.isPaused && typeof chrome.tts.pause === "function") {
-      chrome.tts.pause();
-      state.audio.isPaused = true;
-      updateAudioUi();
-      return;
+    if (!(state.audio.remoteEl && state.audio.remoteEl.src)) return;
+    var rel = state.audio.remoteEl;
+    if (state.audio.backend === "remote") {
+      if (state.audio.isPlaying && !state.audio.isPaused) {
+        rel.pause();
+        state.audio.isPaused = true;
+        updateAudioUi();
+        return;
+      }
+      if (state.audio.isPaused || (!state.audio.isPlaying && rel.currentTime > 0)) {
+        state.audio.isPlaying = true;
+        state.audio.isPaused = false;
+        rel.play().catch(function () {});
+        updateAudioUi();
+        return;
+      }
     }
-    if (state.audio.isPlaying && state.audio.isPaused && typeof chrome.tts.resume === "function") {
-      chrome.tts.resume();
-      state.audio.isPaused = false;
-      updateAudioUi();
-      return;
-    }
-    speakFrom(state.audio.currentChar || 0);
   }
 
   function seekAudioTo(charIndex) {
     var bounded = Math.max(0, Math.min(charIndex || 0, state.audio.totalChars));
     state.audio.currentChar = bounded;
     updateAudioUi();
-    if (state.audio.isPlaying || state.audio.isPaused) speakFrom(bounded);
+    if (
+      state.audio.backend === "remote" &&
+      state.audio.remoteEl &&
+      state.audio.remoteDuration > 0 &&
+      state.audio.totalChars > 0
+    ) {
+      var rel = state.audio.remoteEl;
+      var t = (bounded / state.audio.totalChars) * state.audio.remoteDuration;
+      var cap = isFinite(rel.duration) && rel.duration > 0 ? rel.duration : state.audio.remoteDuration;
+      try {
+        rel.currentTime = Math.max(0, Math.min(t, cap));
+      } catch (_e) {}
+    }
   }
 
   function ensureAudioPlayer() {
@@ -671,23 +986,62 @@
   }
 
   function installListenButtonAudio() {
-    if (!supportsChromeTts()) {
-      logWarn("chrome_tts_unavailable");
+    if (!isGradioTtsEnabled()) {
+      if (!listenInstallInfoLogged.noConfig) {
+        listenInstallInfoLogged.noConfig = true;
+        console.warn(
+          LOG_PREFIX +
+            " Listen: Gradio TTS disabled (window.READER_GRADIO_TTS === false). Remove that to use defaults or your overrides."
+        );
+      }
+      logWarn("listen_audio_unavailable", { reason: "READER_GRADIO_TTS === false" });
       return;
     }
     var listenBtn = getListenButton();
-    if (!listenBtn) return;
+    if (!listenBtn) {
+      if (!listenInstallInfoLogged.noButton) {
+        listenInstallInfoLogged.noButton = true;
+        console.info(
+          LOG_PREFIX +
+            " Listen: Gradio is configured but the Listen button was not found yet (will retry). " +
+            "If this never binds, check devtools for app-listen-button or .listen-button."
+        );
+      }
+      return;
+    }
     if (listenBtn.dataset.dualTranslationAudioBound === "1") return;
     listenBtn.dataset.dualTranslationAudioBound = "1";
+    console.info(LOG_PREFIX + " Listen: Gradio hook attached to button.");
     listenBtn.addEventListener(
       "click",
       function (event) {
         event.preventDefault();
         event.stopPropagation();
+        console.log(LOG_PREFIX + " Listen click — calling Gradio (see request/response logs next).");
+        var reqGen = ++state.audio.listenRequestGen;
+        setListenLoading(listenBtn, true);
         ensureAudioPlayer();
         showAudioPlayer();
         ensureAudioText();
-        speakFrom(state.audio.currentChar || 0);
+        stopAudioPlayback();
+        var ac = new AbortController();
+        state.audio.gradioAbort = ac;
+        playGradioTtsFromListen(ac.signal)
+          .catch(function (err) {
+            if (err && err.name === "AbortError") return;
+            var msg = err && err.message ? String(err.message) : String(err);
+            console.error(LOG_PREFIX, "Gradio TTS failed:", msg);
+            logWarn("gradio_tts_error", { message: msg });
+            state.audio.isPlaying = false;
+            state.audio.isPaused = false;
+            state.audio.backend = null;
+            updateAudioUi();
+          })
+          .finally(function () {
+            if (reqGen === state.audio.listenRequestGen) {
+              setListenLoading(listenBtn, false);
+            }
+          });
       },
       true
     );
@@ -728,7 +1082,7 @@
   function createToggleButton() {
     var button = document.createElement("button");
     button.type = "button";
-    button.className = "translation-mode-button";
+    button.className = "translation-mode-button translation-mode-button_dual";
     button.setAttribute("aria-label", "Toggle side-by-side French translation");
     button.setAttribute("aria-expanded", "false");
     button.innerHTML =
@@ -784,8 +1138,20 @@
     var nodes = sourceNodes();
     if (!nodes.length) return null;
 
+    state.dualRowByIndex = Object.create(null);
+
     var wrap = document.createElement("div");
     wrap.className = "translation-inline-wrap";
+
+    var bisect = document.createElement("div");
+    bisect.className = "translation-inline-bisect";
+
+    var titleEl = document.createElement("div");
+    titleEl.className = "translation-inline-trans__title";
+    titleEl.setAttribute("role", "heading");
+    titleEl.setAttribute("aria-level", "2");
+    titleEl.textContent = "Translation";
+    bisect.appendChild(titleEl);
 
     for (var i = 0; i < nodes.length; i += 1) {
       var row = document.createElement("div");
@@ -795,6 +1161,13 @@
       left.className = "translation-inline-col translation-inline-orig";
       var right = document.createElement("div");
       right.className = "translation-inline-col translation-inline-trans";
+      if (i === 0) right.classList.add("translation-inline-trans_first");
+
+      var gridRow = String(i + 2);
+      left.style.gridColumn = "1";
+      left.style.gridRow = gridRow;
+      right.style.gridColumn = "2";
+      right.style.gridRow = gridRow;
 
       var pL = document.createElement("p");
       pL.setAttribute("data-side", "source");
@@ -809,17 +1182,20 @@
       right.appendChild(pR);
       row.appendChild(left);
       row.appendChild(right);
-      wrap.appendChild(row);
+      bisect.appendChild(row);
 
       var sourceText = (nodes[i].textContent || "").trim();
       var sourceTokens = renderTokenizedParagraph(pL, sourceText, "source", i);
-      state.rowMap.set(row, {
+      var rowData = {
         sourceP: pL,
         targetP: pR,
         sourceTokens: sourceTokens,
         targetTokens: []
-      });
+      };
+      state.rowMap.set(row, rowData);
+      state.dualRowByIndex[String(i)] = rowData;
     }
+    wrap.appendChild(bisect);
 
     nodes[0].parentNode.insertBefore(wrap, nodes[0]);
     state.inlineWrap = wrap;
@@ -1166,7 +1542,22 @@
     }
 
     state.hoverToggleButton = hoverBtn;
+    state.dualToggleButton = openBtn;
     syncHoverToggleUi();
+
+    function onMobileDualViewportChange() {
+      closeDualIfMobileViewport();
+    }
+    if (mobileDualMql) {
+      if (typeof mobileDualMql.addEventListener === "function") {
+        mobileDualMql.addEventListener("change", onMobileDualViewportChange);
+      } else if (typeof mobileDualMql.addListener === "function") {
+        mobileDualMql.addListener(onMobileDualViewportChange);
+      }
+    } else {
+      window.addEventListener("resize", onMobileDualViewportChange);
+    }
+    onMobileDualViewportChange();
 
     hoverBtn.addEventListener("click", function () {
       window[HOVER_FEATURE_FLAG] = !isHoverWordMappingEnabled();
@@ -1176,6 +1567,7 @@
     });
 
     openBtn.addEventListener("click", function () {
+      if (isMobileViewport()) return;
       if (state.isOpen) closeMode(openBtn);
       else openMode(openBtn);
     });
@@ -1188,7 +1580,7 @@
     installListenButtonAudioWatcher();
     attachSingleModeHoverHandlers();
 
-    if (shouldAutoOpenDualOnLoad()) {
+    if (shouldAutoOpenDualOnLoad() && !isMobileViewport()) {
       requestAnimationFrame(function () {
         openMode(openBtn);
       });
