@@ -116,6 +116,18 @@
         border-radius:0 0 0 8px;
         border-top:1px solid transparent;
       }
+      .quick-control-panel_expand-down .quick-control-panel__menu-items{
+        top:36px;
+        bottom:auto;
+        border-radius:0 0 0 8px;
+        border-top:none;
+        border-bottom:1px solid var(--line-gray-gray-secondary);
+      }
+      .quick-control-panel_expanded.quick-control-panel_expand-down{
+        border-radius:8px 0 0 0;
+        border-top:1px solid var(--line-gray-gray-secondary);
+        border-bottom:1px solid transparent;
+      }
       .quick-control-panel_expanded .quick-control-panel__menu-items{opacity:1;pointer-events:all}
       .quick-control-panel_expanded .quick-control-panel__item{transform:translateY(0);opacity:1}
       .quick-control-panel_expanded .quick-control-panel__item:nth-child(1){transition-delay:.1s}
@@ -521,7 +533,15 @@
 
   let expanded = false;
   let oneClickEnabled = false;
+  const MENU_VIEWPORT_MARGIN = 8;
+  const updateMenuExpandDirection = () => {
+    const panelRect = panelEl.getBoundingClientRect();
+    const menuHeight = menu.scrollHeight || menu.getBoundingClientRect().height || 0;
+    const canExpandUpToTop = panelRect.top >= menuHeight + MENU_VIEWPORT_MARGIN;
+    panelEl.classList.toggle("quick-control-panel_expand-down", !canExpandUpToTop);
+  };
   const setExpanded = (v) => {
+    updateMenuExpandDirection();
     expanded = v;
     panelEl.classList.toggle("quick-control-panel_expanded", expanded);
     menu.setAttribute("aria-hidden", String(!expanded));
@@ -661,6 +681,7 @@
     root.style.left = `${sl + dx}px`;
     root.style.top = `${st + dy}px`;
     clamp();
+    updateMenuExpandDirection();
     activeSnapCorner = detectActiveCorner(e.clientX, e.clientY);
     updateCornerZones(activeSnapCorner);
   };
@@ -672,6 +693,7 @@
     if (activeSnapCorner) {
       snapToCorner(activeSnapCorner);
     }
+    updateMenuExpandDirection();
     activeSnapCorner = null;
     hideCornerZones();
     window.removeEventListener("pointermove", onMove, true);
@@ -702,7 +724,14 @@
     true
   );
 
-  addEventListener("resize", clamp, { passive: true });
+  addEventListener(
+    "resize",
+    () => {
+      clamp();
+      updateMenuExpandDirection();
+    },
+    { passive: true }
+  );
   addEventListener(
     "resize",
     () => {
@@ -802,6 +831,7 @@
   });
 
   // Default mimic: start with menu collapsed and one-click OFF
+  updateMenuExpandDirection();
   setExpanded(false);
   setOneClick(false);
   const bootArticleSaved = isCurrentArticleSaved();
