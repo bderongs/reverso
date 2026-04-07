@@ -41,6 +41,7 @@
     hoverTranslationCache: new Map(),
     hoverRequestId: 0,
     hoverPopoverEl: null,
+    historyWords: new Set(),
     audio: {
       text: "",
       totalChars: 0,
@@ -122,7 +123,13 @@
       ".translation-mode-button:hover{background:var(--line-gray-secondary,#eaeef1)}" +
       ".translation-mode-button:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:2px}" +
       ".translation-mode-button_active{background:var(--new-blue-150,#e8f3fc);color:var(--new-blue-700,#2a8bdf)}" +
-      ".translation-mode-logo{display:block;width:16px;height:16px}" +
+      ".translation-mode-button[data-tooltip]{position:relative}" +
+      ".translation-mode-button[data-tooltip]:hover::after,.translation-mode-button[data-tooltip]:focus-visible::after{" +
+      "content:attr(data-tooltip);position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);" +
+      "padding:6px 8px;border-radius:6px;background:rgba(20,24,31,.92);color:#fff;white-space:nowrap;" +
+      "font:500 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "z-index:100001;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.22)}" +
+      ".translation-mode-logo{display:block;width:24px;height:24px}" +
       ".translation-source-hidden{display:none!important}" +
       ".translation-inline-wrap{display:none!important;margin:0}" +
       ".translation-inline-wrap.translation-inline-wrap_open{display:block!important}" +
@@ -200,6 +207,13 @@
       ".translation-listen-spinner_visible{opacity:1}" +
       ".translation-listen-spinner__ring{width:16px;height:16px;border:2px solid var(--line-gray-primary,#d4d9e3);border-top-color:var(--new-blue-700,#2a8bdf);border-radius:50%;box-sizing:border-box;animation:translation-listen-spin .65s linear infinite}" +
       "@keyframes translation-listen-spin{to{transform:rotate(360deg)}}" +
+      ".translation-history-item_just-added .history-item{" +
+      "animation:translation-history-item-flash 1.1s ease-out 1" +
+      "}" +
+      "@keyframes translation-history-item-flash{" +
+      "0%{background:color-mix(in srgb, var(--background-base-primary,#e6eef6) 50%, transparent)}" +
+      "100%{background:var(--background-history-item,#ffffff8f)}" +
+      "}" +
       "body.translation-dual-open{overflow-x:hidden!important}" +
       "body.translation-dual-open .main-content_full-width,body.translation-dual-open .reading-list__container,body.translation-dual-open app-reader-view-content{max-width:100%!important;width:100%!important;box-sizing:border-box!important}" +
       "body.translation-dual-open .reader-view-page__main-container{max-width:none!important;width:100%!important;display:flex!important;align-items:stretch;gap:0}" +
@@ -1084,6 +1098,8 @@
     button.type = "button";
     button.className = "translation-mode-button translation-mode-button_dual";
     button.setAttribute("aria-label", "Toggle side-by-side French translation");
+    button.setAttribute("title", "Toggle side-by-side translation");
+    button.setAttribute("data-tooltip", "Toggle side-by-side translation");
     button.setAttribute("aria-expanded", "false");
     button.innerHTML =
       '<svg class="translation-mode-logo" aria-hidden="true" viewBox="0 0 24 24" fill="none">' +
@@ -1101,12 +1117,17 @@
     button.type = "button";
     button.className = "translation-mode-button";
     button.setAttribute("aria-label", "Toggle word hover hints and translation popover");
+    button.setAttribute("title", "Toggle interactive mode");
+    button.setAttribute("data-tooltip", "Toggle interactive mode");
     button.setAttribute("aria-pressed", "true");
     button.innerHTML =
-      '<svg class="translation-mode-logo" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">' +
-      '<path d="M12 2.2L13.35 6.2 17.4 7.5 13.35 8.8 12 12.8 10.65 8.8 6.6 7.5 10.65 6.2 12 2.2z"/>' +
-      '<path d="M20.2 11.3l.85 2.55 2.55.85-2.55.85-.85 2.55-.85-2.55-2.55-.85 2.55-.85.85-2.55z" opacity=".88"/>' +
-      '<path d="M5.4 14l.75 2.25 2.25.75-2.25.75-.75 2.25-.75-2.25-2.25-.75 2.25-.75.75-2.25z" opacity=".72"/>' +
+      '<svg class="translation-mode-logo" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">' +
+      '<g clip-path="url(#translation-interactive-icon-clip)">' +
+      '<path d="M6 16H9.33333M16 6V9.33333M11.3333 11.3333L8.88889 8.88889M20.6667 11.3333L23.1111 8.88889M11.3333 20.6667L8.88889 23.1111M16 16L26 19.3333L21.5556 21.5556L19.3333 26L16 16Z" stroke="#607D8B" stroke-width="2.22222" stroke-linecap="round" stroke-linejoin="round"></path>' +
+      "</g>" +
+      "<defs>" +
+      '<clipPath id="translation-interactive-icon-clip"><rect width="24" height="24" fill="white" transform="translate(4 4)"></rect></clipPath>' +
+      "</defs>" +
       "</svg>";
     return button;
   }
@@ -1308,7 +1329,6 @@
     var tokenIndex = Number(tokenEl.getAttribute("data-token-index"));
     var sourceToken;
     var targetMatchIdx = -1;
-    tokenEl.classList.add("translation-token_pop");
     if (side === "source") {
       sourceToken = rowData.sourceTokens[tokenIndex];
       if (!sourceToken) return;
@@ -1331,7 +1351,6 @@
         return;
       }
       targetMatchIdx = findBestMatchIndex(sourceToken.norm, rowData.targetTokens, translatedNorm);
-      tokenEl.classList.add("translation-token_src");
       var defPrimary =
         translated.display ||
         (!supportsTranslatorApi()
@@ -1352,7 +1371,6 @@
         loading: false
       });
       if (targetMatchIdx >= 0 && rowData.targetTokens[targetMatchIdx]) {
-        rowData.targetTokens[targetMatchIdx].el.classList.add("translation-token_tgt");
         logDebug("hover_match_token", {
           sourceRaw: sourceToken.raw,
           translatedNorm: translatedNorm,
@@ -1360,17 +1378,16 @@
           targetNorm: rowData.targetTokens[targetMatchIdx].norm,
           targetIndex: targetMatchIdx
         });
-        state.activeHighlight = { sourceEl: tokenEl, targetEl: rowData.targetTokens[targetMatchIdx].el };
+        state.activeHighlight = null;
       } else if (rowData.targetP) {
-        rowData.targetP.classList.add("translation-sentence_tgt");
         logWarn("hover_match_fallback_sentence", {
           sourceRaw: sourceToken.raw,
           sourceNorm: sourceToken.norm,
           translatedNorm: translatedNorm
         });
-        state.activeHighlight = { sourceEl: tokenEl, targetSentenceEl: rowData.targetP };
+        state.activeHighlight = null;
       } else {
-        state.activeHighlight = { sourceEl: tokenEl };
+        state.activeHighlight = null;
       }
     } else {
       var targetToken = rowData.targetTokens[tokenIndex];
@@ -1382,7 +1399,6 @@
         norm: targetToken.norm
       });
       targetMatchIdx = findBestMatchIndex(targetToken.norm, rowData.sourceTokens, "");
-      tokenEl.classList.add("translation-token_tgt");
       var tTitle2 = "";
       var tDef2 = "";
       var tDef1 = "No single-word match in the English column for this sentence.";
@@ -1400,19 +1416,15 @@
         loading: false
       });
       if (targetMatchIdx >= 0 && rowData.sourceTokens[targetMatchIdx]) {
-        rowData.sourceTokens[targetMatchIdx].el.classList.add("translation-token_src");
         logDebug("hover_reverse_match_token", {
           targetRaw: targetToken.raw,
           sourceRaw: rowData.sourceTokens[targetMatchIdx].raw,
           sourceIndex: targetMatchIdx
         });
-        state.activeHighlight = {
-          sourceEl: rowData.sourceTokens[targetMatchIdx].el,
-          targetEl: tokenEl
-        };
+        state.activeHighlight = null;
       } else {
         logWarn("hover_reverse_no_match", { targetRaw: targetToken.raw, targetNorm: targetToken.norm });
-        state.activeHighlight = { targetEl: tokenEl };
+        state.activeHighlight = null;
       }
     }
   }
@@ -1428,6 +1440,160 @@
     wrap.addEventListener("mouseleave", function () {
       clearActiveHighlight();
     });
+  }
+
+  function normalizeHistoryWord(word) {
+    return String(word || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function createHistoryItemElement(word) {
+    var template = document.querySelector(".history-sidebar__list app-history-item");
+    var host = template
+      ? template.cloneNode(true)
+      : document.createElement("app-history-item");
+    if (!template) {
+      var scope = getHistoryItemScopeAttrs();
+      host.innerHTML =
+        '<div class="history-item">' +
+        '<div class="history-item__top">' +
+        '<div class="history-item__top-left"><span class="history-item__word"></span></div>' +
+        "</div>" +
+        '<div class="history-item__bottom"><span class="history-item__translations"></span></div>' +
+        "</div>";
+      if (scope.hostAttr) host.setAttribute(scope.hostAttr, "");
+      if (scope.contentAttr) applyScopedContentAttr(host, scope.contentAttr);
+    }
+    var wordEl = host.querySelector(".history-item__word");
+    if (wordEl) wordEl.textContent = word;
+    var translationsEl = host.querySelector(".history-item__translations");
+    if (translationsEl && !String(translationsEl.textContent || "").trim()) {
+      translationsEl.textContent = " ";
+    }
+    return host;
+  }
+
+  function applyScopedContentAttr(root, attrName) {
+    if (!root || !attrName) return;
+    if (root.setAttribute) root.setAttribute(attrName, "");
+    var all = root.querySelectorAll ? root.querySelectorAll("*") : [];
+    Array.prototype.forEach.call(all, function (el) {
+      el.setAttribute(attrName, "");
+    });
+  }
+
+  function getHistoryItemScopeAttrs() {
+    var out = { hostAttr: "", contentAttr: "" };
+    var styleTags = document.querySelectorAll("style");
+    var re = /\[_nghost-([^\]]+)\]\s+\.history-item__word\[_ngcontent-\1\]/;
+    for (var i = 0; i < styleTags.length; i += 1) {
+      var css = styleTags[i].textContent || "";
+      var m = css.match(re);
+      if (!m || !m[1]) continue;
+      out.hostAttr = "_nghost-" + m[1];
+      out.contentAttr = "_ngcontent-" + m[1];
+      return out;
+    }
+    return out;
+  }
+
+  function ensureHistoryWordCacheFromDom() {
+    var words = document.querySelectorAll(".history-item__word");
+    Array.prototype.forEach.call(words, function (el) {
+      var key = normalizeHistoryWord(el.textContent);
+      if (key) state.historyWords.add(key);
+    });
+  }
+
+  function syncHistoryCountFromDom() {
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return;
+    var countEl = document.querySelector(".reading-view-header__history-count");
+    if (!countEl) return;
+    var itemCount = list.querySelectorAll("app-history-item .history-item__word").length;
+    countEl.textContent = String(itemCount);
+  }
+
+  function removeDuplicateHistoryEntries() {
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return;
+    var items = list.querySelectorAll("app-history-item");
+    var seen = new Set();
+    Array.prototype.forEach.call(items, function (item) {
+      var wordEl = item.querySelector(".history-item__word");
+      var key = normalizeHistoryWord(wordEl ? wordEl.textContent : "");
+      if (!key) return;
+      if (seen.has(key)) {
+        item.remove();
+        return;
+      }
+      seen.add(key);
+    });
+    state.historyWords = seen;
+    syncHistoryCountFromDom();
+  }
+
+  function addWordToHistorySidebar(word) {
+    var clean = String(word || "").trim();
+    if (!clean) return;
+    var key = normalizeHistoryWord(clean);
+    if (!key) return;
+    removeDuplicateHistoryEntries();
+    ensureHistoryWordCacheFromDom();
+    if (state.historyWords.has(key)) return;
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return;
+    var added = createHistoryItemElement(clean);
+    list.appendChild(added);
+    added.classList.add("translation-history-item_just-added");
+    // Keep latest added word visible when list overflows.
+    if (typeof added.scrollIntoView === "function") {
+      added.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    if (typeof list.scrollTop === "number" && typeof list.scrollHeight === "number") {
+      list.scrollTop = list.scrollHeight;
+    }
+    setTimeout(function () {
+      added.classList.remove("translation-history-item_just-added");
+    }, 1200);
+    state.historyWords.add(key);
+    syncHistoryCountFromDom();
+  }
+
+  function installHistoryDedupObserver() {
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list || list.dataset.dualTranslationDedupInstalled === "1") return;
+    list.dataset.dualTranslationDedupInstalled = "1";
+    removeDuplicateHistoryEntries();
+    var observer = new MutationObserver(function () {
+      removeDuplicateHistoryEntries();
+    });
+    observer.observe(list, { childList: true, subtree: true });
+  }
+
+  function readWordFromClickEvent(event) {
+    var selected = String(window.getSelection ? window.getSelection().toString() : "").trim();
+    if (selected) {
+      var first = selected.split(/\s+/)[0] || "";
+      return first.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, "");
+    }
+    var tokenEl = event && event.target && event.target.closest
+      ? event.target.closest(".translation-token")
+      : null;
+    if (tokenEl) return String(tokenEl.textContent || "").trim();
+    return "";
+  }
+
+  function onReaderWordActivate(event) {
+    var root = getReadingHoverRoot();
+    if (!root || !root.contains(event.target)) return;
+    // Single-click selection can be applied after the event dispatch.
+    setTimeout(function () {
+      var word = readWordFromClickEvent(event);
+      if (!word) return;
+      addWordToHistorySidebar(word);
+    }, 0);
   }
 
   async function openMode(button) {
@@ -1575,8 +1741,11 @@
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && state.isOpen) closeMode(openBtn);
     });
+    document.addEventListener("click", onReaderWordActivate, true);
+    document.addEventListener("dblclick", onReaderWordActivate, true);
 
     installHistoryToggleFix();
+    installHistoryDedupObserver();
     installListenButtonAudioWatcher();
     attachSingleModeHoverHandlers();
 
