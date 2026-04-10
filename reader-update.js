@@ -6,14 +6,10 @@
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
   var HOVER_POPOVER_ID = "translation-hover-popover-root";
-  var READER_GRADIO_TTS_KEY = "READER_GRADIO_TTS";
-  var GRADIO_TTS_LEGACY_KEY = "DUAL_TRANSLATION_GRADIO_TTS";
-  var DEFAULT_GRADIO_TTS = {
-    baseUrl: "http://98.82.178.165:8080",
-    endpoint: "run_instruct",
-    langDisp: "Auto",
-    spkDisp: "Vivian"
-  };
+  var VOICE_API_BASE_URL =
+    "https://voice.reverso.net/RestPronunciation.svc/v1/output=json/GetVoiceStream/voiceName=en-US-AvaMultilingualNeural";
+  var VOICE_API_SPEED = 100;
+  var VOICE_API_MAX_TEXT_CHARS = 180;
   var listenInstallInfoLogged = { noConfig: false, noButton: false };
   /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
   var MOBILE_DUAL_MAX_WIDTH = 900;
@@ -55,7 +51,9 @@
       remoteEl: null,
       remoteDuration: 0,
       gradioAbort: null,
-      listenRequestGen: 0
+      listenRequestGen: 0,
+      activeChunkStart: 0,
+      activeChunkLength: 0
     }
   };
 
@@ -83,9 +81,7 @@
           "  window.DUAL_TRANSLATION_AUTO_OPEN = true",
           "- Current hover flag:",
           "  window.DUAL_TRANSLATION_HOVER_WORD_MAP = " + String(window[HOVER_FEATURE_FLAG]),
-          "- Gradio TTS for Listen uses defaults in this file; override with:",
-          "  window.READER_GRADIO_TTS = { baseUrl?, endpoint?, langDisp?, spkDisp?, instruct? }",
-          "  (legacy: window.DUAL_TRANSLATION_GRADIO_TTS)  Set window.READER_GRADIO_TTS = false to disable.",
+          "- Listen mode uses voice.reverso.net (Laura22k) with smart text chunking (<=180 chars).",
           "- More commands can be added here later."
         ].join("\n")
       );
@@ -629,26 +625,99 @@
     }
   }
 
-  function getGradioConfig() {
-    var c = window[READER_GRADIO_TTS_KEY];
-    if (c === false) return null;
-    if (c == null || typeof c !== "object") c = window[GRADIO_TTS_LEGACY_KEY];
-    if (c === false) return null;
-    var fromWindow = c && typeof c === "object" ? c : {};
-    var base = fromWindow.baseUrl || fromWindow.base || DEFAULT_GRADIO_TTS.baseUrl;
-    if (!base || typeof base !== "string") return null;
-    return {
-      baseUrl: String(base).replace(/\/$/, ""),
-      endpoint: fromWindow.endpoint || DEFAULT_GRADIO_TTS.endpoint,
-      langDisp:
-        fromWindow.langDisp != null ? String(fromWindow.langDisp) : DEFAULT_GRADIO_TTS.langDisp,
-      spkDisp: fromWindow.spkDisp != null ? String(fromWindow.spkDisp) : DEFAULT_GRADIO_TTS.spkDisp,
-      instruct: fromWindow.instruct
-    };
+  function sentenceCandidates(text) {
+    var out = [];
+    String(text || "").replace(/[^.!?]+(?:[.!?]+|$)/g, function (m) {
+      out.push(String(m || "").trim());
+      return m;
+    });
+    if (!out.length && String(text || "").trim()) out.push(String(text || "").trim());
+    return out.filter(Boolean);
   }
 
-  function isGradioTtsEnabled() {
-    return getGradioConfig() !== null;
+  function splitLongByWords(text, maxChars) {
+    var words = String(text || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!words.length) return [];
+    var chunks = [];
+    var current = "";
+    for (var i = 0; i < words.length; i += 1) {
+      var word = words[i];
+      if (word.length > maxChars) {
+        if (current) {
+          chunks.push(current);
+          current = "";
+        }
+        // Edge case: a single "word" can exceed the API limit; hard-cut to avoid request failure.
+        for (var j = 0; j < word.length; j += maxChars) {
+          chunks.push(word.slice(j, j + maxChars));
+        }
+        continue;
+      }
+      var next = current ? current + " " + word : word;
+      if (next.length <= maxChars) {
+        current = next;
+      } else {
+        if (current) chunks.push(current);
+        current = word;
+      }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+  }
+
+  function splitTextForVoiceApi(rawText, maxChars) {
+    var normalized = String(rawText || "").replace(/\s+/g, " ").trim();
+    if (!normalized) return [];
+    var sentenceLike = sentenceCandidates(normalized);
+    var chunks = [];
+    for (var i = 0; i < sentenceLike.length; i += 1) {
+      var sentence = sentenceLike[i];
+      if (!sentence) continue;
+      if (sentence.length <= maxChars) {
+        chunks.push(sentence);
+      } else {
+        var byWords = splitLongByWords(sentence, maxChars);
+        for (var k = 0; k < byWords.length; k += 1) chunks.push(byWords[k]);
+      }
+    }
+    var merged = [];
+    for (var m = 0; m < chunks.length; m += 1) {
+      var current = chunks[m];
+      if (!merged.length) {
+        merged.push(current);
+        continue;
+      }
+      var last = merged[merged.length - 1];
+      var candidate = last + " " + current;
+      if (candidate.length <= maxChars) {
+        merged[merged.length - 1] = candidate;
+      } else {
+        merged.push(current);
+      }
+    }
+    return merged;
+  }
+
+  function base64Utf8(text) {
+    var bytes = new TextEncoder().encode(String(text || ""));
+    var bin = "";
+    for (var i = 0; i < bytes.length; i += 1) {
+      bin += String.fromCharCode(bytes[i]);
+    }
+    return btoa(bin);
+  }
+
+  function voiceApiUrlForText(text) {
+    return (
+      VOICE_API_BASE_URL +
+      "?voiceSpeed=" +
+      encodeURIComponent(String(VOICE_API_SPEED)) +
+      "&inputText=" +
+      encodeURIComponent(base64Utf8(text))
+    );
   }
 
   /**
@@ -819,10 +888,14 @@
     var el = state.audio.remoteEl;
     var d = el.duration;
     if (!state.audio.totalChars || !isFinite(d) || d <= 0) return;
-    state.audio.currentChar = Math.min(
-      state.audio.totalChars,
-      Math.round((el.currentTime / d) * state.audio.totalChars)
-    );
+    var activeLen = Math.max(0, state.audio.activeChunkLength || 0);
+    var activeStart = Math.max(0, state.audio.activeChunkStart || 0);
+    if (activeLen > 0) {
+      state.audio.currentChar = Math.min(
+        state.audio.totalChars,
+        activeStart + Math.round((el.currentTime / d) * activeLen)
+      );
+    }
     updateAudioUi();
   }
 
@@ -835,9 +908,10 @@
 
   function onRemoteAudioEnded() {
     if (state.audio.backend !== "remote") return;
-    state.audio.currentChar = state.audio.totalChars;
-    state.audio.isPlaying = false;
-    state.audio.isPaused = false;
+    if (state.audio.currentChar >= state.audio.totalChars) {
+      state.audio.isPlaying = false;
+      state.audio.isPaused = false;
+    }
     updateAudioUi();
   }
 
@@ -870,44 +944,92 @@
     state.audio.remoteDuration = 0;
     state.audio.isPlaying = false;
     state.audio.isPaused = false;
+    state.audio.activeChunkStart = 0;
+    state.audio.activeChunkLength = 0;
     updateAudioUi();
   }
 
-  async function playGradioTtsFromListen(signal) {
-    var cfg = getGradioConfig();
-    if (!cfg) throw new Error("Gradio TTS disabled (window.READER_GRADIO_TTS = false)");
-    var text = ensureAudioText();
-    if (!text.length) throw new Error("No text to read");
-    var instruct = cfg.instruct != null ? String(cfg.instruct) : text;
-    var data = [text, cfg.langDisp, cfg.spkDisp, instruct];
-    var result = await gradioPredict(cfg.baseUrl, cfg.endpoint, data, signal);
-    logDebug("gradio_tts_result", { result: result });
-    var url = audioUrlFromGradioResult(cfg.baseUrl, result);
-    if (!url) {
-      logWarn("gradio_tts_no_audio_url", { result: result });
-      throw new Error("Gradio returned no playable audio URL");
-    }
-    if (signal.aborted) return;
+  function waitForAudioEndOrAbort(el, signal) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      function cleanup() {
+        el.removeEventListener("ended", onEnded);
+        el.removeEventListener("error", onError);
+        signal.removeEventListener("abort", onAbort);
+      }
+      function onEnded() {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve();
+      }
+      function onError() {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error("Audio playback error"));
+      }
+      function onAbort() {
+        if (done) return;
+        done = true;
+        cleanup();
+        try {
+          el.pause();
+        } catch (_e) {}
+        reject(new DOMException("Aborted", "AbortError"));
+      }
+      el.addEventListener("ended", onEnded);
+      el.addEventListener("error", onError);
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
+  }
+
+  async function playVoiceChunk(chunkText, startChar, signal) {
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     var el = ensureRemoteAudioEl();
     state.audio.backend = "remote";
-    state.audio.currentChar = 0;
+    state.audio.activeChunkStart = Math.max(0, startChar || 0);
+    state.audio.activeChunkLength = chunkText.length;
+    state.audio.currentChar = state.audio.activeChunkStart;
     state.audio.remoteDuration = 0;
     state.audio.isPlaying = true;
     state.audio.isPaused = false;
     updateAudioUi();
-    el.src = url;
+    el.src = voiceApiUrlForText(chunkText);
     el.load();
     try {
       await el.play();
+      await waitForAudioEndOrAbort(el, signal);
     } catch (e) {
       var msg = e && e.message ? String(e.message) : String(e);
-      logWarn("gradio_tts_play_failed", { message: msg });
+      logWarn("voice_api_play_failed", { message: msg });
       state.audio.isPlaying = false;
       state.audio.isPaused = false;
       state.audio.backend = null;
       updateAudioUi();
       throw e;
     }
+  }
+
+  async function playVoiceApiFromListen(signal) {
+    var text = ensureAudioText();
+    if (!text.length) throw new Error("No text to read");
+    var chunks = splitTextForVoiceApi(text, VOICE_API_MAX_TEXT_CHARS);
+    if (!chunks.length) throw new Error("No text chunks to read");
+    var playedChars = 0;
+    for (var i = 0; i < chunks.length; i += 1) {
+      var chunk = chunks[i];
+      await playVoiceChunk(chunk, playedChars, signal);
+      playedChars += chunk.length;
+      state.audio.currentChar = Math.min(state.audio.totalChars, playedChars);
+      updateAudioUi();
+    }
+    state.audio.currentChar = state.audio.totalChars;
+    state.audio.isPlaying = false;
+    state.audio.isPaused = false;
+    state.audio.activeChunkStart = state.audio.totalChars;
+    state.audio.activeChunkLength = 0;
+    updateAudioUi();
   }
 
   function pauseOrResumeAudio() {
@@ -1000,17 +1122,6 @@
   }
 
   function installListenButtonAudio() {
-    if (!isGradioTtsEnabled()) {
-      if (!listenInstallInfoLogged.noConfig) {
-        listenInstallInfoLogged.noConfig = true;
-        console.warn(
-          LOG_PREFIX +
-            " Listen: Gradio TTS disabled (window.READER_GRADIO_TTS === false). Remove that to use defaults or your overrides."
-        );
-      }
-      logWarn("listen_audio_unavailable", { reason: "READER_GRADIO_TTS === false" });
-      return;
-    }
     var listenBtn = getListenButton();
     if (!listenBtn) {
       if (!listenInstallInfoLogged.noButton) {
@@ -1025,13 +1136,13 @@
     }
     if (listenBtn.dataset.dualTranslationAudioBound === "1") return;
     listenBtn.dataset.dualTranslationAudioBound = "1";
-    console.info(LOG_PREFIX + " Listen: Gradio hook attached to button.");
+    console.info(LOG_PREFIX + " Listen: Voice API hook attached to button.");
     listenBtn.addEventListener(
       "click",
       function (event) {
         event.preventDefault();
         event.stopPropagation();
-        console.log(LOG_PREFIX + " Listen click — calling Gradio (see request/response logs next).");
+        console.log(LOG_PREFIX + " Listen click — calling Voice API with smart chunks.");
         var reqGen = ++state.audio.listenRequestGen;
         setListenLoading(listenBtn, true);
         ensureAudioPlayer();
@@ -1040,12 +1151,12 @@
         stopAudioPlayback();
         var ac = new AbortController();
         state.audio.gradioAbort = ac;
-        playGradioTtsFromListen(ac.signal)
+        playVoiceApiFromListen(ac.signal)
           .catch(function (err) {
             if (err && err.name === "AbortError") return;
             var msg = err && err.message ? String(err.message) : String(err);
-            console.error(LOG_PREFIX, "Gradio TTS failed:", msg);
-            logWarn("gradio_tts_error", { message: msg });
+            console.error(LOG_PREFIX, "Voice API TTS failed:", msg);
+            logWarn("voice_api_tts_error", { message: msg });
             state.audio.isPlaying = false;
             state.audio.isPaused = false;
             state.audio.backend = null;
