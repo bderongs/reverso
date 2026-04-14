@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YouTube + Transcript v2</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #121212;
+      --panel: #1b1b1b;
+      --panel-border: #2a2a2a;
+      --text: #f3f3f3;
+      --muted: #a1a1a1;
+      --accent: #facc15;
+      --accent-soft: rgba(250, 204, 21, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 16px 28px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 120px 120px auto;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+      .controls input[type="url"] {
+        grid-column: 1 / -1;
+      }
+      .controls button {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 720px) {
+      .panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-block {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 2px 8px;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--accent);
+      color: #121212;
+      cursor: pointer;
+    }
+
+    .video-shell {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+
+    .status {
+      margin: 10px 2px 14px;
+      color: var(--muted);
+      min-height: 20px;
+      font-size: 14px;
+    }
+
+    .transcript,
+    .translation-panel {
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: var(--panel);
+      max-height: 48vh;
+      overflow: auto;
+      padding: 8px;
+      flex: 1;
+    }
+
+    .translation-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .translation-current {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #e8e8e8;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      min-height: 4.5em;
+      white-space: pre-wrap;
+    }
+
+    .translation-current.loading {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .translation-current.empty {
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    .translation-current.error {
+      color: #f87171;
+    }
+
+    .line {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 10px;
+      width: 100%;
+      border: 0;
+      text-align: left;
+      color: inherit;
+      background: transparent;
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .line:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .line.active {
+      background: var(--accent-soft);
+      outline: 1px solid rgba(250, 204, 21, 0.4);
+    }
+
+    .line-time {
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      padding-top: 2px;
+    }
+
+    .line-text {
+      font-size: 15px;
+      color: #ececec;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <form id="form" class="controls">
+      <input
+        id="url"
+        type="url"
+        placeholder="Paste a YouTube URL"
+        value="https://www.youtube.com/watch?v=EyCSHUZ3BOI"
+        required
+      />
+      <select id="lang" aria-label="Subtitle language">
+        <option value="en" selected>English</option>
+        <option value="fr">French</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <option value="it">Italian</option>
+        <option value="pt">Portuguese</option>
+      </select>
+      <select id="translateTo" aria-label="Translate subtitles to">
+        <option value="fra" selected>French</option>
+        <option value="eng">English</option>
+        <option value="spa">Spanish</option>
+        <option value="deu">German</option>
+        <option value="ita">Italian</option>
+        <option value="por">Portuguese</option>
+      </select>
+      <button type="submit">Load</button>
+    </form>
+
+    <div class="video-shell">
+      <div id="player"></div>
+    </div>
+    <div id="status" class="status">Enter a URL and click Load.</div>
+    <div class="panels">
+      <div class="panel-block">
+        <p class="panel-label">Subtitles</p>
+        <div id="transcript" class="transcript"></div>
+      </div>
+      <div class="panel-block">
+        <p class="panel-label">Translation (current line)</p>
+        <div class="translation-panel">
+          <div id="translation" class="translation-current empty">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    const ENDPOINT = "/transcript";
+    const REVERSO_TRANSLATE = "https://api.reverso.net/translate/v1/translation";
+    const ISO_TO_REVERSO = {
+      en: "eng",
+      fr: "fra",
+      es: "spa",
+      de: "deu",
+      it: "ita",
+      pt: "por"
+    };
+
+    const formEl = document.getElementById("form");
+    const urlEl = document.getElementById("url");
+    const langEl = document.getElementById("lang");
+    const translateToEl = document.getElementById("translateTo");
+    const statusEl = document.getElementById("status");
+    const transcriptEl = document.getElementById("transcript");
+    const translationEl = document.getElementById("translation");
+
+    let player = null;
+    let entries = [];
+    let activeIndex = -1;
+    let syncTimer = null;
+    let currentVideoId = null;
+    let translateAbort = null;
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.style.color = isError ? "#f87171" : "var(--muted)";
+    }
+
+    function extractVideoId(input) {
+      const match = input.trim().match(/(?:v=|\/shorts\/|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+      return match ? match[1] : input.trim().length === 11 ? input.trim() : null;
+    }
+
+    function toTimestamp(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+    }
+
+    function getSelectedLang() {
+      return langEl.value || "en";
+    }
+
+    function reversoFromLang() {
+      return ISO_TO_REVERSO[getSelectedLang()] || "eng";
+    }
+
+    function setTranslationUI(state, message) {
+      translationEl.className = "translation-current" + (state ? " " + state : "");
+      translationEl.textContent = message;
+    }
+
+    function stripHtml(s) {
+      if (!s || typeof s !== "string") return "";
+      const tmp = document.createElement("div");
+      tmp.innerHTML = s;
+      return tmp.textContent.replace(/\s+/g, " ").trim();
+    }
+
+    async function fetchReversoTranslation(text, from, to, signal) {
+      const res = await fetch(REVERSO_TRANSLATE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          input: text,
+          from,
+          to,
+          options: {
+            contextResults: true,
+            languageDetection: true,
+            origin: "translation.web",
+            sentenceSplitter: true
+          },
+          format: "text"
+        })
+      });
+      if (!res.ok) throw new Error(`Translation failed (${res.status})`);
+      const data = await res.json();
+      const raw = Array.isArray(data.translation) ? data.translation[0] : data.translation;
+      return stripHtml(raw || "");
+    }
+
+    function updateTranslationForActiveLine() {
+      if (translateAbort) {
+        translateAbort.abort();
+        translateAbort = null;
+      }
+
+      if (activeIndex < 0) {
+        setTranslationUI("empty", "—");
+        return;
+      }
+
+      const text = (entries[activeIndex].text || "").trim();
+      const from = reversoFromLang();
+      const to = translateToEl.value || "fra";
+
+      if (!text) {
+        setTranslationUI("empty", "—");
+        return;
+      }
+
+      if (from === to) {
+        setTranslationUI("", text);
+        return;
+      }
+
+      translateAbort = new AbortController();
+      const { signal } = translateAbort;
+      setTranslationUI("loading", "Translating…");
+
+      fetchReversoTranslation(text, from, to, signal)
+        .then((translated) => {
+          if (signal.aborted) return;
+          setTranslationUI("", translated || "—");
+        })
+        .catch((err) => {
+          if (err.name === "AbortError") return;
+          setTranslationUI("error", err.message || "Translation failed.");
+        });
+    }
+
+    function applyCaptionPreferences() {
+      if (!player) return;
+      const lang = getSelectedLang();
+      try {
+        if (typeof player.setOption === "function") {
+          player.setOption("captions", "track", { languageCode: lang });
+        }
+      } catch (_) {
+        // Best effort: caption APIs are not always available for every video/state.
+      }
+    }
+
+    function findActiveEntryIndex(currentMs) {
+      for (let i = 0; i < entries.length; i += 1) {
+        const start = entries[i].offset;
+        const end = entries[i].offset + entries[i].duration;
+        if (currentMs >= start && currentMs < end) return i;
+      }
+      return -1;
+    }
+
+    function updateActiveHighlight(currentMs) {
+      const nextIndex = findActiveEntryIndex(currentMs);
+      if (nextIndex === activeIndex) return;
+
+      if (activeIndex >= 0) {
+        const prev = transcriptEl.querySelector(`[data-index="${activeIndex}"]`);
+        if (prev) prev.classList.remove("active");
+      }
+
+      activeIndex = nextIndex;
+      if (activeIndex >= 0) {
+        const next = transcriptEl.querySelector(`[data-index="${activeIndex}"]`);
+        if (next) {
+          next.classList.add("active");
+          next.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+
+      updateTranslationForActiveLine();
+    }
+
+    function renderTranscript() {
+      transcriptEl.innerHTML = "";
+      activeIndex = -1;
+      if (translateAbort) {
+        translateAbort.abort();
+        translateAbort = null;
+      }
+      setTranslationUI("empty", "—");
+
+      if (!entries.length) {
+        transcriptEl.textContent = "No transcript entries found.";
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      entries.forEach((entry, index) => {
+        const lineBtn = document.createElement("button");
+        lineBtn.type = "button";
+        lineBtn.className = "line";
+        lineBtn.dataset.index = String(index);
+        lineBtn.innerHTML = `
+          <span class="line-time">${toTimestamp(entry.offset)}</span>
+          <span class="line-text">${entry.text}</span>
+        `;
+        lineBtn.addEventListener("click", () => {
+          if (player && typeof player.seekTo === "function") {
+            player.seekTo(entry.offset / 1000, true);
+            updateActiveHighlight(entry.offset);
+          }
+        });
+        frag.appendChild(lineBtn);
+      });
+
+      transcriptEl.appendChild(frag);
+    }
+
+    async function loadTranscript(url, lang) {
+      const endpointUrl = `${ENDPOINT}?url=${encodeURIComponent(url)}&lang=${encodeURIComponent(lang)}`;
+      const res = await fetch(endpointUrl);
+      if (!res.ok) throw new Error(`Transcript request failed (${res.status})`);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.entries)) throw new Error("Invalid transcript response format.");
+      return data;
+    }
+
+    async function loadVideoAndTranscript(rawUrl) {
+      const videoId = extractVideoId(rawUrl);
+      const lang = getSelectedLang();
+      if (!videoId) {
+        setStatus("Invalid YouTube URL or video ID.", true);
+        return;
+      }
+
+      setStatus("Loading transcript...");
+      try {
+        const transcript = await loadTranscript(rawUrl, lang);
+        entries = transcript.entries;
+        renderTranscript();
+        setStatus(`Loaded ${entries.length} transcript lines (${transcript.language || "unknown"}).`);
+
+        if (player && typeof player.loadVideoById === "function") {
+          if (currentVideoId !== videoId) {
+            player.loadVideoById(videoId);
+            currentVideoId = videoId;
+          }
+          applyCaptionPreferences();
+        }
+      } catch (err) {
+        entries = [];
+        renderTranscript();
+        setStatus(err.message || "Failed to load transcript.", true);
+      }
+    }
+
+    function startSyncLoop() {
+      if (syncTimer) clearInterval(syncTimer);
+      syncTimer = setInterval(() => {
+        if (!player || typeof player.getCurrentTime !== "function" || !entries.length) return;
+        const ms = Math.round(player.getCurrentTime() * 1000);
+        updateActiveHighlight(ms);
+      }, 250);
+    }
+
+    formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadVideoAndTranscript(urlEl.value);
+    });
+
+    langEl.addEventListener("change", () => {
+      applyCaptionPreferences();
+      loadVideoAndTranscript(urlEl.value);
+    });
+
+    translateToEl.addEventListener("change", () => {
+      updateTranslationForActiveLine();
+    });
+
+    window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        videoId: "EyCSHUZ3BOI",
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          cc_load_policy: 1,
+          cc_lang_pref: getSelectedLang()
+        },
+        events: {
+          onReady: () => {
+            startSyncLoop();
+            currentVideoId = "EyCSHUZ3BOI";
+            applyCaptionPreferences();
+            loadVideoAndTranscript(urlEl.value);
+          },
+          onStateChange: () => {
+            applyCaptionPreferences();
+          }
+        }
+      });
+    };
+  </script>
+</body>
+</html>

@@ -6,10 +6,8 @@
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
   var HOVER_POPOVER_ID = "translation-hover-popover-root";
-  var VOICE_API_BASE_URL =
-    "https://voice.reverso.net/RestPronunciation.svc/v1/output=json/GetVoiceStream/voiceName=en-US-AvaMultilingualNeural";
-  var VOICE_API_SPEED = 100;
-  var VOICE_API_MAX_TEXT_CHARS = 180;
+  var READ_ALOUD_ENDPOINT = "/read-aloud/stream";
+  var READ_ALOUD_MAX_CHUNK_CHARS = 2000;
   var listenInstallInfoLogged = { noConfig: false, noButton: false };
   /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
   var MOBILE_DUAL_MAX_WIDTH = 900;
@@ -50,7 +48,7 @@
       backend: null,
       remoteEl: null,
       remoteDuration: 0,
-      gradioAbort: null,
+      player: null,
       listenRequestGen: 0,
       activeChunkStart: 0,
       activeChunkLength: 0
@@ -60,13 +58,13 @@
   function logDebug(event, payload) {
     try {
       console.debug(LOG_PREFIX, event, payload || {});
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   function logWarn(event, payload) {
     try {
       console.warn(LOG_PREFIX, event, payload || {});
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   function printConsoleHelp() {
@@ -79,13 +77,17 @@
           "  Or: window.DUAL_TRANSLATION_HOVER_WORD_MAP = true|false",
           "- Auto-open dual mode on load is off by default. To enable:",
           "  window.DUAL_TRANSLATION_AUTO_OPEN = true",
+          "- Dual translation mode (icon + side-by-side translation) is off by default. To enable:",
+          "  window.DUAL_TRANSLATION_ENABLED = true",
           "- Current hover flag:",
           "  window.DUAL_TRANSLATION_HOVER_WORD_MAP = " + String(window[HOVER_FEATURE_FLAG]),
-          "- Listen mode uses voice.reverso.net (Laura22k) with smart text chunking (<=180 chars).",
+          "- Current dual mode flag:",
+          "  window.DUAL_TRANSLATION_ENABLED = " + String(isDualTranslationEnabled()),
+          "- Listen mode uses Mistral Voxtral TTS with streaming via /read-aloud/stream.",
           "- More commands can be added here later."
         ].join("\n")
       );
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   function isHoverWordMappingEnabled() {
@@ -96,6 +98,13 @@
   function shouldAutoOpenDualOnLoad() {
     if (typeof window.DUAL_TRANSLATION_AUTO_OPEN !== "undefined") {
       return Boolean(window.DUAL_TRANSLATION_AUTO_OPEN);
+    }
+    return false;
+  }
+
+  function isDualTranslationEnabled() {
+    if (typeof window.DUAL_TRANSLATION_ENABLED !== "undefined") {
+      return Boolean(window.DUAL_TRANSLATION_ENABLED);
     }
     return false;
   }
@@ -701,25 +710,6 @@
     return merged;
   }
 
-  function base64Utf8(text) {
-    var bytes = new TextEncoder().encode(String(text || ""));
-    var bin = "";
-    for (var i = 0; i < bytes.length; i += 1) {
-      bin += String.fromCharCode(bytes[i]);
-    }
-    return btoa(bin);
-  }
-
-  function voiceApiUrlForText(text) {
-    return (
-      VOICE_API_BASE_URL +
-      "?voiceSpeed=" +
-      encodeURIComponent(String(VOICE_API_SPEED)) +
-      "&inputText=" +
-      encodeURIComponent(base64Utf8(text))
-    );
-  }
-
   /**
    * Gradio SSE consumer matching the early-return behavior of a known-good client:
    * return on first `data:` JSON where `!Array.isArray(parsed) || parsed.length > 0`.
@@ -737,7 +727,7 @@
       if (line.indexOf("event: ") === 0) {
         try {
           console.log(LOG_PREFIX + " Gradio SSE event type:", line.slice(7).trim());
-        } catch (_e) {}
+        } catch (_e) { }
         return null;
       }
       if (line.indexOf("data: ") !== 0) return null;
@@ -747,11 +737,11 @@
         var parsed = JSON.parse(raw);
         try {
           console.log(LOG_PREFIX + " Gradio SSE parsed data:", parsed);
-        } catch (_e2) {}
+        } catch (_e2) { }
         if (!Array.isArray(parsed) || parsed.length > 0) {
           return parsed;
         }
-      } catch (_parse) {}
+      } catch (_parse) { }
       return null;
     }
 
@@ -761,7 +751,7 @@
       var chunk = decoder.decode(read.value, { stream: true });
       try {
         console.log(LOG_PREFIX + " Gradio SSE raw chunk:", chunk);
-      } catch (_e3) {}
+      } catch (_e3) { }
       carry += chunk;
       var lines = carry.split("\n");
       carry = lines.pop() || "";
@@ -785,12 +775,12 @@
         LOG_PREFIX + " Gradio TTS request →",
         submitUrl,
         "(string field lengths: " +
-          data.map(function (x) {
-            return typeof x === "string" ? x.length : "-";
-          }) +
-          ")"
+        data.map(function (x) {
+          return typeof x === "string" ? x.length : "-";
+        }) +
+        ")"
       );
-    } catch (_logE) {}
+    } catch (_logE) { }
     var postRes = await fetch(submitUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -805,14 +795,14 @@
     if (event_id == null) throw new Error("Missing event_id from Gradio");
     try {
       console.log(LOG_PREFIX + " Gradio event_id:", event_id);
-    } catch (_eLog) {}
+    } catch (_eLog) { }
     var result = await gradioSseReadUntilFirstPayload(
       base + "/gradio_api/call/" + endpoint + "/" + event_id,
       signal
     );
     try {
       console.log(LOG_PREFIX + " Gradio TTS response ←", result);
-    } catch (_logE2) {}
+    } catch (_logE2) { }
     return result;
   }
 
@@ -919,26 +909,44 @@
     if (state.audio.remoteEl) return state.audio.remoteEl;
     var el = new Audio();
     el.preload = "auto";
+    el.muted = false;
+    el.volume = 1;
     el.addEventListener("timeupdate", onRemoteAudioTimeUpdate);
     el.addEventListener("loadedmetadata", onRemoteAudioLoadedMetadata);
     el.addEventListener("ended", onRemoteAudioEnded);
+    el.addEventListener("playing", function () {
+      logDebug("remote_audio_playing", {
+        currentTime: el.currentTime,
+        duration: el.duration,
+        muted: el.muted,
+        volume: el.volume,
+        readyState: el.readyState
+      });
+    });
+    el.addEventListener("error", function () {
+      var mediaErr = el.error;
+      logWarn("remote_audio_error", {
+        code: mediaErr ? mediaErr.code : null,
+        message: mediaErr && mediaErr.message ? mediaErr.message : "",
+        currentSrc: el.currentSrc || ""
+      });
+    });
     state.audio.remoteEl = el;
     return el;
   }
 
   function stopAudioPlayback() {
-    if (state.audio.gradioAbort) {
+    if (state.audio.player && typeof state.audio.player.stop === "function") {
       try {
-        state.audio.gradioAbort.abort();
-      } catch (_e) {}
-      state.audio.gradioAbort = null;
+        state.audio.player.stop();
+      } catch (_e) { }
     }
     if (state.audio.remoteEl) {
       try {
         state.audio.remoteEl.pause();
         state.audio.remoteEl.removeAttribute("src");
         state.audio.remoteEl.load();
-      } catch (_e) {}
+      } catch (_e) { }
     }
     state.audio.backend = null;
     state.audio.remoteDuration = 0;
@@ -947,6 +955,26 @@
     state.audio.activeChunkStart = 0;
     state.audio.activeChunkLength = 0;
     updateAudioUi();
+  }
+
+  function ensureReadAloudPlayer() {
+    if (state.audio.player) return state.audio.player;
+    if (
+      !window.DualTranslationReadAloud ||
+      typeof window.DualTranslationReadAloud.createMistralReadAloud !== "function"
+    ) {
+      throw new Error("read_aloud.js is not loaded.");
+    }
+    var player = window.DualTranslationReadAloud.createMistralReadAloud({
+      endpoint: READ_ALOUD_ENDPOINT,
+      format: "mp3",
+      voice: "gb_oliver_excited",
+      language: "en",
+      maxChunkChars: READ_ALOUD_MAX_CHUNK_CHARS,
+      audio: ensureRemoteAudioEl()
+    });
+    state.audio.player = player;
+    return player;
   }
 
   function waitForAudioEndOrAbort(el, signal) {
@@ -975,7 +1003,7 @@
         cleanup();
         try {
           el.pause();
-        } catch (_e) {}
+        } catch (_e) { }
         reject(new DOMException("Aborted", "AbortError"));
       }
       el.addEventListener("ended", onEnded);
@@ -984,46 +1012,35 @@
     });
   }
 
-  async function playVoiceChunk(chunkText, startChar, signal) {
-    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-    var el = ensureRemoteAudioEl();
-    state.audio.backend = "remote";
-    state.audio.activeChunkStart = Math.max(0, startChar || 0);
-    state.audio.activeChunkLength = chunkText.length;
-    state.audio.currentChar = state.audio.activeChunkStart;
-    state.audio.remoteDuration = 0;
-    state.audio.isPlaying = true;
-    state.audio.isPaused = false;
-    updateAudioUi();
-    el.src = voiceApiUrlForText(chunkText);
-    el.load();
-    try {
-      await el.play();
-      await waitForAudioEndOrAbort(el, signal);
-    } catch (e) {
-      var msg = e && e.message ? String(e.message) : String(e);
-      logWarn("voice_api_play_failed", { message: msg });
-      state.audio.isPlaying = false;
-      state.audio.isPaused = false;
-      state.audio.backend = null;
-      updateAudioUi();
-      throw e;
-    }
-  }
-
-  async function playVoiceApiFromListen(signal) {
+  async function playMistralFromListen() {
     var text = ensureAudioText();
     if (!text.length) throw new Error("No text to read");
-    var chunks = splitTextForVoiceApi(text, VOICE_API_MAX_TEXT_CHARS);
-    if (!chunks.length) throw new Error("No text chunks to read");
-    var playedChars = 0;
-    for (var i = 0; i < chunks.length; i += 1) {
-      var chunk = chunks[i];
-      await playVoiceChunk(chunk, playedChars, signal);
-      playedChars += chunk.length;
-      state.audio.currentChar = Math.min(state.audio.totalChars, playedChars);
-      updateAudioUi();
-    }
+    var player = ensureReadAloudPlayer();
+    logDebug("mistral_play_start", {
+      totalChars: text.length,
+      hasRemoteEl: Boolean(state.audio.remoteEl),
+      endpoint: READ_ALOUD_ENDPOINT
+    });
+    state.audio.backend = "remote";
+    state.audio.isPlaying = true;
+    state.audio.isPaused = false;
+    state.audio.remoteDuration = 0;
+    updateAudioUi();
+    await player.playText(text, {
+      onChunkStart: function (ctx) {
+        state.audio.backend = "remote";
+        state.audio.activeChunkStart = Math.max(0, ctx.startChar || 0);
+        state.audio.activeChunkLength = (ctx.chunkText || "").length;
+        state.audio.currentChar = state.audio.activeChunkStart;
+        state.audio.isPlaying = true;
+        state.audio.isPaused = false;
+        updateAudioUi();
+      },
+      onChunkEnd: function (ctx) {
+        state.audio.currentChar = Math.min(state.audio.totalChars, Math.max(0, ctx.playedChars || 0));
+        updateAudioUi();
+      }
+    });
     state.audio.currentChar = state.audio.totalChars;
     state.audio.isPlaying = false;
     state.audio.isPaused = false;
@@ -1045,7 +1062,7 @@
       if (state.audio.isPaused || (!state.audio.isPlaying && rel.currentTime > 0)) {
         state.audio.isPlaying = true;
         state.audio.isPaused = false;
-        rel.play().catch(function () {});
+        rel.play().catch(function () { });
         updateAudioUi();
         return;
       }
@@ -1067,7 +1084,7 @@
       var cap = isFinite(rel.duration) && rel.duration > 0 ? rel.duration : state.audio.remoteDuration;
       try {
         rel.currentTime = Math.max(0, Math.min(t, cap));
-      } catch (_e) {}
+      } catch (_e) { }
     }
   }
 
@@ -1128,8 +1145,8 @@
         listenInstallInfoLogged.noButton = true;
         console.info(
           LOG_PREFIX +
-            " Listen: Gradio is configured but the Listen button was not found yet (will retry). " +
-            "If this never binds, check devtools for app-listen-button or .listen-button."
+          " Listen: Gradio is configured but the Listen button was not found yet (will retry). " +
+          "If this never binds, check devtools for app-listen-button or .listen-button."
         );
       }
       return;
@@ -1142,21 +1159,19 @@
       function (event) {
         event.preventDefault();
         event.stopPropagation();
-        console.log(LOG_PREFIX + " Listen click — calling Voice API with smart chunks.");
+        console.log(LOG_PREFIX + " Listen click — calling Mistral Voxtral streaming TTS.");
         var reqGen = ++state.audio.listenRequestGen;
         setListenLoading(listenBtn, true);
         ensureAudioPlayer();
         showAudioPlayer();
         ensureAudioText();
         stopAudioPlayback();
-        var ac = new AbortController();
-        state.audio.gradioAbort = ac;
-        playVoiceApiFromListen(ac.signal)
+        playMistralFromListen()
           .catch(function (err) {
             if (err && err.name === "AbortError") return;
             var msg = err && err.message ? String(err.message) : String(err);
-            console.error(LOG_PREFIX, "Voice API TTS failed:", msg);
-            logWarn("voice_api_tts_error", { message: msg });
+            console.error(LOG_PREFIX, "Mistral Voxtral TTS failed:", msg);
+            logWarn("mistral_tts_error", { message: msg });
             state.audio.isPlaying = false;
             state.audio.isPaused = false;
             state.audio.backend = null;
@@ -1708,6 +1723,7 @@
   }
 
   async function openMode(button) {
+    if (!isDualTranslationEnabled()) return;
     var wrap = ensureInlineWrap();
     if (!wrap) return;
     setOpen(true, button);
@@ -1797,24 +1813,24 @@
     printConsoleHelp();
     logDebug("feature_flags", { hoverWordMap: isHoverWordMappingEnabled(), flagName: HOVER_FEATURE_FLAG });
 
-    var openBtn = createToggleButton();
     var hoverBtn = createHoverToggleButton();
+    var openBtn = isDualTranslationEnabled() ? createToggleButton() : null;
     var darkBtn = findDarkModeBtn();
     var darkHost = darkBtn && typeof darkBtn.closest === "function" ? darkBtn.closest("app-button") : null;
     if (darkHost && darkHost.parentElement) {
       darkHost.insertAdjacentElement("afterend", hoverBtn);
-      hoverBtn.insertAdjacentElement("afterend", openBtn);
+      if (openBtn) hoverBtn.insertAdjacentElement("afterend", openBtn);
     } else if (darkBtn && darkBtn.parentElement) {
       darkBtn.insertAdjacentElement("afterend", hoverBtn);
-      hoverBtn.insertAdjacentElement("afterend", openBtn);
+      if (openBtn) hoverBtn.insertAdjacentElement("afterend", openBtn);
     } else {
       var header = document.querySelector("header.reading-view-header") || document.querySelector("header");
       if (header) {
         header.appendChild(hoverBtn);
-        header.appendChild(openBtn);
+        if (openBtn) header.appendChild(openBtn);
       } else {
         document.body.appendChild(hoverBtn);
-        document.body.appendChild(openBtn);
+        if (openBtn) document.body.appendChild(openBtn);
       }
     }
 
@@ -1843,11 +1859,13 @@
       logDebug("hover_toggle_click", { enabled: isHoverWordMappingEnabled() });
     });
 
-    openBtn.addEventListener("click", function () {
-      if (isMobileViewport()) return;
-      if (state.isOpen) closeMode(openBtn);
-      else openMode(openBtn);
-    });
+    if (openBtn) {
+      openBtn.addEventListener("click", function () {
+        if (isMobileViewport()) return;
+        if (state.isOpen) closeMode(openBtn);
+        else openMode(openBtn);
+      });
+    }
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && state.isOpen) closeMode(openBtn);
@@ -1860,7 +1878,7 @@
     installListenButtonAudioWatcher();
     attachSingleModeHoverHandlers();
 
-    if (shouldAutoOpenDualOnLoad() && !isMobileViewport()) {
+    if (openBtn && shouldAutoOpenDualOnLoad() && !isMobileViewport()) {
       requestAnimationFrame(function () {
         openMode(openBtn);
       });
