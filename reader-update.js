@@ -219,7 +219,7 @@
       "grid-column:2;grid-row:1;padding-left:21px;align-self:start" +
       "}" +
       "}" +
-      ".translation-audio-player{position:fixed;left:0;right:0;bottom:0;z-index:900;width:100%;display:none}" +
+      ".translation-audio-player{position:fixed;left:0;right:clamp(320px,28vw,420px);bottom:0;z-index:900;display:none}" +
       ".translation-audio-player_visible{display:block}" +
       ".translation-audio-player__toolbar{display:flex;flex-direction:column;background:var(--background-base-secondary,#fcf4e9);box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.1));padding:0 24px 8px}" +
       ".translation-audio-player__main{display:flex;align-items:center;justify-content:space-between;height:64px}" +
@@ -242,7 +242,7 @@
       ".translation-audio-player__seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;margin-top:-4px;background:var(--new-blue-700,#2a8bdf);border:0}" +
       ".translation-audio-player__seek::-moz-range-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
       ".translation-audio-player__seek::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--new-blue-700,#2a8bdf);border:0}" +
-      "@media only screen and (max-width:567px){.translation-audio-player__toolbar{padding:0 8px 8px}.translation-audio-player__control{gap:8px}}" +
+      "@media only screen and (max-width:567px){.translation-audio-player{right:0}.translation-audio-player__toolbar{padding:0 8px 8px}.translation-audio-player__control{gap:8px}}" +
       ".translation-listen-spinner{display:inline-flex;align-items:center;vertical-align:middle;flex-shrink:0;margin-left:6px;width:18px;height:18px;opacity:0;pointer-events:none;transition:opacity .15s ease}" +
       ".translation-listen-spinner_visible{opacity:1}" +
       ".translation-listen-spinner__ring{width:16px;height:16px;border:2px solid var(--line-gray-primary,#d4d9e3);border-top-color:var(--new-blue-700,#2a8bdf);border-radius:50%;box-sizing:border-box;animation:translation-listen-spin .65s linear infinite}" +
@@ -704,7 +704,13 @@
       listenBtn.dataset.translationListenPlayHtml = listenBtn.innerHTML;
     }
     if (isPause) {
-      listenBtn.innerHTML = "Stop";
+      listenBtn.innerHTML =
+        '<app-icon-stop fillcolor="none">' +
+        '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="6" y="6" width="16" height="16" rx="2" stroke="#7C7C7C" stroke-width="2"></rect>' +
+        "</svg>" +
+        "</app-icon-stop>" +
+        '<span class="button__text">Stop</span>';
       listenBtn.setAttribute("aria-label", "Stop");
       return;
     }
@@ -804,6 +810,28 @@
     clearKaraokeDomHighlight();
     karaoke.tokenEls[domIdx].classList.add("translation-token_karaoke");
     karaoke.activeDomTokenIndex = domIdx;
+  }
+
+  function prepareGlobalKaraokeMap(fullText) {
+    ensureSingleModeTokenization();
+    var nodes = sourceNodes();
+    var tokenEls = [];
+    for (var i = 0; i < nodes.length; i += 1) {
+      var rowTokens = nodes[i].querySelectorAll(".translation-token");
+      for (var j = 0; j < rowTokens.length; j += 1) {
+        tokenEls.push(rowTokens[j]);
+      }
+    }
+    var normalizedDomTokens = tokenEls.map(function (el) {
+      return normalizeKaraokeToken(el.textContent || "");
+    });
+    state.audio.karaoke.paragraphEl = null;
+    state.audio.karaoke.tokenEls = tokenEls;
+    state.audio.karaoke.mapByTimedWordIndex = createTimedWordToDomIndexMap(
+      normalizedDomTokens,
+      fullText
+    );
+    clearKaraokeDomHighlight();
   }
 
   function setActiveListenTriggerButton(btn) {
@@ -1057,6 +1085,14 @@
     return m + ":" + s;
   }
 
+  function playerPauseIconSvg() {
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">' +
+      '<path fill-rule="evenodd" clip-rule="evenodd" d="M6.37946 5.72222C6.01411 5.77142 5.92726 5.84719 5.8888 5.88583L5.88639 5.88825C5.84699 5.92756 5.77117 6.01531 5.72197 6.38058C5.66889 6.77475 5.66675 7.31384 5.66675 8.167V19.8337C5.66675 20.6874 5.66889 21.2268 5.72197 21.621C5.77118 21.9863 5.84695 22.0732 5.88558 22.1116L5.888 22.114C5.92745 22.1536 6.01508 22.2293 6.37994 22.2785C6.77394 22.3315 7.31298 22.3337 8.16675 22.3337C9.02052 22.3337 9.55988 22.3315 9.95405 22.2784C10.3194 22.2292 10.4062 22.1535 10.4447 22.1148L10.4471 22.1124C10.4865 22.0731 10.5623 21.9853 10.6115 21.6201C10.6646 21.2259 10.6668 20.6868 10.6668 19.8337V8.167C10.6668 7.31324 10.6646 6.77387 10.6115 6.3797C10.5623 6.01436 10.4866 5.92751 10.4479 5.88905L10.4455 5.88664C10.4061 5.8471 10.3184 5.77137 9.95357 5.72221C9.55957 5.66913 9.02053 5.667 8.16675 5.667C7.31299 5.667 6.77363 5.66913 6.37946 5.72222ZM8.10264 3.667C8.12394 3.667 8.14531 3.667 8.16675 3.667C8.18821 3.667 8.20959 3.667 8.2309 3.667C9.0013 3.66694 9.67705 3.66689 10.2206 3.74012C10.8078 3.81923 11.3876 3.99994 11.8601 4.47284C12.3339 4.94516 12.5146 5.52573 12.5936 6.11275C12.6669 6.65643 12.6668 7.33245 12.6668 8.10289C12.6668 8.12419 12.6668 8.14556 12.6668 8.167L12.6668 19.8977C12.6668 20.6676 12.6669 21.3434 12.5936 21.887C12.5146 22.4742 12.334 23.0544 11.8609 23.5271C11.3886 24.0008 10.808 24.1815 10.221 24.2605C9.67733 24.3338 9.00131 24.3337 8.23089 24.3337H8.10263C7.33222 24.3337 6.65646 24.3338 6.11291 24.2605C5.52518 24.1814 4.94489 24.0004 4.47218 23.5266C3.99928 23.0545 3.81886 22.4744 3.73987 21.8879C3.66665 21.3442 3.6667 20.6682 3.66675 19.8978L3.66675 8.167C3.66675 8.14558 3.66675 8.12423 3.66675 8.10295C3.6667 7.33303 3.66665 6.6573 3.73987 6.11363C3.81894 5.52652 3.99955 4.94626 4.47258 4.47363C4.9449 3.99983 5.52548 3.81917 6.11251 3.74011C6.65618 3.66689 7.3322 3.66694 8.10264 3.667ZM18.0461 5.72222C17.6808 5.77142 17.5939 5.84719 17.5555 5.88583L17.5531 5.88824C17.5137 5.92755 17.4378 6.01531 17.3886 6.38058C17.3356 6.77475 17.3334 7.31384 17.3334 8.167V19.8337C17.3334 20.6874 17.3356 21.2268 17.3886 21.621C17.4378 21.9863 17.5136 22.0732 17.5522 22.1116L17.5547 22.114C17.594 22.1534 17.6817 22.2292 18.047 22.2784C18.4412 22.3315 18.9803 22.3337 19.8334 22.3337C20.6866 22.3337 21.2257 22.3315 21.6198 22.2784C21.9851 22.2292 22.0729 22.1534 22.1122 22.114L22.1138 22.1124C22.1532 22.0731 22.229 21.9853 22.2782 21.6201C22.3313 21.2259 22.3334 20.6868 22.3334 19.8337V8.167C22.3334 7.31324 22.3313 6.77387 22.2782 6.3797C22.229 6.01436 22.1532 5.92751 22.1146 5.88905L22.1122 5.88663C22.0727 5.84709 21.9851 5.77137 21.6202 5.72221C21.2262 5.66913 20.6872 5.667 19.8334 5.667C18.9797 5.667 18.4403 5.66913 18.0461 5.72222ZM19.7693 3.667H19.8976C20.668 3.66694 21.3437 3.66689 21.8873 3.74012C22.4745 3.81923 23.0543 3.99994 23.5268 4.47284C24.0006 4.94516 24.1812 5.52573 24.2603 6.11275C24.3335 6.65642 24.3335 7.33244 24.3334 8.10287V19.8977C24.3335 20.6676 24.3335 21.3434 24.2603 21.887C24.1812 22.4743 24.0005 23.0547 23.5272 23.5274C23.0545 24.0008 22.4741 24.1815 21.8868 24.2605C21.3431 24.3338 20.6674 24.3337 19.8975 24.3337H19.7694C18.9995 24.3337 18.3237 24.3338 17.78 24.2605C17.1929 24.1815 16.6127 24.0009 16.14 23.5278C15.6662 23.0555 15.4856 22.4749 15.4065 21.8879C15.3333 21.3442 15.3334 20.6682 15.3334 19.8978L15.3334 8.167C15.3334 8.14558 15.3334 8.12424 15.3334 8.10296C15.3334 7.33304 15.3333 6.6573 15.4065 6.11363C15.4857 5.52602 15.6665 4.94528 16.1405 4.47242C16.6126 3.99953 17.1926 3.81911 17.7792 3.74011C18.3228 3.66689 18.9989 3.66694 19.7693 3.667Z" fill="var(--text-banner-placeholder)"></path>' +
+      "</svg>"
+    );
+  }
+
   function getEstimatedTotalSeconds() {
     if (state.audio.backend === "remote" && state.audio.remoteDuration > 0) {
       return state.audio.remoteDuration;
@@ -1085,7 +1121,13 @@
     seek.value = String(Math.max(0, Math.min(state.audio.currentChar, state.audio.totalChars)));
     current.textContent = formatTime(getEstimatedCurrentSeconds());
     total.textContent = formatTime(getEstimatedTotalSeconds());
-    playPause.textContent = state.audio.isPlaying && !state.audio.isPaused ? "Pause" : "Play";
+    if (state.audio.isPlaying && !state.audio.isPaused) {
+      playPause.innerHTML = playerPauseIconSvg();
+      playPause.setAttribute("aria-label", "Pause");
+    } else {
+      playPause.textContent = "Play";
+      playPause.setAttribute("aria-label", "Play");
+    }
     syncTriggerButtonsUi();
   }
 
@@ -1290,6 +1332,7 @@
 
   async function playMistralFromListen() {
     var text = ensureAudioText();
+    prepareGlobalKaraokeMap(text);
     await playMistralText(text);
   }
 
@@ -1317,6 +1360,7 @@
     state.audio.activeChunkLength = state.audio.totalChars;
     updateAudioUi();
     await player.playText(text, {
+      onWordChange: onKaraokeWordChange,
       onChunkStart: function (ctx) {
         state.audio.backend = "remote";
         state.audio.activeChunkStart = Math.max(0, ctx.startChar || 0);
@@ -1558,9 +1602,6 @@
       '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.9604 22.2852C14.4131 22.2852 14.0234 21.9048 14.0234 21.3574C14.0234 20.8193 14.4131 20.4668 14.9604 20.4668C18.5601 20.4668 21.4453 17.5908 21.4453 14.0005C21.4453 10.4102 18.5601 7.53418 14.9604 7.53418C11.3423 7.53418 8.47559 10.3823 8.47559 13.9727C8.47559 14.585 8.52197 15.1509 8.62402 15.624L11.1289 13.1006C11.3052 12.9336 11.5 12.8408 11.7412 12.8408C12.2515 12.8408 12.6411 13.2305 12.6411 13.7222C12.6411 13.9912 12.5576 14.2046 12.3906 14.3623L8.5498 18.166C8.35498 18.3608 8.13232 18.4536 7.88184 18.4536C7.64062 18.4536 7.39941 18.3516 7.21387 18.166L3.34521 14.3623C3.16895 14.2046 3.07617 13.9819 3.07617 13.7222C3.07617 13.2305 3.48438 12.8408 3.98535 12.8408C4.22656 12.8408 4.43994 12.9336 4.60693 13.0913L6.82422 15.3364C6.74072 14.9282 6.69434 14.4551 6.69434 13.9727C6.69434 9.38037 10.3682 5.71582 14.9604 5.71582C19.562 5.71582 23.2637 9.4082 23.2637 14.0005C23.2637 18.5928 19.562 22.2852 14.9604 22.2852Z" fill="currentColor"></path></svg>' +
       "</button>" +
       '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_play" data-audio-action="play-pause" aria-label="Play or pause">Play</button>' +
-      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="stop" aria-label="Stop playback">' +
-      '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor"></rect></svg>' +
-      "</button>" +
       '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="forward" aria-label="Forward 15 seconds">' +
       '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.0396 5.71484C17.6318 5.71484 21.3057 9.38867 21.3057 13.9717C21.3057 14.4541 21.2593 14.9272 21.1758 15.3354L23.3931 13.0903C23.5601 12.9326 23.7734 12.8491 24.0146 12.8491C24.5156 12.8491 24.9238 13.2295 24.9238 13.7305C24.9238 13.9902 24.8311 14.2036 24.6548 14.3613L20.7861 18.1743C20.6006 18.3599 20.3594 18.4619 20.1182 18.4619C19.8677 18.4619 19.645 18.3691 19.4502 18.1743L15.6094 14.3613C15.4424 14.2036 15.3589 13.9902 15.3589 13.7305C15.3589 13.2295 15.7485 12.8491 16.2588 12.8491C16.5 12.8491 16.6948 12.9326 16.8711 13.0996L19.376 15.623C19.478 15.1499 19.5244 14.584 19.5244 13.9717C19.5244 10.3906 16.6577 7.5332 13.0396 7.5332C9.43994 7.5332 6.55469 10.4092 6.55469 13.9995C6.55469 17.5898 9.43994 20.4751 13.0396 20.4751C13.5869 20.4751 13.9766 20.8276 13.9766 21.3564C13.9766 21.9038 13.5869 22.2842 13.0396 22.2842C8.43799 22.2842 4.73633 18.5918 4.73633 13.9995C4.73633 9.40723 8.43799 5.71484 13.0396 5.71484Z" fill="currentColor"></path></svg>' +
       "</button>" +
