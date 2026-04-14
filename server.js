@@ -4,6 +4,7 @@ const express = require("express");
 const path = require("path");
 const { Readable } = require("stream");
 const { fetchTranscript, extractVideoId, toTimestamp } = require("./transcript");
+const READ_ALOUD_VOICE_CONFIG = require("./voice-config");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,7 +42,9 @@ async function handleReadAloud(req, res) {
     const fromQuery = req.query || {};
     const text = String(fromBody.text || fromQuery.text || "").trim();
     const format = String(fromBody.format || fromQuery.format || "mp3").trim();
-    const voice = String(fromBody.voice || fromQuery.voice || "gb_oliver_excited").trim();
+    const defaultVoice =
+        (READ_ALOUD_VOICE_CONFIG && READ_ALOUD_VOICE_CONFIG.defaultVoice) || "en_paul_neutral";
+    const voice = String(fromBody.voice || fromQuery.voice || defaultVoice).trim();
 
     if (!text) return res.status(400).json({ error: 'Missing required query param: "text"' });
 

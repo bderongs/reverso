@@ -1,6 +1,7 @@
 (function () {
   "use strict";
   var LOG_PREFIX = "[read-aloud]";
+  var DEFAULT_MODE = "preGenerated";
 
   function log(event, payload) {
     try {
@@ -66,15 +67,124 @@
     return chunks;
   }
 
+  function normalizeToken(token) {
+    return String(token || "")
+      .toLowerCase()
+      .replace(/^[^a-z0-9']+|[^a-z0-9']+$/g, "")
+      .trim();
+  }
+
+  function textToTokens(text) {
+    var matches = String(text || "").match(/[a-z0-9']+/gi) || [];
+    var out = [];
+    for (var i = 0; i < matches.length; i += 1) {
+      var normalized = normalizeToken(matches[i]);
+      if (normalized) out.push(normalized);
+    }
+    return out;
+  }
+
+  function splitParagraphs(text) {
+    var normalized = String(text || "").replace(/\r\n/g, "\n");
+    return normalized
+      .split(/\n\s*\n+/)
+      .map(function (p) {
+        return String(p || "").trim();
+      })
+      .filter(Boolean);
+  }
+
+  function findTokenSequenceIndex(haystack, needle) {
+    if (!needle.length || needle.length > haystack.length) return -1;
+    var anchorLen = Math.min(10, needle.length);
+    for (var i = 0; i <= haystack.length - needle.length; i += 1) {
+      var ok = true;
+      for (var j = 0; j < anchorLen; j += 1) {
+        if (haystack[i + j] !== needle[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      for (var k = anchorLen; k < needle.length; k += 1) {
+        if (haystack[i + k] !== needle[k]) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) return i;
+    }
+    return -1;
+  }
+
+  function findParagraphStartIndex(allTokens, paragraphTokens) {
+    if (!paragraphTokens.length || !allTokens.length) return -1;
+    var full = findTokenSequenceIndex(allTokens, paragraphTokens);
+    if (full >= 0) return full;
+    // Fallback to robust anchor matching for slight text differences.
+    var anchorSizes = [24, 16, 12, 8, 6];
+    for (var i = 0; i < anchorSizes.length; i += 1) {
+      var size = Math.min(anchorSizes[i], paragraphTokens.length);
+      if (size < 4) continue;
+      var anchor = paragraphTokens.slice(0, size);
+      var idx = findTokenSequenceIndex(allTokens, anchor);
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  }
+
+  function scoreParagraphSimilarity(aText, bText) {
+    var a = textToTokens(aText);
+    var b = textToTokens(bText);
+    if (!a.length || !b.length) return 0;
+    var maxPrefix = Math.min(20, a.length, b.length);
+    var prefixHits = 0;
+    for (var i = 0; i < maxPrefix; i += 1) {
+      if (a[i] !== b[i]) break;
+      prefixHits += 1;
+    }
+    var prefixScore = prefixHits / maxPrefix;
+    var aSet = Object.create(null);
+    for (var j = 0; j < a.length; j += 1) aSet[a[j]] = true;
+    var overlapHits = 0;
+    for (var k = 0; k < b.length; k += 1) {
+      if (aSet[b[k]]) overlapHits += 1;
+    }
+    var overlapScore = overlapHits / Math.max(a.length, b.length);
+    return prefixScore * 0.7 + overlapScore * 0.3;
+  }
+
+  function pickTranscriptParagraph(paragraphs, paragraphText, paragraphIndex) {
+    if (!Array.isArray(paragraphs) || !paragraphs.length) return String(paragraphText || "");
+    if (paragraphs.length <= 1) return String(paragraphText || "");
+    if (typeof paragraphIndex === "number" && paragraphIndex >= 0 && paragraphIndex < paragraphs.length) {
+      return String(paragraphs[paragraphIndex] || "");
+    }
+    var best = String(paragraphText || "");
+    var bestScore = -1;
+    for (var i = 0; i < paragraphs.length; i += 1) {
+      var candidate = String(paragraphs[i] || "");
+      var score = scoreParagraphSimilarity(paragraphText, candidate);
+      if (score > bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
   function createMistralReadAloud(options) {
     var cfg = Object.assign(
       {
+        mode: DEFAULT_MODE,
         endpoint: "/read-aloud/stream",
         format: "mp3",
-        voice: "gb_oliver_excited",
-        language: "en",
+        voice: "en_paul_neutral",
+        language: "en-US",
         maxChunkChars: 2000,
-        audio: null
+        audio: null,
+        preGeneratedAudioUrl: "/reader_v2.mp3",
+        preGeneratedTranscriptUrl: "/read_aloud_transcript.json"
       },
       options || {}
     );
@@ -84,6 +194,13 @@
     audio.muted = false;
     audio.volume = 1;
     var currentAbort = null;
+    var runtimeMode = cfg.mode === "preGenerated" ? "preGenerated" : "streaming";
+    var preGeneratedDataPromise = null;
+    var karaokeState = {
+      activeWordIndex: -1,
+      onTimeUpdate: null,
+      onEnded: null
+    };
 
     audio.addEventListener("playing", function () {
       log("audio_playing", {
@@ -108,6 +225,226 @@
         currentSrc: audio.currentSrc || ""
       });
     });
+
+    function clearKaraokeListeners() {
+      if (karaokeState.onTimeUpdate) audio.removeEventListener("timeupdate", karaokeState.onTimeUpdate);
+      if (karaokeState.onEnded) audio.removeEventListener("ended", karaokeState.onEnded);
+      karaokeState.activeWordIndex = -1;
+      karaokeState.onTimeUpdate = null;
+      karaokeState.onEnded = null;
+    }
+
+    async function loadPreGeneratedData() {
+      if (preGeneratedDataPromise) return preGeneratedDataPromise;
+      preGeneratedDataPromise = fetch(cfg.preGeneratedTranscriptUrl)
+        .then(function (res) {
+          if (!res.ok) throw new Error("Transcript request failed (" + res.status + ")");
+          return res.json();
+        })
+        .then(function (data) {
+          var segments = Array.isArray(data && data.segments) ? data.segments : [];
+          var timedWords = [];
+          for (var i = 0; i < segments.length; i += 1) {
+            var seg = segments[i];
+            var segText = String(seg && seg.text ? seg.text : "");
+            var tokens = textToTokens(segText);
+            for (var t = 0; t < tokens.length; t += 1) {
+              timedWords.push({
+                token: tokens[t],
+                start: Number(seg.start || 0),
+                end: Number(seg.end || seg.start || 0),
+                segmentIndex: i
+              });
+            }
+          }
+          return {
+            transcript: String((data && data.text) || ""),
+            paragraphs: splitParagraphs((data && data.text) || ""),
+            timedWords: timedWords
+          };
+        });
+      return preGeneratedDataPromise;
+    }
+
+    function findTokenSequenceIndex(haystack, needle) {
+      if (!needle.length || needle.length > haystack.length) return -1;
+      var anchorLen = Math.min(10, needle.length);
+      for (var i = 0; i <= haystack.length - needle.length; i += 1) {
+        var ok = true;
+        for (var j = 0; j < anchorLen; j += 1) {
+          if (haystack[i + j] !== needle[j]) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        for (var k = anchorLen; k < needle.length; k += 1) {
+          if (haystack[i + k] !== needle[k]) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) return i;
+      }
+      return -1;
+    }
+
+    function setupKaraokeTracking(timedWords, callbacks) {
+      clearKaraokeListeners();
+      if (!timedWords || !timedWords.length) return;
+      var cb = callbacks || {};
+      var searchIndex = 0;
+      karaokeState.onTimeUpdate = function () {
+        var current = Number(audio.currentTime || 0);
+        while (searchIndex + 1 < timedWords.length && timedWords[searchIndex + 1].start <= current) {
+          searchIndex += 1;
+        }
+        while (searchIndex > 0 && timedWords[searchIndex].start > current) {
+          searchIndex -= 1;
+        }
+        var active = -1;
+        if (timedWords[searchIndex] && timedWords[searchIndex].start <= current && current <= timedWords[searchIndex].end + 0.12) {
+          active = searchIndex;
+        }
+        if (active !== karaokeState.activeWordIndex) {
+          karaokeState.activeWordIndex = active;
+          if (typeof cb.onWordChange === "function") {
+            cb.onWordChange(active >= 0 ? Object.assign({ index: active }, timedWords[active]) : null);
+          }
+        }
+      };
+      karaokeState.onEnded = function () {
+        if (typeof cb.onWordChange === "function") cb.onWordChange(null);
+      };
+      audio.addEventListener("timeupdate", karaokeState.onTimeUpdate);
+      audio.addEventListener("ended", karaokeState.onEnded);
+    }
+
+    async function playPreGenerated(text, callbacks) {
+      var cb = callbacks || {};
+      var data = await loadPreGeneratedData();
+      var allTokens = data.timedWords.map(function (w) { return w.token; });
+      var selectedWords = data.timedWords;
+      var startAt = 0;
+      var paragraphText = typeof cb.paragraphText === "string" ? cb.paragraphText : "";
+      var paragraphIndex = typeof cb.paragraphIndex === "number" ? cb.paragraphIndex : -1;
+      if (paragraphText) {
+        var transcriptParagraphText = pickTranscriptParagraph(data.paragraphs, paragraphText, paragraphIndex);
+        var paragraphTokens = textToTokens(transcriptParagraphText || paragraphText);
+        log("paragraph_debug_input", {
+          paragraphIndex: paragraphIndex,
+          paragraphTextStart: String(paragraphText || "").slice(0, 120),
+          transcriptParagraphStart: String(transcriptParagraphText || "").slice(0, 120),
+          paragraphTokenCount: paragraphTokens.length
+        });
+        var idx = findParagraphStartIndex(allTokens, paragraphTokens);
+        if (idx >= 0) {
+          startAt = Number(data.timedWords[idx].start || 0);
+          selectedWords = data.timedWords.slice(idx);
+          log("paragraph_match", {
+            tokenCount: paragraphTokens.length,
+            startTokenIndex: idx,
+            startAt: startAt,
+            paragraphIndex: paragraphIndex
+          });
+        } else {
+          log("paragraph_match_miss", { tokenCount: paragraphTokens.length, paragraphIndex: paragraphIndex });
+        }
+      } else if (text) {
+        var tokens = textToTokens(text);
+        var startIdx = findTokenSequenceIndex(allTokens, tokens.slice(0, Math.min(tokens.length, 24)));
+        if (startIdx >= 0) startAt = Number(data.timedWords[startIdx].start || 0);
+      }
+
+      audio.src = cfg.preGeneratedAudioUrl;
+      audio.load();
+      log("pregenerated_seek_begin", { startAt: startAt, src: cfg.preGeneratedAudioUrl });
+      if (startAt > 0) {
+        var seekTarget = Math.max(0, startAt);
+        await new Promise(function (resolve) {
+          var done = false;
+          var attemptedSeek = false;
+          function finish() {
+            if (done) return;
+            done = true;
+            audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+            audio.removeEventListener("canplay", onLoadedMetadata);
+            resolve();
+          }
+          function onLoadedMetadata() {
+            try {
+              audio.currentTime = seekTarget;
+              attemptedSeek = true;
+              log("pregenerated_seek_on_metadata", {
+                seekTarget: seekTarget,
+                currentTime: audio.currentTime,
+                readyState: audio.readyState
+              });
+            } catch (_e) { }
+            finish();
+          }
+          function trySeekNow() {
+            if (attemptedSeek) return;
+            try {
+              audio.currentTime = seekTarget;
+              attemptedSeek = true;
+              log("pregenerated_seek_try_now", {
+                seekTarget: seekTarget,
+                currentTime: audio.currentTime,
+                readyState: audio.readyState
+              });
+            } catch (_e) { }
+          }
+          audio.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+          audio.addEventListener("canplay", onLoadedMetadata, { once: true });
+          trySeekNow();
+          setTimeout(function () {
+            trySeekNow();
+            log("pregenerated_seek_timeout_finish", {
+              seekTarget: seekTarget,
+              attemptedSeek: attemptedSeek,
+              currentTime: audio.currentTime,
+              readyState: audio.readyState
+            });
+            finish();
+          }, 2200);
+        });
+      } else {
+        audio.currentTime = 0;
+      }
+      log("pregenerated_before_play", {
+        startAt: startAt,
+        currentTime: audio.currentTime,
+        readyState: audio.readyState
+      });
+      setupKaraokeTracking(selectedWords, cb);
+      currentAbort = new AbortController();
+      if (typeof cb.onChunkStart === "function") {
+        cb.onChunkStart({
+          chunkText: String(text || data.transcript || ""),
+          chunkIndex: 0,
+          startChar: 0
+        });
+      }
+      await audio.play();
+      log("pregenerated_after_play", {
+        startAt: startAt,
+        currentTime: audio.currentTime,
+        readyState: audio.readyState,
+        duration: audio.duration
+      });
+      await waitForAudioEndOrAbort(currentAbort.signal);
+      if (typeof cb.onChunkEnd === "function") {
+        var fullText = String(text || data.transcript || "");
+        cb.onChunkEnd({
+          chunkText: fullText,
+          chunkIndex: 0,
+          playedChars: fullText.length
+        });
+      }
+      currentAbort = null;
+      return { mode: "preGenerated", startAt: startAt };
+    }
 
     async function fetchChunkAudioUrl(chunk, signal) {
       log("chunk_request_start", { chars: chunk.length, format: cfg.format, voice: cfg.voice });
@@ -206,6 +543,9 @@
     }
 
     async function playText(text, callbacks) {
+      if (runtimeMode === "preGenerated") {
+        return playPreGenerated(text, callbacks);
+      }
       var cb = callbacks || {};
       var chunks = splitText(text, cfg.maxChunkChars);
       if (!chunks.length) throw new Error("No text to read");
@@ -242,6 +582,7 @@
         } catch (_e) { }
       }
       currentAbort = null;
+      clearKaraokeListeners();
       try {
         audio.pause();
         audio.removeAttribute("src");
@@ -257,16 +598,48 @@
       return audio.play();
     }
 
+    function setMode(mode) {
+      runtimeMode = mode === "preGenerated" ? "preGenerated" : "streaming";
+      log("mode_set", { mode: runtimeMode });
+      return runtimeMode;
+    }
+
+    function getMode() {
+      return runtimeMode;
+    }
+
+    async function playParagraph(paragraphText, callbacks) {
+      if (!String(paragraphText || "").trim()) throw new Error("No paragraph text provided");
+      return playText(null, Object.assign({}, callbacks || {}, { paragraphText: paragraphText }));
+    }
+
+    async function loadAssets() {
+      if (runtimeMode !== "preGenerated") return null;
+      return loadPreGeneratedData();
+    }
+
     return {
       audio: audio,
       playText: playText,
+      playParagraph: playParagraph,
       stop: stop,
       pause: pause,
       resume: resume
+      ,
+      setMode: setMode,
+      getMode: getMode,
+      loadAssets: loadAssets
     };
   }
 
   window.DualTranslationReadAloud = {
-    createMistralReadAloud: createMistralReadAloud
+    createMistralReadAloud: createMistralReadAloud,
+    setDefaultMode: function (mode) {
+      DEFAULT_MODE = mode === "preGenerated" ? "preGenerated" : "streaming";
+      return DEFAULT_MODE;
+    },
+    getDefaultMode: function () {
+      return DEFAULT_MODE;
+    }
   };
 })();

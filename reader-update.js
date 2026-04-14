@@ -6,8 +6,13 @@
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
   var HOVER_POPOVER_ID = "translation-hover-popover-root";
+  var READ_ALOUD_CONFIG = window.READ_ALOUD_VOICE_CONFIG || {};
   var READ_ALOUD_ENDPOINT = "/read-aloud/stream";
   var READ_ALOUD_MAX_CHUNK_CHARS = 2000;
+  var READ_ALOUD_MODE = String(window.READ_ALOUD_MODE || "preGenerated");
+  var READ_ALOUD_DEFAULT_LANGUAGE = READ_ALOUD_CONFIG.defaultLanguage || "en-US";
+  var READ_ALOUD_DEFAULT_VOICE = READ_ALOUD_CONFIG.defaultVoice || "en_paul_neutral";
+  var READ_ALOUD_VOICE_BY_LANGUAGE = READ_ALOUD_CONFIG.byLanguage || {};
   var listenInstallInfoLogged = { noConfig: false, noButton: false };
   /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
   var MOBILE_DUAL_MAX_WIDTH = 900;
@@ -25,6 +30,7 @@
     hoverToggleButton: null,
     inlineWrap: null,
     singleModeTokenized: false,
+    paragraphPlayInstalled: false,
     singleRowByIndex: null,
     singleModeHoverListenerAttached: false,
     sourceNodes: [],
@@ -51,7 +57,17 @@
       player: null,
       listenRequestGen: 0,
       activeChunkStart: 0,
-      activeChunkLength: 0
+      activeChunkLength: 0,
+      selectedVoice: "",
+      selectedLanguage: "",
+      activeListenBtn: null,
+      activeParagraphBtn: null,
+      karaoke: {
+        paragraphEl: null,
+        tokenEls: [],
+        mapByTimedWordIndex: [],
+        activeDomTokenIndex: -1
+      }
     }
   };
 
@@ -84,6 +100,7 @@
           "- Current dual mode flag:",
           "  window.DUAL_TRANSLATION_ENABLED = " + String(isDualTranslationEnabled()),
           "- Listen mode uses Mistral Voxtral TTS with streaming via /read-aloud/stream.",
+          "- Read-aloud mode selector: window.READ_ALOUD_MODE = 'preGenerated' | 'streaming' (default: preGenerated).",
           "- More commands can be added here later."
         ].join("\n")
       );
@@ -147,6 +164,7 @@
       "body.translation-hover-disabled .translation-inline-wrap .translation-token{cursor:default}" +
       ".translation-token_src{background:rgba(21,124,213,.2)}" +
       ".translation-token_tgt{background:rgba(255,190,92,.35)}" +
+      ".translation-token_karaoke{background:rgba(21,124,213,.28)!important}" +
       ".translation-token_pop{background:#fef9c3!important;border-radius:4px}" +
       ".translation-hover-popover{position:fixed;z-index:100000;box-sizing:border-box;width:min(280px,calc(100vw - 24px));max-width:280px;padding:20px;background:#fff;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.1),0 12px 28px rgba(0,0,0,.06);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.45;color:#1f2937;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s ease}" +
       ".translation-hover-popover_visible{opacity:1;visibility:visible}" +
@@ -201,17 +219,72 @@
       "grid-column:2;grid-row:1;padding-left:21px;align-self:start" +
       "}" +
       "}" +
-      ".translation-audio-player{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--bg-primary,#fff);border-top:1px solid var(--line-gray-primary,#d4d9e3);box-shadow:0 -6px 20px rgba(0,0,0,.08);padding:10px 14px;display:none}" +
+      ".translation-audio-player{position:fixed;left:0;right:0;bottom:0;z-index:900;width:100%;display:none}" +
       ".translation-audio-player_visible{display:block}" +
-      ".translation-audio-player__row{display:flex;align-items:center;gap:10px;max-width:1080px;margin:0 auto}" +
-      ".translation-audio-player__btn{height:34px;min-width:34px;border-radius:999px;border:1px solid var(--line-gray-primary,#d4d9e3);background:var(--bg-primary,#fff);cursor:pointer;padding:0 10px;font:inherit}" +
-      ".translation-audio-player__btn:hover{background:var(--surface-elevated,#f7f9fc)}" +
-      ".translation-audio-player__time{min-width:46px;font:12px/1.2 sans-serif;color:var(--text-base-secondary,#5a6175)}" +
-      ".translation-audio-player__seek{flex:1;accent-color:var(--new-blue-700,#2a8bdf)}" +
+      ".translation-audio-player__toolbar{display:flex;flex-direction:column;background:var(--background-base-secondary,#fcf4e9);box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.1));padding:0 24px 8px}" +
+      ".translation-audio-player__main{display:flex;align-items:center;justify-content:space-between;height:64px}" +
+      ".translation-audio-player__adjustment,.translation-audio-player__close{display:flex;align-items:center;gap:12px}" +
+      ".translation-audio-player__control{display:flex;align-items:center;justify-content:center;gap:16px}" +
+      ".translation-audio-player__btn{height:44px;min-width:44px;border:0;border-radius:10px;background:transparent;color:var(--text-banner-placeholder,#7c7c7c);cursor:pointer;padding:0 10px;font:600 13px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}" +
+      ".translation-audio-player__btn:hover{background-color:var(--line-gray-secondary,#eaeef1)}" +
+      ".translation-audio-player__btn:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:2px}" +
+      ".translation-audio-player__btn_square{width:44px;min-width:44px;padding:0}" +
+      ".translation-audio-player__btn_dialect{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 8px}" +
+      ".translation-audio-player__dialect-chevron{display:inline-flex;width:20px;height:20px;transform:rotate(270deg);color:var(--black-700,#7c7c7c)}" +
+      ".translation-audio-player__btn_play{color:var(--text-banner-placeholder,#7c7c7c)}" +
+      ".translation-audio-player__btn svg{display:block;width:28px;height:28px}" +
+      ".translation-audio-player__progress{display:flex;align-items:center;gap:8px;padding:0 2px 2px}" +
+      ".translation-audio-player__time{min-width:42px;font:12px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b)}" +
+      ".translation-audio-player__time_total{text-align:right}" +
+      ".translation-audio-player__seek{flex:1;min-width:0;height:14px;background:transparent;-webkit-appearance:none;appearance:none}" +
+      ".translation-audio-player__seek:focus{outline:none}" +
+      ".translation-audio-player__seek::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
+      ".translation-audio-player__seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;margin-top:-4px;background:var(--new-blue-700,#2a8bdf);border:0}" +
+      ".translation-audio-player__seek::-moz-range-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
+      ".translation-audio-player__seek::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--new-blue-700,#2a8bdf);border:0}" +
+      "@media only screen and (max-width:567px){.translation-audio-player__toolbar{padding:0 8px 8px}.translation-audio-player__control{gap:8px}}" +
       ".translation-listen-spinner{display:inline-flex;align-items:center;vertical-align:middle;flex-shrink:0;margin-left:6px;width:18px;height:18px;opacity:0;pointer-events:none;transition:opacity .15s ease}" +
       ".translation-listen-spinner_visible{opacity:1}" +
       ".translation-listen-spinner__ring{width:16px;height:16px;border:2px solid var(--line-gray-primary,#d4d9e3);border-top-color:var(--new-blue-700,#2a8bdf);border-radius:50%;box-sizing:border-box;animation:translation-listen-spin .65s linear infinite}" +
       "@keyframes translation-listen-spin{to{transform:rotate(360deg)}}" +
+      ".translation-paragraph-play-host{position:relative}" +
+      ".translation-paragraph-play-host::before{" +
+      "content:'';position:absolute;left:-44px;top:0;bottom:0;width:44px;" +
+      "}" +
+      ".translation-paragraph-play-host::after{" +
+      "content:'';position:absolute;left:-12px;top:0;bottom:0;width:2px;border-radius:999px;" +
+      "background:var(--new-blue-700,#2a8bdf);opacity:0;pointer-events:none;" +
+      "transition:opacity .15s ease" +
+      "}" +
+      ".translation-paragraph-play-host:hover::after{opacity:.28}" +
+      ".translation-paragraph-actions{" +
+      "position:absolute;left:-44px;top:0;display:flex;flex-direction:column;gap:6px;z-index:3;" +
+      "opacity:0;pointer-events:none;transition:opacity .12s ease" +
+      "}" +
+      ".translation-paragraph-play-host:hover .translation-paragraph-actions,.translation-paragraph-actions:focus-within{" +
+      "opacity:1;pointer-events:auto" +
+      "}" +
+      ".translation-paragraph-play{" +
+      "position:relative;left:auto;top:auto;transform:none;" +
+      "width:26px;height:26px;border:1px solid var(--line-gray-primary,#d4d9e3);border-radius:999px;" +
+      "display:inline-flex;align-items:center;justify-content:center;" +
+      "background:#472c1f;color:#fff;" +
+      "opacity:1;pointer-events:auto;cursor:pointer;z-index:1;" +
+      "box-shadow:0 1px 3px rgba(0,0,0,.08);" +
+      "transition:opacity .12s ease,background-color .12s ease,border-color .12s ease" +
+      "}" +
+      ".translation-paragraph-play:hover{opacity:.9}" +
+      ".translation-paragraph-play svg{display:block;width:13px;height:13px}" +
+      ".translation-paragraph-play:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:1px}" +
+      ".translation-paragraph-translate{" +
+      "width:26px;height:26px;border:1px solid var(--line-gray-primary,#d4d9e3);border-radius:999px;" +
+      "display:inline-flex;align-items:center;justify-content:center;background:#472c1f;color:#fff;" +
+      "cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);padding:0;overflow:hidden;" +
+      "transition:background-color .12s ease,border-color .12s ease,color .12s ease,opacity .12s ease" +
+      "}" +
+      ".translation-paragraph-translate:hover{opacity:.9}" +
+      ".translation-paragraph-translate svg{display:block;width:78%;height:78%}" +
+      ".translation-paragraph-translate:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:1px}" +
       ".translation-history-item_just-added .history-item{" +
       "animation:translation-history-item-flash 1.1s ease-out 1" +
       "}" +
@@ -607,6 +680,151 @@
     );
   }
 
+  function listenPauseIconSvg() {
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+      '<path d="M6.5 4.8C6.5 4.36 6.86 4 7.3 4H8.9C9.34 4 9.7 4.36 9.7 4.8V15.2C9.7 15.64 9.34 16 8.9 16H7.3C6.86 16 6.5 15.64 6.5 15.2V4.8Z" fill="var(--text-banner-placeholder,#7c7c7c)"></path>' +
+      '<path d="M10.3 4.8C10.3 4.36 10.66 4 11.1 4H12.7C13.14 4 13.5 4.36 13.5 4.8V15.2C13.5 15.64 13.14 16 12.7 16H11.1C10.66 16 10.3 15.64 10.3 15.2V4.8Z" fill="var(--text-banner-placeholder,#7c7c7c)"></path>' +
+      "</svg>"
+    );
+  }
+
+  function paragraphPauseIconSvg() {
+    return (
+      '<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">' +
+      '<rect x="7" y="6" width="3.5" height="12" rx="1"></rect>' +
+      '<rect x="13.5" y="6" width="3.5" height="12" rx="1"></rect>' +
+      "</svg>"
+    );
+  }
+
+  function setTopListenButtonVisual(listenBtn, isPause) {
+    if (!listenBtn) return;
+    if (!listenBtn.dataset.translationListenPlayHtml) {
+      listenBtn.dataset.translationListenPlayHtml = listenBtn.innerHTML;
+    }
+    if (isPause) {
+      listenBtn.innerHTML = "Stop";
+      listenBtn.setAttribute("aria-label", "Stop");
+      return;
+    }
+    if (listenBtn.dataset.translationListenPlayHtml) {
+      listenBtn.innerHTML = listenBtn.dataset.translationListenPlayHtml;
+    }
+    listenBtn.setAttribute("aria-label", "Listen");
+  }
+
+  function setParagraphButtonVisual(btn, isPause) {
+    if (!btn) return;
+    btn.innerHTML = isPause ? paragraphPauseIconSvg() : paragraphPlayIconSvg();
+    btn.setAttribute("aria-label", isPause ? "Pause reading" : "Read this paragraph aloud");
+    btn.setAttribute("title", isPause ? "Pause reading" : "Read this paragraph aloud");
+  }
+
+  function clearActiveTriggerButtons() {
+    setTopListenButtonVisual(state.audio.activeListenBtn, false);
+    setParagraphButtonVisual(state.audio.activeParagraphBtn, false);
+    state.audio.activeListenBtn = null;
+    state.audio.activeParagraphBtn = null;
+  }
+
+  function clearKaraokeDomHighlight() {
+    var karaoke = state.audio.karaoke;
+    if (!karaoke || !karaoke.tokenEls || !karaoke.tokenEls.length) {
+      if (karaoke) karaoke.activeDomTokenIndex = -1;
+      return;
+    }
+    if (karaoke.activeDomTokenIndex >= 0 && karaoke.tokenEls[karaoke.activeDomTokenIndex]) {
+      karaoke.tokenEls[karaoke.activeDomTokenIndex].classList.remove("translation-token_karaoke");
+    }
+    karaoke.activeDomTokenIndex = -1;
+  }
+
+  function resetKaraokeState() {
+    clearKaraokeDomHighlight();
+    state.audio.karaoke.paragraphEl = null;
+    state.audio.karaoke.tokenEls = [];
+    state.audio.karaoke.mapByTimedWordIndex = [];
+  }
+
+  function normalizeKaraokeToken(token) {
+    return String(token || "")
+      .toLowerCase()
+      .replace(/^[^a-z0-9']+|[^a-z0-9']+$/g, "")
+      .trim();
+  }
+
+  function buildKaraokeDomMap(paragraphEl) {
+    var tokenEls = Array.prototype.slice.call(paragraphEl.querySelectorAll(".translation-token"));
+    var normalizedDomTokens = tokenEls.map(function (el) {
+      return normalizeKaraokeToken(el.textContent || "");
+    });
+    return {
+      tokenEls: tokenEls,
+      normalizedDomTokens: normalizedDomTokens
+    };
+  }
+
+  function createTimedWordToDomIndexMap(normalizedDomTokens, paragraphText) {
+    var paragraphTokens = String(paragraphText || "")
+      .match(/[a-z0-9']+/gi) || [];
+    var normalizedParaTokens = paragraphTokens.map(normalizeKaraokeToken).filter(Boolean);
+    var map = [];
+    var domIdx = 0;
+    for (var i = 0; i < normalizedParaTokens.length; i += 1) {
+      var token = normalizedParaTokens[i];
+      while (domIdx < normalizedDomTokens.length && normalizedDomTokens[domIdx] !== token) {
+        domIdx += 1;
+      }
+      if (domIdx >= normalizedDomTokens.length) {
+        map.push(-1);
+      } else {
+        map.push(domIdx);
+        domIdx += 1;
+      }
+    }
+    return map;
+  }
+
+  function onKaraokeWordChange(word) {
+    var karaoke = state.audio.karaoke;
+    if (!karaoke) return;
+    clearKaraokeDomHighlight();
+    if (!word || typeof word.index !== "number") return;
+    var domIdx = karaoke.mapByTimedWordIndex[word.index];
+    if (typeof domIdx !== "number" || domIdx < 0 || !karaoke.tokenEls[domIdx]) return;
+    karaoke.tokenEls[domIdx].classList.add("translation-token_karaoke");
+    karaoke.activeDomTokenIndex = domIdx;
+  }
+
+  function setActiveListenTriggerButton(btn) {
+    if (state.audio.activeParagraphBtn && state.audio.activeParagraphBtn !== btn) {
+      setParagraphButtonVisual(state.audio.activeParagraphBtn, false);
+    }
+    if (state.audio.activeListenBtn && state.audio.activeListenBtn !== btn) {
+      setTopListenButtonVisual(state.audio.activeListenBtn, false);
+    }
+    state.audio.activeParagraphBtn = null;
+    state.audio.activeListenBtn = btn || null;
+  }
+
+  function setActiveParagraphTriggerButton(btn) {
+    if (state.audio.activeListenBtn && state.audio.activeListenBtn !== btn) {
+      setTopListenButtonVisual(state.audio.activeListenBtn, false);
+    }
+    if (state.audio.activeParagraphBtn && state.audio.activeParagraphBtn !== btn) {
+      setParagraphButtonVisual(state.audio.activeParagraphBtn, false);
+    }
+    state.audio.activeListenBtn = null;
+    state.audio.activeParagraphBtn = btn || null;
+  }
+
+  function syncTriggerButtonsUi() {
+    var shouldShowPause = state.audio.isPlaying && !state.audio.isPaused;
+    setTopListenButtonVisual(state.audio.activeListenBtn, shouldShowPause);
+    setParagraphButtonVisual(state.audio.activeParagraphBtn, shouldShowPause);
+  }
+
   function ensureListenSpinnerBesideButton(listenBtn) {
     var next = listenBtn.nextElementSibling;
     if (next && next.classList && next.classList.contains("translation-listen-spinner")) return next;
@@ -859,6 +1077,7 @@
     current.textContent = formatTime(getEstimatedCurrentSeconds());
     total.textContent = formatTime(getEstimatedTotalSeconds());
     playPause.textContent = state.audio.isPlaying && !state.audio.isPaused ? "Pause" : "Play";
+    syncTriggerButtonsUi();
   }
 
   function ensureAudioText() {
@@ -866,6 +1085,36 @@
     state.audio.text = sourceParagraphs().join("\n\n");
     state.audio.totalChars = state.audio.text.length;
     return state.audio.text;
+  }
+
+  function normalizeLanguageCode(input) {
+    var raw = String(input || "").trim().replace(/_/g, "-");
+    if (!raw) return "";
+    var parts = raw.split("-").filter(Boolean);
+    if (!parts.length) return "";
+    var lang = parts[0].toLowerCase();
+    var region = parts[1] ? parts[1].toUpperCase() : "";
+    return region ? lang + "-" + region : lang;
+  }
+
+  function guessLanguageFromPage() {
+    var htmlLang = normalizeLanguageCode(
+      (document.documentElement && document.documentElement.lang) || ""
+    );
+    if (htmlLang) return htmlLang;
+    var ogLocale = document.querySelector('meta[property="og:locale"]');
+    var ogLang = normalizeLanguageCode(ogLocale ? ogLocale.getAttribute("content") : "");
+    if (ogLang) return ogLang;
+    return READ_ALOUD_DEFAULT_LANGUAGE;
+  }
+
+  function resolveVoiceForLanguage(languageCode) {
+    var normalized = normalizeLanguageCode(languageCode) || READ_ALOUD_DEFAULT_LANGUAGE;
+    var keyExact = normalized.toLowerCase();
+    if (READ_ALOUD_VOICE_BY_LANGUAGE[keyExact]) return READ_ALOUD_VOICE_BY_LANGUAGE[keyExact];
+    var base = keyExact.split("-")[0];
+    if (READ_ALOUD_VOICE_BY_LANGUAGE[base]) return READ_ALOUD_VOICE_BY_LANGUAGE[base];
+    return READ_ALOUD_VOICE_BY_LANGUAGE.en || READ_ALOUD_DEFAULT_VOICE;
   }
 
   function showAudioPlayer() {
@@ -954,11 +1203,26 @@
     state.audio.isPaused = false;
     state.audio.activeChunkStart = 0;
     state.audio.activeChunkLength = 0;
+    resetKaraokeState();
+    clearActiveTriggerButtons();
     updateAudioUi();
   }
 
-  function ensureReadAloudPlayer() {
-    if (state.audio.player) return state.audio.player;
+  function ensureReadAloudPlayer(voice, language) {
+    var nextVoice = String(voice || "").trim() || resolveVoiceForLanguage(language);
+    var nextLanguage = normalizeLanguageCode(language) || READ_ALOUD_DEFAULT_LANGUAGE;
+    if (
+      state.audio.player &&
+      state.audio.selectedVoice === nextVoice &&
+      state.audio.selectedLanguage === nextLanguage
+    ) {
+      return state.audio.player;
+    }
+    if (state.audio.player && typeof state.audio.player.stop === "function") {
+      try {
+        state.audio.player.stop();
+      } catch (_e) { }
+    }
     if (
       !window.DualTranslationReadAloud ||
       typeof window.DualTranslationReadAloud.createMistralReadAloud !== "function"
@@ -966,14 +1230,17 @@
       throw new Error("read_aloud.js is not loaded.");
     }
     var player = window.DualTranslationReadAloud.createMistralReadAloud({
+      mode: READ_ALOUD_MODE === "streaming" ? "streaming" : "preGenerated",
       endpoint: READ_ALOUD_ENDPOINT,
       format: "mp3",
-      voice: "gb_oliver_excited",
-      language: "en",
+      voice: nextVoice,
+      language: nextLanguage,
       maxChunkChars: READ_ALOUD_MAX_CHUNK_CHARS,
       audio: ensureRemoteAudioEl()
     });
     state.audio.player = player;
+    state.audio.selectedVoice = nextVoice;
+    state.audio.selectedLanguage = nextLanguage;
     return player;
   }
 
@@ -1014,17 +1281,31 @@
 
   async function playMistralFromListen() {
     var text = ensureAudioText();
+    await playMistralText(text);
+  }
+
+  async function playMistralText(text) {
+    text = String(text || "").trim();
     if (!text.length) throw new Error("No text to read");
-    var player = ensureReadAloudPlayer();
+    state.audio.text = text;
+    state.audio.totalChars = text.length;
+    state.audio.currentChar = 0;
+    var language = guessLanguageFromPage();
+    var voice = resolveVoiceForLanguage(language);
+    var player = ensureReadAloudPlayer(voice, language);
     logDebug("mistral_play_start", {
       totalChars: text.length,
       hasRemoteEl: Boolean(state.audio.remoteEl),
-      endpoint: READ_ALOUD_ENDPOINT
+      endpoint: READ_ALOUD_ENDPOINT,
+      language: language,
+      voice: voice
     });
     state.audio.backend = "remote";
     state.audio.isPlaying = true;
     state.audio.isPaused = false;
     state.audio.remoteDuration = 0;
+    state.audio.activeChunkStart = 0;
+    state.audio.activeChunkLength = state.audio.totalChars;
     updateAudioUi();
     await player.playText(text, {
       onChunkStart: function (ctx) {
@@ -1047,6 +1328,168 @@
     state.audio.activeChunkStart = state.audio.totalChars;
     state.audio.activeChunkLength = 0;
     updateAudioUi();
+  }
+
+  function paragraphPlayIconSvg() {
+    return (
+      '<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">' +
+      '<path d="M8 6.5v11a1 1 0 0 0 1.53.85l8.5-5.5a1 1 0 0 0 0-1.7l-8.5-5.5A1 1 0 0 0 8 6.5z"/>' +
+      "</svg>"
+    );
+  }
+
+  function createParagraphPlayButton() {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "translation-paragraph-play";
+    btn.setAttribute("aria-label", "Read this paragraph aloud");
+    btn.setAttribute("title", "Read this paragraph aloud");
+    btn.innerHTML = paragraphPlayIconSvg();
+    return btn;
+  }
+
+  function paragraphTranslateIconSvg() {
+    return (
+      '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M14.7886 17.8604C14.9264 17.4915 14.8348 17.0761 14.5547 16.7993L12.0517 14.3258L12.0867 14.2908C14.1167 12.0275 15.5634 9.42583 16.415 6.6725H18.8334C19.3856 6.6725 19.8334 6.22479 19.8334 5.6725V5.33333C19.8334 4.78105 19.3856 4.33333 18.8334 4.33333H11.6667V3C11.6667 2.44772 11.219 2 10.6667 2H10.3334C9.78107 2 9.33335 2.44772 9.33335 3V4.33333H2.16669C1.6144 4.33333 1.16669 4.78105 1.16669 5.33333V5.655C1.16669 6.20728 1.6144 6.655 2.16669 6.655H14.1984C13.4109 8.90667 12.18 11.0417 10.5 12.9083C9.55647 11.8583 8.75408 10.7288 8.09287 9.53905C7.91062 9.21113 7.56906 9 7.1939 9H7.01525C6.29036 9 5.81007 9.74616 6.15675 10.3828C6.91475 11.7747 7.84862 13.0971 8.94835 14.32L3.73138 19.4754C3.33689 19.8652 3.33501 20.5017 3.72717 20.8938L3.95958 21.1262C4.3501 21.5168 4.98327 21.5168 5.37379 21.1262L10.5 16L13.0286 18.5286C13.5433 19.0433 14.4178 18.8532 14.6725 18.1713L14.7886 17.8604ZM21.8267 11.9822C21.6803 11.5919 21.3072 11.3333 20.8904 11.3333H19.943C19.5262 11.3333 19.1531 11.5919 19.0067 11.9822L14.5067 23.9822C14.2615 24.636 14.7448 25.3333 15.443 25.3333H15.6404C16.0572 25.3333 16.4303 25.0748 16.5767 24.6845L17.6459 21.8333H23.1875L24.2567 24.6845C24.4031 25.0748 24.7762 25.3333 25.193 25.3333H25.3904C26.0886 25.3333 26.5718 24.636 26.3267 23.9822L21.8267 11.9822ZM18.5209 19.5L20.4167 14.4425L22.3125 19.5H18.5209Z" fill="var(--white,#fff)"></path>' +
+      "</svg>"
+    );
+  }
+
+  function createParagraphTranslateButton() {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "translation-paragraph-translate";
+    btn.setAttribute("aria-label", "Translate this paragraph");
+    btn.setAttribute("title", "Translate this paragraph");
+    btn.innerHTML = paragraphTranslateIconSvg();
+    return btn;
+  }
+
+  function openParagraphTranslationModal(p) {
+    if (!p) return;
+    var text = (p.textContent || "").trim();
+    if (!text) return;
+    var selection = window.getSelection ? window.getSelection() : null;
+    if (!selection) return;
+    try {
+      selection.removeAllRanges();
+      var range = document.createRange();
+      range.selectNodeContents(p);
+      selection.addRange(range);
+      ["mouseup", "click", "dblclick"].forEach(function (eventName) {
+        p.dispatchEvent(new MouseEvent(eventName, { bubbles: true, cancelable: true, view: window }));
+      });
+    } catch (_e) { }
+  }
+
+  function getParagraphPlainText(p) {
+    if (!p) return "";
+    var clone = p.cloneNode(true);
+    var actions = clone.querySelector(".translation-paragraph-actions");
+    if (actions && actions.parentNode) actions.parentNode.removeChild(actions);
+    return String(clone.textContent || "").trim();
+  }
+
+  function installParagraphPlayButtons() {
+    if (state.paragraphPlayInstalled) return;
+    var nodes = sourceNodes();
+    if (!nodes.length) return;
+    state.paragraphPlayInstalled = true;
+    nodes.forEach(function (p, paragraphIndex) {
+      if (p.dataset.translationParagraphPlayBound === "1") return;
+      p.dataset.translationParagraphPlayBound = "1";
+      p.classList.add("translation-paragraph-play-host");
+      var actions = document.createElement("div");
+      actions.className = "translation-paragraph-actions";
+      var btn = createParagraphPlayButton();
+      var translateBtn = createParagraphTranslateButton();
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var text = getParagraphPlainText(p);
+        logDebug("paragraph_click", {
+          paragraphIndex: paragraphIndex,
+          textStart: String(text || "").slice(0, 140),
+          textLength: String(text || "").length
+        });
+        if (!text) return;
+        if (state.audio.activeParagraphBtn === btn && state.audio.remoteEl && state.audio.remoteEl.src) {
+          pauseOrResumeAudio();
+          return;
+        }
+        setActiveParagraphTriggerButton(btn);
+        ensureAudioPlayer();
+        showAudioPlayer();
+        stopAudioPlayback();
+        setActiveParagraphTriggerButton(btn);
+        var karaokeDom = buildKaraokeDomMap(p);
+        state.audio.karaoke.paragraphEl = p;
+        state.audio.karaoke.tokenEls = karaokeDom.tokenEls;
+        state.audio.karaoke.mapByTimedWordIndex = createTimedWordToDomIndexMap(
+          karaokeDom.normalizedDomTokens,
+          text
+        );
+        var paragraphLanguage = guessLanguageFromPage();
+        var paragraphVoice = resolveVoiceForLanguage(paragraphLanguage);
+        var player = ensureReadAloudPlayer(paragraphVoice, paragraphLanguage);
+        logDebug("paragraph_player_ready", {
+          paragraphIndex: paragraphIndex,
+          mode: (player && typeof player.getMode === "function") ? player.getMode() : "unknown",
+          language: paragraphLanguage,
+          voice: paragraphVoice
+        });
+        if (player && typeof player.playParagraph === "function") {
+          state.audio.backend = "remote";
+          state.audio.isPlaying = true;
+          state.audio.isPaused = false;
+          state.audio.currentChar = 0;
+          state.audio.text = text;
+          state.audio.totalChars = text.length;
+          updateAudioUi();
+          player.playParagraph(text, {
+            onWordChange: onKaraokeWordChange,
+            paragraphIndex: paragraphIndex
+          }).then(function () {
+            logDebug("paragraph_play_done", { paragraphIndex: paragraphIndex });
+            state.audio.currentChar = state.audio.totalChars;
+            state.audio.isPlaying = false;
+            state.audio.isPaused = false;
+            updateAudioUi();
+          }).catch(function (err) {
+            if (err && err.name === "AbortError") return;
+            var msg = err && err.message ? String(err.message) : String(err);
+            console.error(LOG_PREFIX, "Paragraph read aloud failed:", msg);
+            logWarn("paragraph_tts_error", { message: msg });
+            state.audio.isPlaying = false;
+            state.audio.isPaused = false;
+            state.audio.backend = null;
+            resetKaraokeState();
+            updateAudioUi();
+          });
+          return;
+        }
+        playMistralText(text).catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          var msg = err && err.message ? String(err.message) : String(err);
+          console.error(LOG_PREFIX, "Paragraph read aloud failed:", msg);
+          logWarn("paragraph_tts_error", { message: msg });
+          state.audio.isPlaying = false;
+          state.audio.isPaused = false;
+          state.audio.backend = null;
+          resetKaraokeState();
+          updateAudioUi();
+        });
+      });
+      translateBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openParagraphTranslationModal(p);
+      });
+      actions.appendChild(btn);
+      actions.appendChild(translateBtn);
+      p.appendChild(actions);
+    });
   }
 
   function pauseOrResumeAudio() {
@@ -1093,14 +1536,37 @@
     var root = document.createElement("div");
     root.className = "translation-audio-player";
     root.innerHTML =
-      '<div class="translation-audio-player__row">' +
-      '<button type="button" class="translation-audio-player__btn" data-audio-action="back">-15s</button>' +
-      '<button type="button" class="translation-audio-player__btn" data-audio-action="play-pause">Play</button>' +
-      '<button type="button" class="translation-audio-player__btn" data-audio-action="forward">+15s</button>' +
+      '<div class="translation-audio-player__toolbar">' +
+      '<div class="translation-audio-player__main">' +
+      '<div class="translation-audio-player__adjustment">' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_dialect" data-audio-action="dialect" aria-label="Dialect">' +
+      "<span>EN</span>" +
+      '<span class="translation-audio-player__dialect-chevron" aria-hidden="true">&#8250;</span>' +
+      "</button>" +
+      "</div>" +
+      '<div class="translation-audio-player__control">' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="back" aria-label="Back 15 seconds">' +
+      '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.9604 22.2852C14.4131 22.2852 14.0234 21.9048 14.0234 21.3574C14.0234 20.8193 14.4131 20.4668 14.9604 20.4668C18.5601 20.4668 21.4453 17.5908 21.4453 14.0005C21.4453 10.4102 18.5601 7.53418 14.9604 7.53418C11.3423 7.53418 8.47559 10.3823 8.47559 13.9727C8.47559 14.585 8.52197 15.1509 8.62402 15.624L11.1289 13.1006C11.3052 12.9336 11.5 12.8408 11.7412 12.8408C12.2515 12.8408 12.6411 13.2305 12.6411 13.7222C12.6411 13.9912 12.5576 14.2046 12.3906 14.3623L8.5498 18.166C8.35498 18.3608 8.13232 18.4536 7.88184 18.4536C7.64062 18.4536 7.39941 18.3516 7.21387 18.166L3.34521 14.3623C3.16895 14.2046 3.07617 13.9819 3.07617 13.7222C3.07617 13.2305 3.48438 12.8408 3.98535 12.8408C4.22656 12.8408 4.43994 12.9336 4.60693 13.0913L6.82422 15.3364C6.74072 14.9282 6.69434 14.4551 6.69434 13.9727C6.69434 9.38037 10.3682 5.71582 14.9604 5.71582C19.562 5.71582 23.2637 9.4082 23.2637 14.0005C23.2637 18.5928 19.562 22.2852 14.9604 22.2852Z" fill="currentColor"></path></svg>' +
+      "</button>" +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_play" data-audio-action="play-pause" aria-label="Play or pause">Play</button>' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="stop" aria-label="Stop playback">' +
+      '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor"></rect></svg>' +
+      "</button>" +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="forward" aria-label="Forward 15 seconds">' +
+      '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.0396 5.71484C17.6318 5.71484 21.3057 9.38867 21.3057 13.9717C21.3057 14.4541 21.2593 14.9272 21.1758 15.3354L23.3931 13.0903C23.5601 12.9326 23.7734 12.8491 24.0146 12.8491C24.5156 12.8491 24.9238 13.2295 24.9238 13.7305C24.9238 13.9902 24.8311 14.2036 24.6548 14.3613L20.7861 18.1743C20.6006 18.3599 20.3594 18.4619 20.1182 18.4619C19.8677 18.4619 19.645 18.3691 19.4502 18.1743L15.6094 14.3613C15.4424 14.2036 15.3589 13.9902 15.3589 13.7305C15.3589 13.2295 15.7485 12.8491 16.2588 12.8491C16.5 12.8491 16.6948 12.9326 16.8711 13.0996L19.376 15.623C19.478 15.1499 19.5244 14.584 19.5244 13.9717C19.5244 10.3906 16.6577 7.5332 13.0396 7.5332C9.43994 7.5332 6.55469 10.4092 6.55469 13.9995C6.55469 17.5898 9.43994 20.4751 13.0396 20.4751C13.5869 20.4751 13.9766 20.8276 13.9766 21.3564C13.9766 21.9038 13.5869 22.2842 13.0396 22.2842C8.43799 22.2842 4.73633 18.5918 4.73633 13.9995C4.73633 9.40723 8.43799 5.71484 13.0396 5.71484Z" fill="currentColor"></path></svg>' +
+      "</button>" +
+      "</div>" +
+      '<div class="translation-audio-player__close">' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="close" aria-label="Close player">' +
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7141 4.22865C12.9744 3.9683 12.9744 3.54619 12.7141 3.28584C12.4537 3.02549 12.0316 3.02549 11.7712 3.28584L8.00001 7.05708L4.22877 3.28584C3.96842 3.02549 3.54631 3.02549 3.28596 3.28584C3.02561 3.54619 3.02561 3.9683 3.28596 4.22865L7.0572 7.99988L3.28596 11.7711C3.02561 12.0315 3.02561 12.4536 3.28596 12.7139C3.54631 12.9743 3.96842 12.9743 4.22877 12.7139L8.00001 8.94269L11.7712 12.7139C12.0316 12.9743 12.4537 12.9743 12.7141 12.7139C12.9744 12.4536 12.9744 12.0315 12.7141 11.7711L8.94281 7.99988L12.7141 4.22865Z" fill="currentColor"></path></svg>' +
+      "</button>" +
+      "</div>" +
+      "</div>" +
+      '<div class="translation-audio-player__progress">' +
       '<span class="translation-audio-player__time" data-audio-time="current">0:00</span>' +
-      '<input class="translation-audio-player__seek" type="range" min="0" max="0" value="0" step="1" data-audio-seek="1" />' +
-      '<span class="translation-audio-player__time" data-audio-time="total">0:00</span>' +
-      '<button type="button" class="translation-audio-player__btn" data-audio-action="stop">Stop</button>' +
+      '<input class="translation-audio-player__seek" type="range" min="0" max="0" value="0" step="1" data-audio-seek="1" aria-label="Playback progress" />' +
+      '<span class="translation-audio-player__time translation-audio-player__time_total" data-audio-time="total">0:00</span>' +
+      "</div>" +
       "</div>";
     document.body.appendChild(root);
     state.audio.ui = {
@@ -1109,6 +1575,7 @@
       back: root.querySelector('[data-audio-action="back"]'),
       forward: root.querySelector('[data-audio-action="forward"]'),
       stop: root.querySelector('[data-audio-action="stop"]'),
+      close: root.querySelector('[data-audio-action="close"]'),
       seek: root.querySelector('[data-audio-seek="1"]'),
       current: root.querySelector('[data-audio-time="current"]'),
       total: root.querySelector('[data-audio-time="total"]')
@@ -1122,11 +1589,21 @@
       var jumpChars = Math.round(15 * 13 * state.audio.rate);
       seekAudioTo(state.audio.currentChar + jumpChars);
     });
-    state.audio.ui.stop.addEventListener("click", function () {
-      stopAudioPlayback();
-      state.audio.currentChar = 0;
-      updateAudioUi();
-    });
+    if (state.audio.ui.stop) {
+      state.audio.ui.stop.addEventListener("click", function () {
+        stopAudioPlayback();
+        state.audio.currentChar = 0;
+        updateAudioUi();
+      });
+    }
+    if (state.audio.ui.close) {
+      state.audio.ui.close.addEventListener("click", function () {
+        stopAudioPlayback();
+        state.audio.currentChar = 0;
+        root.classList.remove("translation-audio-player_visible");
+        updateAudioUi();
+      });
+    }
     state.audio.ui.seek.addEventListener("input", function (event) {
       state.audio.currentChar = Number(event.target.value) || 0;
       updateAudioUi();
@@ -1159,6 +1636,13 @@
       function (event) {
         event.preventDefault();
         event.stopPropagation();
+        if (state.audio.activeListenBtn === listenBtn && state.audio.remoteEl && state.audio.remoteEl.src) {
+          stopAudioPlayback();
+          state.audio.currentChar = 0;
+          updateAudioUi();
+          return;
+        }
+        setActiveListenTriggerButton(listenBtn);
         console.log(LOG_PREFIX + " Listen click — calling Mistral Voxtral streaming TTS.");
         var reqGen = ++state.audio.listenRequestGen;
         setListenLoading(listenBtn, true);
@@ -1166,6 +1650,7 @@
         showAudioPlayer();
         ensureAudioText();
         stopAudioPlayback();
+        setActiveListenTriggerButton(listenBtn);
         playMistralFromListen()
           .catch(function (err) {
             if (err && err.name === "AbortError") return;
@@ -1712,6 +2197,17 @@
   }
 
   function onReaderWordActivate(event) {
+    if (
+      event &&
+      event.target &&
+      event.target.closest &&
+      (
+        event.target.closest(".translation-paragraph-play") ||
+        event.target.closest(".translation-paragraph-translate")
+      )
+    ) {
+      return;
+    }
     var root = getReadingHoverRoot();
     if (!root || !root.contains(event.target)) return;
     // Single-click selection can be applied after the event dispatch.
@@ -1877,6 +2373,7 @@
     installHistoryDedupObserver();
     installListenButtonAudioWatcher();
     attachSingleModeHoverHandlers();
+    installParagraphPlayButtons();
 
     if (openBtn && shouldAutoOpenDualOnLoad() && !isMobileViewport()) {
       requestAnimationFrame(function () {
