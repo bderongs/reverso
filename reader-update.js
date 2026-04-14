@@ -748,10 +748,13 @@
   }
 
   function normalizeKaraokeToken(token) {
-    return String(token || "")
+    var normalized = String(token || "")
       .toLowerCase()
       .replace(/^[^a-z0-9']+|[^a-z0-9']+$/g, "")
       .trim();
+    // Make transcript ordinals (e.g. 13th) align with rendered numeric tokens (e.g. 13).
+    normalized = normalized.replace(/^(\d+)(st|nd|rd|th)$/i, "$1");
+    return normalized;
   }
 
   function buildKaraokeDomMap(paragraphEl) {
@@ -771,16 +774,22 @@
     var normalizedParaTokens = paragraphTokens.map(normalizeKaraokeToken).filter(Boolean);
     var map = [];
     var domIdx = 0;
+    var LOOKAHEAD = 10;
     for (var i = 0; i < normalizedParaTokens.length; i += 1) {
       var token = normalizedParaTokens[i];
-      while (domIdx < normalizedDomTokens.length && normalizedDomTokens[domIdx] !== token) {
-        domIdx += 1;
+      var found = -1;
+      var maxIdx = Math.min(normalizedDomTokens.length - 1, domIdx + LOOKAHEAD);
+      for (var scan = domIdx; scan <= maxIdx; scan += 1) {
+        if (normalizedDomTokens[scan] === token) {
+          found = scan;
+          break;
+        }
       }
-      if (domIdx >= normalizedDomTokens.length) {
+      if (found < 0) {
         map.push(-1);
       } else {
-        map.push(domIdx);
-        domIdx += 1;
+        map.push(found);
+        domIdx = found + 1;
       }
     }
     return map;
@@ -789,10 +798,10 @@
   function onKaraokeWordChange(word) {
     var karaoke = state.audio.karaoke;
     if (!karaoke) return;
-    clearKaraokeDomHighlight();
     if (!word || typeof word.index !== "number") return;
     var domIdx = karaoke.mapByTimedWordIndex[word.index];
     if (typeof domIdx !== "number" || domIdx < 0 || !karaoke.tokenEls[domIdx]) return;
+    clearKaraokeDomHighlight();
     karaoke.tokenEls[domIdx].classList.add("translation-token_karaoke");
     karaoke.activeDomTokenIndex = domIdx;
   }

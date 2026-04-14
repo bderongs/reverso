@@ -294,17 +294,24 @@
       if (!timedWords || !timedWords.length) return;
       var cb = callbacks || {};
       var searchIndex = 0;
+      var offsetSec = Number(window.READ_ALOUD_TRANSCRIPT_OFFSET_SEC || 0);
       karaokeState.onTimeUpdate = function () {
-        var current = Number(audio.currentTime || 0);
+        // Convert audio time to transcript timeline (offset lets us calibrate drift).
+        var audioCurrent = Number(audio.currentTime || 0);
+        var current = audioCurrent - offsetSec;
         while (searchIndex + 1 < timedWords.length && timedWords[searchIndex + 1].start <= current) {
           searchIndex += 1;
         }
         while (searchIndex > 0 && timedWords[searchIndex].start > current) {
           searchIndex -= 1;
         }
-        var active = -1;
-        if (timedWords[searchIndex] && timedWords[searchIndex].start <= current && current <= timedWords[searchIndex].end + 0.12) {
-          active = searchIndex;
+        var active = karaokeState.activeWordIndex;
+        if (timedWords[searchIndex] && timedWords[searchIndex].start <= current) {
+          var nextStart = timedWords[searchIndex + 1] ? timedWords[searchIndex + 1].start : Infinity;
+          // Keep word active until just before next word to avoid flicker on timestamp gaps.
+          if (current <= nextStart + 0.15) {
+            active = searchIndex;
+          }
         }
         if (active !== karaokeState.activeWordIndex) {
           karaokeState.activeWordIndex = active;
