@@ -6,6 +6,15 @@
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
   var HOVER_POPOVER_ID = "translation-hover-popover-root";
+  var QUICK_SEARCH_IMAGE_PATH = "quick_search.png";
+  var QUICK_SEARCH_DEMO_MODAL_ID = "translation-quick-search-demo-modal-root";
+  var PARAGRAPH_SEARCH_IMAGE_PATH = "paragraph_search.png";
+  var PARAGRAPH_DEMO_MODAL_ID = "translation-paragraph-demo-modal-root";
+  var ARTICLE_VOCAB_GLOBAL = "READER_ARTICLE_VOCAB";
+  var VOCAB_MARKUP_CLASS = "vocab-word";
+  var VOCAB_MARKUP_INDEX_ATTR = "data-vocab-index";
+  var VOCAB_TOOLTIP_TEXT = "This word comes from a vocabulary list";
+  var PRACTICE_SAVED_WORDS_MIN = 3;
   var READ_ALOUD_CONFIG = window.READ_ALOUD_VOICE_CONFIG || {};
   var READ_ALOUD_ENDPOINT = "/read-aloud/stream";
   var READ_ALOUD_MAX_CHUNK_CHARS = 2000;
@@ -13,6 +22,12 @@
   var READ_ALOUD_DEFAULT_LANGUAGE = READ_ALOUD_CONFIG.defaultLanguage || "en-US";
   var READ_ALOUD_DEFAULT_VOICE = READ_ALOUD_CONFIG.defaultVoice || "en_paul_neutral";
   var READ_ALOUD_VOICE_BY_LANGUAGE = READ_ALOUD_CONFIG.byLanguage || {};
+  var READ_ALOUD_PREGENERATED_AUDIO_URL = READ_ALOUD_CONFIG.preGeneratedAudioUrl || "/reader_v2.mp3";
+  var READ_ALOUD_PREGENERATED_AUDIO_BY_LANGUAGE =
+    READ_ALOUD_CONFIG.preGeneratedAudioByLanguage || {
+      "en-us": READ_ALOUD_CONFIG.preGeneratedAudioUrlUs || "/reader_v2_us.mp3",
+      "en-gb": READ_ALOUD_PREGENERATED_AUDIO_URL
+    };
   var listenInstallInfoLogged = { noConfig: false, noButton: false };
   /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
   var MOBILE_DUAL_MAX_WIDTH = 900;
@@ -27,7 +42,6 @@
     lastJobId: 0,
     isOpen: false,
     dualToggleButton: null,
-    hoverToggleButton: null,
     inlineWrap: null,
     singleModeTokenized: false,
     paragraphPlayInstalled: false,
@@ -41,7 +55,41 @@
     hoverTranslationCache: new Map(),
     hoverRequestId: 0,
     hoverPopoverEl: null,
+    quickSearchDemoModalEl: null,
+    paragraphDemoModalEl: null,
     historyWords: new Set(),
+    articleVocab: null,
+    vocabPreview: {
+      tokenEl: null,
+      vocabIndex: null
+    },
+    mobileSelection: {
+      installed: false,
+      selectedParagraph: null,
+      locked: false,
+      /** Helps avoid flicker when scrolling. */
+      lastSelectedAtMs: 0
+    },
+    mobileCommandBar: {
+      installed: false,
+      root: null,
+      playBtn: null,
+      accentBtn: null,
+      speedBtn: null,
+      translateBtn: null,
+      collapseBtn: null,
+      expandBtn: null,
+      collapsed: false,
+      lastPlayedParagraph: null
+    },
+    mobileTranslateSheet: {
+      installed: false,
+      open: false
+    },
+    mobileHeaderAutoHide: {
+      installed: false,
+      hidden: false
+    },
     audio: {
       text: "",
       totalChars: 0,
@@ -49,6 +97,7 @@
       isPlaying: false,
       isPaused: false,
       rate: 1,
+      accent: "US",
       lang: "en-US",
       ui: null,
       backend: null,
@@ -58,6 +107,9 @@
       listenRequestGen: 0,
       activeChunkStart: 0,
       activeChunkLength: 0,
+      /** When > 0, map `currentTime` between these seconds for progress (paragraph / slice playback). */
+      progressMediaStart: 0,
+      progressMediaEnd: 0,
       selectedVoice: "",
       selectedLanguage: "",
       activeListenBtn: null,
@@ -89,8 +141,8 @@
         [
           "[dual-translation] Help",
           "- Word hover works in single-column reading and in dual mode (tokenized text).",
-          "  Use the sparkle button (next to dark mode) to enable/disable hover hints.",
-          "  Or: window.DUAL_TRANSLATION_HOVER_WORD_MAP = true|false",
+          "  Hover hints are enabled by default.",
+          "  You can still override via: window.DUAL_TRANSLATION_HOVER_WORD_MAP = true|false",
           "- Auto-open dual mode on load is off by default. To enable:",
           "  window.DUAL_TRANSLATION_AUTO_OPEN = true",
           "- Dual translation mode (icon + side-by-side translation) is off by default. To enable:",
@@ -164,10 +216,20 @@
       "body.translation-hover-disabled .translation-inline-wrap .translation-token{cursor:default}" +
       ".translation-token_src{background:rgba(21,124,213,.2)}" +
       ".translation-token_tgt{background:rgba(255,190,92,.35)}" +
+      ".translation-token_vocab{background:#c9e3fb}" +
+      ".translation-token_vocab-focus{background:#b7daf9!important;box-shadow:0 0 0 2px rgba(102,153,204,.35);border-radius:6px}" +
       ".translation-token_karaoke{background:rgba(21,124,213,.28)!important}" +
       ".translation-token_pop{background:#fef9c3!important;border-radius:4px}" +
-      ".translation-hover-popover{position:fixed;z-index:100000;box-sizing:border-box;width:min(280px,calc(100vw - 24px));max-width:280px;padding:20px;background:#fff;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.1),0 12px 28px rgba(0,0,0,.06);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.45;color:#1f2937;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s ease}" +
+      ".translation-token_saved{background:#e6dfd5!important;border-radius:4px}" +
+      ".translation-hover-popover{position:fixed;z-index:100000;box-sizing:border-box;width:min(360px,calc(100vw - 24px));max-width:360px;padding:10px;background:#fff;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.1),0 12px 28px rgba(0,0,0,.06);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.45;color:#1f2937;pointer-events:auto;opacity:0;visibility:hidden;transition:opacity .12s ease}" +
       ".translation-hover-popover_visible{opacity:1;visibility:visible}" +
+      ".translation-hover-popover__demo-wrap{display:block}" +
+      ".translation-hover-popover__demo-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px;flex-shrink:0}" +
+      ".translation-hover-popover__demo-label{font:600 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b)}" +
+      ".translation-hover-popover__demo-close{border:none;background:transparent;padding:0;margin:0;font:600 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--new-blue-700,#2a8bdf);text-decoration:underline;cursor:pointer}" +
+      ".translation-hover-popover__demo-toggle{display:none}" +
+      ".translation-hover-popover__demo-image{display:block;width:100%;height:auto;border-radius:12px}" +
+      ".translation-hover-popover__demo-caption{margin:8px 4px 2px;font-size:12px;line-height:1.3;color:var(--text-base-secondary,#607d8b);text-align:center}" +
       ".translation-hover-popover__head{display:flex;align-items:center;gap:8px;margin:0 0 6px}" +
       ".translation-hover-popover__sparkle{flex:0 0 auto;color:#2352a3;width:18px;height:18px}" +
       ".translation-hover-popover__title{font-weight:700;font-size:15px;line-height:1.3;color:#2352a3;margin:0}" +
@@ -219,7 +281,7 @@
       "grid-column:2;grid-row:1;padding-left:21px;align-self:start" +
       "}" +
       "}" +
-      ".translation-audio-player{position:fixed;left:0;right:clamp(320px,28vw,420px);bottom:0;z-index:900;display:none}" +
+      ".translation-audio-player{position:fixed;left:0;right:clamp(320px,28vw,420px);bottom:0;z-index:900;display:none;box-sizing:border-box}" +
       ".translation-audio-player_visible{display:block}" +
       ".translation-audio-player__toolbar{display:flex;flex-direction:column;background:var(--background-base-secondary,#fcf4e9);box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.1));padding:0 24px 8px}" +
       ".translation-audio-player__main{display:flex;align-items:center;justify-content:space-between;height:64px}" +
@@ -242,7 +304,22 @@
       ".translation-audio-player__seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;margin-top:-4px;background:var(--new-blue-700,#2a8bdf);border:0}" +
       ".translation-audio-player__seek::-moz-range-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
       ".translation-audio-player__seek::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--new-blue-700,#2a8bdf);border:0}" +
-      "@media only screen and (max-width:567px){.translation-audio-player{right:0}.translation-audio-player__toolbar{padding:0 8px 8px}.translation-audio-player__control{gap:8px}}" +
+      "@media only screen and (max-width:1023px){" +
+      ".translation-audio-player{" +
+      "left:0!important;right:0!important;width:100vw!important;max-width:100vw!important;min-width:0!important;" +
+      "margin:0!important;overflow-x:hidden!important;box-sizing:border-box!important" +
+      "}" +
+      ".translation-audio-player__toolbar{padding:0 8px 8px;box-sizing:border-box!important;overflow-x:hidden!important}" +
+      ".translation-audio-player__main,.translation-audio-player__progress{min-width:0;max-width:100%;box-sizing:border-box}" +
+      ".translation-audio-player__control{gap:8px}" +
+      ".highlight-overlay{" +
+      "left:0!important;right:0!important;width:100vw!important;max-width:100vw!important;" +
+      "overflow-x:hidden!important;pointer-events:none!important;box-sizing:border-box!important" +
+      "}" +
+      ".highlight-overlay .listening-highlight-element{" +
+      "max-width:calc(100vw - 12px)!important;box-sizing:border-box!important" +
+      "}" +
+      "}" +
       ".translation-listen-spinner{display:inline-flex;align-items:center;vertical-align:middle;flex-shrink:0;margin-left:6px;width:18px;height:18px;opacity:0;pointer-events:none;transition:opacity .15s ease}" +
       ".translation-listen-spinner_visible{opacity:1}" +
       ".translation-listen-spinner__ring{width:16px;height:16px;border:2px solid var(--line-gray-primary,#d4d9e3);border-top-color:var(--new-blue-700,#2a8bdf);border-radius:50%;box-sizing:border-box;animation:translation-listen-spin .65s linear infinite}" +
@@ -251,12 +328,6 @@
       ".translation-paragraph-play-host::before{" +
       "content:'';position:absolute;left:-44px;top:0;bottom:0;width:44px;" +
       "}" +
-      ".translation-paragraph-play-host::after{" +
-      "content:'';position:absolute;left:-12px;top:0;bottom:0;width:2px;border-radius:999px;" +
-      "background:var(--new-blue-700,#2a8bdf);opacity:0;pointer-events:none;" +
-      "transition:opacity .15s ease" +
-      "}" +
-      ".translation-paragraph-play-host:hover::after{opacity:.28}" +
       ".translation-paragraph-actions{" +
       "position:absolute;left:-44px;top:0;display:flex;flex-direction:column;gap:6px;z-index:3;" +
       "opacity:0;pointer-events:none;transition:opacity .12s ease" +
@@ -288,6 +359,212 @@
       ".translation-history-item_just-added .history-item{" +
       "animation:translation-history-item-flash 1.1s ease-out 1" +
       "}" +
+      ".translation-history-vocab-badge{" +
+      "display:inline-flex;align-items:center;justify-content:center;" +
+      "width:16px;height:16px;margin-left:6px;border:0;border-radius:999px;background:transparent;color:#0A6CC2;cursor:help;position:relative;padding:0;vertical-align:middle;" +
+      "}" +
+      ".translation-history-vocab-badge svg{display:block;width:14px;height:14px}" +
+      ".translation-history-vocab-badge[data-tooltip]:hover::after,.translation-history-vocab-badge[data-tooltip]:focus-visible::after{" +
+      "content:attr(data-tooltip);position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);" +
+      "padding:5px 8px;border-radius:6px;background:rgba(20,24,31,.92);color:#fff;white-space:nowrap;" +
+      "font:500 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "z-index:100001;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.22)" +
+      "}" +
+      ".translation-history-vocab-badge:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:1px}" +
+      ".translation-vocab-section{" +
+      "display:block;margin-top:14px;padding:12px 0 8px;border-top:1px solid var(--line-gray-primary,#dee4e7);" +
+      "height:auto;max-height:none;overflow:visible" +
+      "}" +
+      ".translation-vocab-section__title{" +
+      "margin:0 0 10px;font:700 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "letter-spacing:.04em;text-transform:uppercase;color:#3f5f7a" +
+      "}" +
+      ".translation-vocab-section__list{" +
+      "display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;overflow:visible;" +
+      "height:auto;max-height:none" +
+      "}" +
+      ".translation-vocab-item{" +
+      "display:inline-flex;align-items:center;box-sizing:border-box;height:auto;min-height:0;" +
+      "border-radius:12px;padding:6px 14px;" +
+      "font:600 13px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "white-space:nowrap;color:#3d4d5d;background:#e8f2fb;border:1px solid #d8e8f7;cursor:pointer;transition:background-color .12s ease,color .12s ease,box-shadow .12s ease" +
+      "}" +
+      ".translation-vocab-item:hover{background:#deecf9}" +
+      ".translation-vocab-item:focus-visible{outline:2px solid #7aa7d1;outline-offset:1px}" +
+      ".translation-reading-stats{" +
+      "margin:20px 0 10px;padding:16px;border:1px solid #d9e9f8;border-radius:16px;background:linear-gradient(180deg,#f8fcff 0%,#f2f9ff 100%);" +
+      "box-shadow:0 2px 8px rgba(10,108,194,.08)" +
+      "}" +
+      ".translation-reading-stats__top{display:flex;align-items:center;gap:14px}" +
+      ".translation-reading-stats__ring{" +
+      "width:56px;height:56px;border-radius:999px;display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 56px;" +
+      "background:conic-gradient(#0a6cc2 var(--reading-stats-progress,0%), #d7e8f9 0%)" +
+      "}" +
+      ".translation-reading-stats__ring::after{" +
+      "content:'';position:absolute;inset:6px;border-radius:999px;background:#fff" +
+      "}" +
+      ".translation-reading-stats__ring-value{" +
+      "position:relative;z-index:1;font:700 14px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0a6cc2" +
+      "}" +
+      ".translation-reading-stats__badge{" +
+      "display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;" +
+      "background:#e8f3fc;color:#0a6cc2;margin-bottom:4px" +
+      "}" +
+      ".translation-reading-stats__badge svg{display:block;width:14px;height:14px}" +
+      ".translation-reading-stats__title-row{display:flex;align-items:center;gap:8px}" +
+      ".translation-reading-stats__title{" +
+      "margin:0;font:700 17px/1.25 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f3556" +
+      "}" +
+      ".translation-reading-stats__subtitle{" +
+      "margin:2px 0 0;font:500 13px/1.35 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#4f6b82" +
+      "}" +
+      ".translation-reading-stats__cta{" +
+      "width:100%;margin-top:14px;border:0;border-radius:999px;min-height:42px;padding:10px 16px;cursor:pointer;" +
+      "font:700 14px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "background:linear-gradient(90deg,#0a6cc2 0%,#157cd5 100%);color:#fff;transition:filter .15s ease,opacity .15s ease" +
+      "}" +
+      ".translation-reading-stats__cta:hover{filter:brightness(1.04)}" +
+      ".translation-reading-stats__cta:focus-visible{outline:2px solid #7aa7d1;outline-offset:2px}" +
+      ".translation-reading-stats__cta:disabled,.translation-reading-stats__cta_disabled{" +
+      "cursor:not-allowed;background:#c8d8e8;color:#35506a;filter:none" +
+      "}" +
+      ".translation-reading-stats__hint{" +
+      "margin:8px 2px 0;font:500 12px/1.3 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#607d96" +
+      "}" +
+      ".translation-reading-stats_mastered{border-color:#cde8d6;background:linear-gradient(180deg,#f6fff9 0%,#eefbf3 100%);box-shadow:0 2px 10px rgba(10,152,89,.12)}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__ring{background:conic-gradient(#10b981 var(--reading-stats-progress,0%), #d9f1e3 0%)}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__ring-value{color:#0e9a58}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__badge{background:#dcfce7;color:#0e9a58}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__title{color:#0f5132}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__subtitle{color:#2d6a4f}" +
+      ".translation-reading-stats_mastered .translation-reading-stats__cta{background:linear-gradient(90deg,#0e9a58 0%,#13b56a 100%)}" +
+      ".history-sidebar .history-sidebar__list{overflow:auto}" +
+      ".translation-paragraph_selected{position:relative;background:rgba(250,204,21,.10);border-radius:10px}" +
+      ".translation-paragraph_selected::before{content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:999px;background:rgba(250,204,21,.55)}" +
+      "body.translation-mobile-commandbar-open .reading-list__content{padding-bottom:132px}" +
+      "body.translation-mobile-commandbar-open.translation-mobile-commandbar-collapsed .reading-list__content{padding-bottom:72px}" +
+      ".translation-mobile-commandbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:950;display:none;box-sizing:border-box;max-width:calc(100vw - 24px);overflow-x:hidden}" +
+      ".translation-mobile-commandbar_visible{display:block}" +
+      ".translation-mobile-commandbar_collapsed{left:50%;right:auto;transform:translateX(-50%);max-width:unset;overflow:visible}" +
+      ".translation-mobile-commandbar__inner{" +
+      "display:flex;align-items:center;justify-content:space-between;gap:10px;" +
+      "position:relative;" +
+      "padding:12px 12px 10px;border-radius:16px;" +
+      "background:var(--background-base-secondary,#fcf4e9);color:var(--text-base-primary,#1a1a1a);" +
+      "border:1px solid var(--line-gray-primary,#dee4e7);" +
+      "box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.1));" +
+      "max-width:100%;box-sizing:border-box;overflow:hidden" +
+      "}" +
+      ".translation-mobile-commandbar_collapsed .translation-mobile-commandbar__inner{display:none}" +
+      ".translation-mobile-commandbar__hint{font:600 13px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b);margin-right:auto;padding-right:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".translation-mobile-commandbar__collapse{" +
+      "appearance:none;border:0;background:transparent;color:var(--text-base-secondary,#607d8b);" +
+      "position:absolute;top:6px;right:6px;" +
+      "width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;cursor:pointer" +
+      "}" +
+      ".translation-mobile-commandbar__collapse:hover{background:var(--line-gray-secondary,#eaeef1)}" +
+      ".translation-mobile-commandbar__collapse svg{display:block;width:18px;height:18px}" +
+      ".translation-mobile-commandbar__expand{" +
+      "display:none;appearance:none;border:1px solid var(--line-gray-primary,#d4d9e3);" +
+      "background:#472c1f;color:#fff;border-radius:999px;" +
+      "width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;" +
+      "box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.18));-webkit-tap-highlight-color:transparent" +
+      "}" +
+      ".translation-mobile-commandbar__expand svg{display:block;width:18px;height:18px}" +
+      ".translation-mobile-commandbar_collapsed .translation-mobile-commandbar__expand{display:inline-flex}" +
+      ".translation-mobile-commandbar__group{display:flex;align-items:center;gap:10px}" +
+      ".translation-mobile-commandbar__btn{" +
+      "appearance:none;" +
+      "width:44px;min-width:44px;height:44px;" +
+      "border:1px solid var(--line-gray-primary,#d4d9e3);" +
+      "border-radius:999px;" +
+      "display:inline-flex;align-items:center;justify-content:center;" +
+      "background:#472c1f;color:#fff;" +
+      "cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);" +
+      "-webkit-tap-highlight-color:transparent" +
+      "}" +
+      ".translation-mobile-commandbar__btn:hover{opacity:.95}" +
+      ".translation-mobile-commandbar__btn:active{transform:translateY(1px)}" +
+      ".translation-mobile-commandbar__btn:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:2px}" +
+      ".translation-mobile-commandbar__btn svg{display:block;width:22px;height:22px}" +
+      "body.translation-mobile-header-hidden app-reader-view-header{display:none!important}" +
+      "body.translation-mobile-header-hidden app-header{display:none!important}" +
+      "body.translation-mobile-header-hidden router-outlet.page{padding-top:0!important}" +
+      "body.translation-mobile-header-hidden app-reader-view-tabs{top:0!important}" +
+      "body.translation-mobile-header-hidden .reader-view-tabs__button{overflow:visible!important}" +
+      "body.translation-mobile-header-hidden .translation-words-tab_has-new::before{display:block!important;visibility:visible!important;opacity:1!important;z-index:1}" +
+      "body.translation-mobile-sheet-open{overflow:hidden;overflow-x:hidden!important}" +
+      "body.translation-mobile-sheet-open .popup-menu-backdrop{opacity:.5!important}" +
+      "body.translation-mobile-sheet-open .reverso-context-block," +
+      "body.translation-mobile-sheet-open [class*='reverso-context']," +
+      "body.translation-mobile-sheet-open [class*='context-block']," +
+      "body.translation-mobile-sheet-open [role='dialog'][aria-modal='true']{" +
+      "position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;" +
+      "width:100vw!important;max-width:100vw!important;min-width:0!important;" +
+      "margin:0!important;box-sizing:border-box!important;" +
+      "max-height:82vh!important;overflow:auto!important;overflow-x:hidden!important;" +
+      "border-radius:18px 18px 0 0!important;" +
+      "transform:translateY(0)!important;" +
+      "box-shadow:0 -12px 40px rgba(0,0,0,.35)!important;" +
+      "}" +
+      "body.translation-mobile-sheet-open .reverso-context-block *," +
+      "body.translation-mobile-sheet-open [class*='reverso-context'] *," +
+      "body.translation-mobile-sheet-open [class*='context-block'] *," +
+      "body.translation-mobile-sheet-open [role='dialog'][aria-modal='true'] *{" +
+      "max-width:100%!important;min-width:0!important;box-sizing:border-box!important" +
+      "}" +
+      "body.translation-mobile-sheet-open .reverso-context-block img," +
+      "body.translation-mobile-sheet-open [class*='reverso-context'] img," +
+      "body.translation-mobile-sheet-open [class*='context-block'] img," +
+      "body.translation-mobile-sheet-open [role='dialog'][aria-modal='true'] img{" +
+      "height:auto!important" +
+      "}" +
+      ".translation-mobile-sheet-close{" +
+      "position:sticky;top:0;display:flex;justify-content:flex-end;" +
+      "padding:10px 10px 0;z-index:3;" +
+      "}" +
+      ".translation-mobile-sheet-close__btn{" +
+      "width:40px;height:40px;border-radius:999px;border:1px solid var(--line-gray-primary,#d4d9e3);" +
+      "background:rgba(252,244,233,.95);color:var(--text-base-secondary,#607d8b);" +
+      "display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" +
+      "box-shadow:0 1px 2px rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent" +
+      "}" +
+      ".translation-mobile-sheet-close__btn:active{transform:translateY(1px)}" +
+      ".translation-mobile-sheet-close__btn:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:2px}" +
+      ".translation-mobile-sheet-close__btn svg{width:18px;height:18px;display:block}" +
+      ".translation-paragraph-demo-modal{position:fixed;z-index:100050;display:none;box-sizing:border-box;width:min(420px,calc(100vw - 24px));max-width:420px;padding:10px;background:#fff;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08)}" +
+      ".translation-paragraph-demo-modal_visible{display:block}" +
+      ".translation-paragraph-demo-modal__card{position:relative}" +
+      ".translation-paragraph-demo-modal__header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;padding-bottom:6px;position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid rgba(15,23,42,.08)}" +
+      ".translation-paragraph-demo-modal__label{font:600 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b)}" +
+      ".translation-paragraph-demo-modal__close-link{display:inline-block;margin:0;font:600 12px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--new-blue-700,#2a8bdf);text-decoration:underline;cursor:pointer}" +
+      ".translation-paragraph-demo-modal__close-link:hover{opacity:.85}" +
+      ".translation-paragraph-demo-modal__image{display:block;width:100%;height:auto;border-radius:12px}" +
+      ".translation-paragraph-demo-modal__caption{margin:8px 4px 2px;font-size:12px;line-height:1.3;color:var(--text-base-secondary,#607d8b);text-align:center}" +
+      "body.translation-mobile-sheet-open .reverso-context-block," +
+      "body.translation-mobile-sheet-open [class*='reverso-context']," +
+      "body.translation-mobile-sheet-open [class*='context-block']{" +
+      "animation:translation-sheet-up .18s ease-out 1" +
+      "}" +
+      "@keyframes translation-sheet-up{from{transform:translateY(18px);opacity:.92}to{transform:translateY(0);opacity:1}}" +
+      "@media (max-width:1023px){" +
+      ".translation-hover-popover{left:12px!important;right:12px!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-width:none;padding:10px;border-radius:16px}" +
+      ".translation-hover-popover_collapsed{width:auto!important;left:auto!important;right:12px!important;padding:8px 10px}" +
+      ".translation-hover-popover_collapsed .translation-hover-popover__demo-wrap{display:none}" +
+      ".translation-hover-popover__demo-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;padding:8px 12px;border:none;border-radius:999px;background:var(--line-gray-secondary,#eaeef1);color:var(--text-base-primary,#1f2937);font:600 13px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;cursor:pointer}" +
+      ".translation-hover-popover__demo-toggle:focus-visible{outline:2px solid var(--new-blue-700,#2a8bdf);outline-offset:2px}" +
+      ".translation-hover-popover__demo-caption{text-align:left}" +
+      ".translation-paragraph-demo-modal{left:12px!important;right:12px!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-width:none;max-height:min(78vh,calc(100vh - 160px - env(safe-area-inset-bottom, 0px)));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}" +
+      "}" +
+      ".translation-words-tab_has-new{position:relative}" +
+      ".translation-words-tab_has-new::before{" +
+      "content:'';" +
+      "position:absolute;" +
+      "top:8px;right:12px;" +
+      "width:8px;height:8px;border-radius:999px;" +
+      "background:#ef4444;" +
+      "box-shadow:0 0 0 2px var(--background-base-header, #fff);" +
+      "}" +
       "@keyframes translation-history-item-flash{" +
       "0%{background:color-mix(in srgb, var(--background-base-primary,#e6eef6) 50%, transparent)}" +
       "100%{background:var(--background-history-item,#ffffff8f)}" +
@@ -316,6 +593,751 @@
       ".translation-inline-wrap_open .translation-inline-trans{border-top-color:rgba(212,176,122,.75)!important;background:rgba(251,191,36,.06)!important}" +
       "}";
     document.head.appendChild(style);
+  }
+
+  function isMobileReaderViewport() {
+    // Align with the Reverso snapshot tabs breakpoint (they appear at <= 1023px).
+    if (hasMobileTabs() && state.mobileTabs.isTabsViewport) return state.mobileTabs.isTabsViewport();
+    return window.innerWidth <= 1023;
+  }
+
+  function setSelectedParagraph(p) {
+    if (state.mobileSelection.selectedParagraph === p) return;
+    if (state.mobileSelection.selectedParagraph) {
+      state.mobileSelection.selectedParagraph.classList.remove("translation-paragraph_selected");
+    }
+    state.mobileSelection.selectedParagraph = p || null;
+    if (state.mobileSelection.selectedParagraph) {
+      state.mobileSelection.selectedParagraph.classList.add("translation-paragraph_selected");
+    }
+    state.mobileSelection.lastSelectedAtMs = Date.now();
+  }
+
+  function pickParagraphClosestToReadingLine(paragraphs) {
+    var list = paragraphs || sourceNodes();
+    if (!list || !list.length) return null;
+    var vh = window.innerHeight || 0;
+    if (!vh) return list[0] || null;
+    var readingLineY = vh * 0.35;
+    var best = null;
+    var bestDist = Infinity;
+    for (var i = 0; i < list.length; i += 1) {
+      var p = list[i];
+      if (!p || !p.getBoundingClientRect) continue;
+      var rect = p.getBoundingClientRect();
+      // Ignore paragraphs fully outside viewport.
+      if (rect.bottom <= 0 || rect.top >= vh) continue;
+      var dist = Math.abs(rect.top - readingLineY);
+      if (dist < bestDist) {
+        best = p;
+        bestDist = dist;
+      }
+    }
+    return best || list[0] || null;
+  }
+
+  function updateMobileParagraphSelection() {
+    if (!isMobileReaderViewport()) return;
+    if (state.mobileSelection.locked) return;
+    var paragraphs = sourceNodes();
+    if (!paragraphs.length) return;
+    var next = pickParagraphClosestToReadingLine(paragraphs);
+    if (!next) return;
+
+    var current = state.mobileSelection.selectedParagraph;
+    if (!current) {
+      setSelectedParagraph(next);
+      return;
+    }
+    if (current === next) return;
+
+    // Hysteresis: only switch if the new candidate is meaningfully better.
+    var vh = window.innerHeight || 0;
+    var readingLineY = vh * 0.35;
+    var currentRect = current.getBoundingClientRect();
+    var nextRect = next.getBoundingClientRect();
+    var currentDist = Math.abs(currentRect.top - readingLineY);
+    var nextDist = Math.abs(nextRect.top - readingLineY);
+    var SWITCH_THRESHOLD_PX = 28;
+    if (nextDist + SWITCH_THRESHOLD_PX < currentDist) {
+      setSelectedParagraph(next);
+    }
+  }
+
+  function lockMobileSelection() {
+    state.mobileSelection.locked = true;
+  }
+
+  function unlockMobileSelection() {
+    state.mobileSelection.locked = false;
+    // Re-evaluate selection after an interaction completes.
+    updateMobileParagraphSelection();
+  }
+
+  function installMobileParagraphSelection() {
+    if (state.mobileSelection.installed) return;
+    state.mobileSelection.installed = true;
+
+    var rafId = 0;
+    function scheduleUpdate() {
+      if (!isMobileReaderViewport()) return;
+      if (rafId) return;
+      rafId = requestAnimationFrame(function () {
+        rafId = 0;
+        updateMobileParagraphSelection();
+      });
+    }
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    // Initialize.
+    scheduleUpdate();
+  }
+
+  function installMobileHeaderAutoHide() {
+    if (state.mobileHeaderAutoHide.installed) return;
+    state.mobileHeaderAutoHide.installed = true;
+
+    var rafId = 0;
+
+    function updateHeaderVisibility() {
+      var shouldHide = isMobileReaderViewport() && window.scrollY > 0;
+      if (shouldHide === state.mobileHeaderAutoHide.hidden) return;
+      state.mobileHeaderAutoHide.hidden = shouldHide;
+      document.body.classList.toggle("translation-mobile-header-hidden", shouldHide);
+    }
+
+    function scheduleUpdate() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(function () {
+        rafId = 0;
+        updateHeaderVisibility();
+      });
+    }
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    scheduleUpdate();
+  }
+
+  function getSelectedParagraphForMobileActions() {
+    // Trust the visible highlight first so UI state and action target stay aligned.
+    var highlighted = document.querySelector("p.translation-paragraph_selected");
+    if (highlighted && document.contains(highlighted)) {
+      setSelectedParagraph(highlighted);
+      return highlighted;
+    }
+    var p = state.mobileSelection.selectedParagraph;
+    if (p && document.contains(p)) return p;
+    var next = pickParagraphClosestToReadingLine(sourceNodes());
+    if (next) setSelectedParagraph(next);
+    return state.mobileSelection.selectedParagraph;
+  }
+
+  function mobileBarPlayIcon() {
+    return paragraphPlayIconSvg();
+  }
+
+  function mobileBarPauseIcon() {
+    return (
+      '<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">' +
+      '<path d="M7 6.5C7 5.67 7.67 5 8.5 5h1C10.33 5 11 5.67 11 6.5v11c0 .83-.67 1.5-1.5 1.5h-1C7.67 19 7 18.33 7 17.5v-11zM13 6.5C13 5.67 13.67 5 14.5 5h1c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-1c-.83 0-1.5-.67-1.5-1.5v-11z"/>' +
+      "</svg>"
+    );
+  }
+
+  function mobileBarChevronDownIcon() {
+    return (
+      '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M5.527 7.364a.8.8 0 0 1 1.131 0L10 10.706l3.343-3.342a.8.8 0 0 1 1.131 1.131l-3.909 3.91a.8.8 0 0 1-1.131 0l-3.91-3.91a.8.8 0 0 1 0-1.131Z" fill="currentColor"></path>' +
+      "</svg>"
+    );
+  }
+
+  function mobileBarChevronUpIcon() {
+    return (
+      '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M14.473 12.636a.8.8 0 0 1-1.131 0L10 9.294l-3.343 3.342a.8.8 0 0 1-1.131-1.131l3.909-3.91a.8.8 0 0 1 1.131 0l3.91 3.91a.8.8 0 0 1 0 1.131Z" fill="currentColor"></path>' +
+      "</svg>"
+    );
+  }
+
+  function getAccentLanguage(accent) {
+    return String(accent || "").toUpperCase() === "UK" ? "en-GB" : "en-US";
+  }
+
+  function getAccentFlag(accent) {
+    return String(accent || "").toUpperCase() === "UK" ? "🇬🇧" : "🇺🇸";
+  }
+
+  function getAccentLabel(accent) {
+    return String(accent || "").toUpperCase() === "UK" ? "UK" : "US";
+  }
+
+  function cycleAccent(accent) {
+    return String(accent || "").toUpperCase() === "UK" ? "US" : "UK";
+  }
+
+  function cyclePlaybackRate(current) {
+    var values = [1, 1.5, 2];
+    var now = Number(current);
+    var idx = values.indexOf(now);
+    if (idx < 0) return values[0];
+    return values[(idx + 1) % values.length];
+  }
+
+  function formatPlaybackRateLabel(rate) {
+    var safe = Number(rate) || 1;
+    return String(safe).replace(/\.0$/, "") + "x";
+  }
+
+  function getSelectedReadAloudLanguage() {
+    return getAccentLanguage(state.audio.accent);
+  }
+
+  function toggleReadAloudAccent() {
+    state.audio.accent = cycleAccent(state.audio.accent);
+    state.audio.lang = getSelectedReadAloudLanguage();
+    state.audio.selectedVoice = "";
+    state.audio.selectedLanguage = "";
+
+    var rel = state.audio.remoteEl;
+    var switchingPreGen =
+      READ_ALOUD_MODE !== "streaming" &&
+      state.audio.backend === "remote" &&
+      rel &&
+      rel.src &&
+      state.audio.player &&
+      typeof state.audio.player.getMode === "function" &&
+      state.audio.player.getMode() === "preGenerated";
+
+    if (!switchingPreGen) {
+      updateAudioUi();
+      updateMobileCommandBarUi();
+      return;
+    }
+
+    var savedTime = Number(rel.currentTime || 0);
+    if (!isFinite(savedTime) || savedTime < 0) savedTime = 0;
+    var wasPlaying = Boolean(state.audio.isPlaying && !state.audio.isPaused);
+    var paragraphEl =
+      state.audio.karaoke && state.audio.karaoke.paragraphEl && document.contains(state.audio.karaoke.paragraphEl)
+        ? state.audio.karaoke.paragraphEl
+        : null;
+    var paragraphText = paragraphEl ? getParagraphPlainText(paragraphEl) : "";
+    var paragraphIndex = -1;
+    if (paragraphEl) {
+      try {
+        paragraphIndex = sourceNodes().indexOf(paragraphEl);
+      } catch (_eIdx) {
+        paragraphIndex = -1;
+      }
+    }
+    var listenText = !paragraphEl ? String(state.audio.text || "").trim() : "";
+
+    stopAudioPlayback();
+
+    if (paragraphEl && paragraphText) {
+      var karaokeDom = buildKaraokeDomMap(paragraphEl);
+      state.audio.karaoke.paragraphEl = paragraphEl;
+      state.audio.karaoke.tokenEls = karaokeDom.tokenEls;
+      state.audio.karaoke.mapByTimedWordIndex = createTimedWordToDomIndexMap(
+        karaokeDom.normalizedDomTokens,
+        paragraphText
+      );
+    } else if (listenText) {
+      prepareGlobalKaraokeMap(listenText);
+    }
+
+    var language = getSelectedReadAloudLanguage();
+    var voice = resolveVoiceForLanguage(language);
+    var player = ensureReadAloudPlayer(voice, language);
+    applyPlaybackRateToAudio();
+
+    state.audio.backend = "remote";
+    state.audio.text = paragraphText || listenText;
+    state.audio.totalChars = state.audio.text.length;
+    state.audio.remoteDuration = 0;
+    state.audio.activeChunkStart = 0;
+    state.audio.activeChunkLength = state.audio.totalChars;
+
+    var resumeOpts = {
+      onWordChange: onKaraokeWordChange,
+      resumeMediaSeconds: savedTime,
+      resumePaused: !wasPlaying,
+      onChunkStart: function (ctx) {
+        applyReadAloudChunkProgress(ctx);
+        updateAudioUi();
+      },
+      onChunkEnd: function (ctx) {
+        state.audio.currentChar = Math.min(state.audio.totalChars, Math.max(0, ctx.playedChars || 0));
+        updateAudioUi();
+      }
+    };
+
+    function onPlaybackFinished() {
+      state.audio.currentChar = state.audio.totalChars;
+      state.audio.isPlaying = false;
+      state.audio.isPaused = false;
+      state.audio.backend = null;
+      state.audio.progressMediaStart = 0;
+      state.audio.progressMediaEnd = 0;
+      resetKaraokeState();
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    }
+
+    function onPlaybackPausedResume() {
+      state.audio.isPlaying = false;
+      state.audio.isPaused = true;
+      state.audio.backend = "remote";
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    }
+
+    function handlePlayResult(res) {
+      if (res && res.paused === true) {
+        onPlaybackPausedResume();
+        return;
+      }
+      onPlaybackFinished();
+    }
+
+    function handlePlayErr(err) {
+      if (err && err.name === "AbortError") return;
+      var msg = err && err.message ? String(err.message) : String(err);
+      console.error(LOG_PREFIX, "Accent switch replay failed:", msg);
+      logWarn("accent_switch_replay_error", { message: msg });
+      state.audio.isPlaying = false;
+      state.audio.isPaused = false;
+      state.audio.backend = null;
+      resetKaraokeState();
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    }
+
+    if (paragraphText && player && typeof player.playParagraph === "function") {
+      state.audio.isPlaying = wasPlaying;
+      state.audio.isPaused = !wasPlaying;
+      updateAudioUi();
+      player
+        .playParagraph(paragraphText, Object.assign({ paragraphIndex: paragraphIndex }, resumeOpts))
+        .then(handlePlayResult)
+        .catch(handlePlayErr);
+    } else if (listenText && player && typeof player.playText === "function") {
+      state.audio.isPlaying = wasPlaying;
+      state.audio.isPaused = !wasPlaying;
+      updateAudioUi();
+      player
+        .playText(listenText, resumeOpts)
+        .then(handlePlayResult)
+        .catch(handlePlayErr);
+    } else {
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    }
+  }
+
+  function updateMobileCommandBarUi() {
+    if (!state.mobileCommandBar.root) return;
+    var isPlaying = Boolean(state.audio.remoteEl && state.audio.remoteEl.src && state.audio.isPlaying && !state.audio.isPaused);
+    if (!state.mobileCommandBar.playBtn) return;
+    state.mobileCommandBar.playBtn.innerHTML = isPlaying ? mobileBarPauseIcon() : mobileBarPlayIcon();
+    state.mobileCommandBar.playBtn.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+    if (state.mobileCommandBar.accentBtn) {
+      state.mobileCommandBar.accentBtn.textContent = getAccentFlag(state.audio.accent);
+      state.mobileCommandBar.accentBtn.setAttribute("aria-label", "Accent " + getAccentLabel(state.audio.accent));
+      state.mobileCommandBar.accentBtn.setAttribute("title", "Accent " + getAccentLabel(state.audio.accent));
+    }
+    if (state.mobileCommandBar.speedBtn) {
+      state.mobileCommandBar.speedBtn.textContent = formatPlaybackRateLabel(state.audio.rate);
+      state.mobileCommandBar.speedBtn.setAttribute("aria-label", "Speed " + formatPlaybackRateLabel(state.audio.rate));
+      state.mobileCommandBar.speedBtn.setAttribute("title", "Speed " + formatPlaybackRateLabel(state.audio.rate));
+    }
+  }
+
+  function playSelectedParagraphFromCommandBar() {
+    // Recompute once at action time to avoid stale cache/rAF lag.
+    updateMobileParagraphSelection();
+    var p = getSelectedParagraphForMobileActions();
+    if (!p) return;
+    var text = getParagraphPlainText(p);
+    if (!text) return;
+
+    lockMobileSelection();
+    setSelectedParagraph(p);
+
+    // Toggle pause/resume if we're already playing this paragraph.
+    if (state.audio.karaoke && state.audio.karaoke.paragraphEl === p && state.audio.remoteEl && state.audio.remoteEl.src) {
+      pauseOrResumeAudio();
+      updateMobileCommandBarUi();
+      return;
+    }
+
+    state.mobileCommandBar.lastPlayedParagraph = p;
+    setActiveParagraphTriggerButton(state.mobileCommandBar.playBtn);
+    ensureAudioPlayer();
+    showAudioPlayer();
+    stopAudioPlayback();
+    setActiveParagraphTriggerButton(state.mobileCommandBar.playBtn);
+
+    ensureSingleModeTokenization();
+    var karaokeDom = buildKaraokeDomMap(p);
+    state.audio.karaoke.paragraphEl = p;
+    state.audio.karaoke.tokenEls = karaokeDom.tokenEls;
+    state.audio.karaoke.mapByTimedWordIndex = createTimedWordToDomIndexMap(karaokeDom.normalizedDomTokens, text);
+
+    var paragraphIndex = -1;
+    try {
+      paragraphIndex = sourceNodes().indexOf(p);
+    } catch (_e) { }
+
+    var paragraphLanguage = getSelectedReadAloudLanguage();
+    var paragraphVoice = resolveVoiceForLanguage(paragraphLanguage);
+    var player = ensureReadAloudPlayer(paragraphVoice, paragraphLanguage);
+    applyPlaybackRateToAudio();
+
+    if (player && typeof player.playParagraph === "function") {
+      state.audio.backend = "remote";
+      state.audio.isPlaying = true;
+      state.audio.isPaused = false;
+      state.audio.currentChar = 0;
+      state.audio.text = text;
+      state.audio.totalChars = text.length;
+      updateAudioUi();
+      updateMobileCommandBarUi();
+      player
+        .playParagraph(text, {
+          onWordChange: onKaraokeWordChange,
+          paragraphIndex: paragraphIndex,
+          onChunkStart: function (ctx) {
+            applyReadAloudChunkProgress(ctx);
+            updateAudioUi();
+            updateMobileCommandBarUi();
+          },
+          onChunkEnd: function (ctx) {
+            state.audio.currentChar = Math.min(state.audio.totalChars, Math.max(0, ctx.playedChars || 0));
+            updateAudioUi();
+            updateMobileCommandBarUi();
+          }
+        })
+        .then(function () {
+          state.audio.currentChar = state.audio.totalChars;
+          state.audio.isPlaying = false;
+          state.audio.isPaused = false;
+          state.audio.activeChunkLength = 0;
+          state.audio.progressMediaStart = 0;
+          state.audio.progressMediaEnd = 0;
+          updateAudioUi();
+          updateMobileCommandBarUi();
+          unlockMobileSelection();
+        })
+        .catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          state.audio.isPlaying = false;
+          state.audio.isPaused = false;
+          state.audio.backend = null;
+          state.audio.activeChunkLength = 0;
+          state.audio.progressMediaStart = 0;
+          state.audio.progressMediaEnd = 0;
+          resetKaraokeState();
+          updateAudioUi();
+          updateMobileCommandBarUi();
+          unlockMobileSelection();
+        });
+      return;
+    }
+
+    playMistralText(text)
+      .then(function () {
+        unlockMobileSelection();
+      })
+      .catch(function () {
+        unlockMobileSelection();
+      });
+  }
+
+  function translateSelectedParagraphFromCommandBar() {
+    var p = getSelectedParagraphForMobileActions();
+    if (!p) return;
+    lockMobileSelection();
+    setSelectedParagraph(p);
+    openParagraphTranslationModal(p);
+  }
+
+  function installMobileCommandBar() {
+    if (state.mobileCommandBar.installed) return;
+    state.mobileCommandBar.installed = true;
+
+    var root = document.createElement("div");
+    root.className = "translation-mobile-commandbar";
+    root.innerHTML =
+      '<div class="translation-mobile-commandbar__inner">' +
+      '<span class="translation-mobile-commandbar__hint">Tap any word to get a definition</span>' +
+      '<div class="translation-mobile-commandbar__group">' +
+      '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="play" aria-label="Play">' +
+      mobileBarPlayIcon() +
+      "</button>" +
+      '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="accent" aria-label="Accent US" title="Accent US">🇺🇸</button>' +
+      '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="speed" aria-label="Speed 1x" title="Speed 1x">1x</button>' +
+      '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="translate" aria-label="Translate">' +
+      paragraphTranslateIconSvg() +
+      "</button>" +
+      "</div>" +
+      '<button type="button" class="translation-mobile-commandbar__collapse" data-mobile-bar="collapse" aria-label="Collapse controls">' +
+      mobileBarChevronDownIcon() +
+      "</button>" +
+      "</div>" +
+      '<button type="button" class="translation-mobile-commandbar__expand" data-mobile-bar="expand" aria-label="Expand controls">' +
+      mobileBarChevronUpIcon() +
+      "</button>";
+    document.body.appendChild(root);
+
+    state.mobileCommandBar.root = root;
+    state.mobileCommandBar.playBtn = root.querySelector('[data-mobile-bar="play"]');
+    state.mobileCommandBar.accentBtn = root.querySelector('[data-mobile-bar="accent"]');
+    state.mobileCommandBar.speedBtn = root.querySelector('[data-mobile-bar="speed"]');
+    state.mobileCommandBar.translateBtn = root.querySelector('[data-mobile-bar="translate"]');
+    state.mobileCommandBar.collapseBtn = root.querySelector('[data-mobile-bar="collapse"]');
+    state.mobileCommandBar.expandBtn = root.querySelector('[data-mobile-bar="expand"]');
+
+    function stopEvent(e) {
+      if (!e) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    state.mobileCommandBar.playBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      playSelectedParagraphFromCommandBar();
+    });
+    state.mobileCommandBar.accentBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      toggleReadAloudAccent();
+    });
+    state.mobileCommandBar.speedBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      state.audio.rate = cyclePlaybackRate(state.audio.rate);
+      applyPlaybackRateToAudio();
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    });
+    state.mobileCommandBar.translateBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      translateSelectedParagraphFromCommandBar();
+    });
+    state.mobileCommandBar.collapseBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      state.mobileCommandBar.collapsed = true;
+      root.classList.add("translation-mobile-commandbar_collapsed");
+      document.body.classList.add("translation-mobile-commandbar-collapsed");
+    });
+    state.mobileCommandBar.expandBtn.addEventListener("click", function (e) {
+      stopEvent(e);
+      state.mobileCommandBar.collapsed = false;
+      root.classList.remove("translation-mobile-commandbar_collapsed");
+      document.body.classList.remove("translation-mobile-commandbar-collapsed");
+    });
+
+    function syncVisibility() {
+      // Be defensive: viewport sizing can lag behind initial navigation/resize.
+      var visible = isMobileReaderViewport() || window.innerWidth <= 1023;
+      root.classList.toggle("translation-mobile-commandbar_visible", visible);
+      document.body.classList.toggle("translation-mobile-commandbar-open", visible);
+      if (visible) {
+        root.classList.toggle("translation-mobile-commandbar_collapsed", Boolean(state.mobileCommandBar.collapsed));
+        document.body.classList.toggle("translation-mobile-commandbar-collapsed", Boolean(state.mobileCommandBar.collapsed));
+        updateMobileParagraphSelection();
+        updateMobileCommandBarUi();
+      } else {
+        root.classList.remove("translation-mobile-commandbar_collapsed");
+        document.body.classList.remove("translation-mobile-commandbar-collapsed");
+        unlockMobileSelection();
+      }
+    }
+
+    window.addEventListener("resize", syncVisibility);
+    // Run multiple passes to survive late layout/viewport updates.
+    syncVisibility();
+    requestAnimationFrame(syncVisibility);
+    setTimeout(syncVisibility, 250);
+  }
+
+  function findTranslationModalCandidate() {
+    return (
+      document.querySelector(".reverso-context-block") ||
+      document.querySelector("[role='dialog'][aria-modal='true']") ||
+      document.querySelector("[class*='reverso-context']") ||
+      document.querySelector("[class*='context-block']")
+    );
+  }
+
+  function mobileSheetCloseIconSvg() {
+    return (
+      '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path fill-rule="evenodd" clip-rule="evenodd" d="M12.7141 4.22865C12.9744 3.9683 12.9744 3.54619 12.7141 3.28584C12.4537 3.02549 12.0316 3.02549 11.7712 3.28584L8.00001 7.05708L4.22877 3.28584C3.96842 3.02549 3.54631 3.02549 3.28596 3.28584C3.02561 3.54619 3.02561 3.9683 3.28596 4.22865L7.0572 7.99988L3.28596 11.7711C3.02561 12.0315 3.02561 12.4536 3.28596 12.7139C3.54631 12.9743 3.96842 12.9743 4.22877 12.7139L8.00001 8.94269L11.7712 12.7139C12.0316 12.9743 12.4537 12.9743 12.7141 12.7139C12.9744 12.4536 12.9744 12.0315 12.7141 11.7711L8.94281 7.99988L12.7141 4.22865Z" fill="currentColor"></path>' +
+      "</svg>"
+    );
+  }
+
+  function tryCloseTranslationModal(modal) {
+    // Prefer native close buttons if present.
+    var scope = modal || document;
+    var closeBtn =
+      scope.querySelector("[aria-label='Close']") ||
+      scope.querySelector("[aria-label='close']") ||
+      scope.querySelector("[data-testid*='close']") ||
+      scope.querySelector("button[aria-label*='Close']") ||
+      scope.querySelector("button[aria-label*='close']");
+    if (closeBtn && typeof closeBtn.click === "function") {
+      closeBtn.click();
+      return true;
+    }
+    var backdrop = document.querySelector(".popup-menu-backdrop");
+    if (backdrop && typeof backdrop.click === "function") {
+      backdrop.click();
+      return true;
+    }
+    try {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      return true;
+    } catch (_e) { }
+    return false;
+  }
+
+  function ensureMobileSheetCloseButton(modal) {
+    if (!modal) return;
+    if (modal.querySelector(".translation-mobile-sheet-close")) return;
+    var host = document.createElement("div");
+    host.className = "translation-mobile-sheet-close";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "translation-mobile-sheet-close__btn";
+    btn.setAttribute("aria-label", "Close");
+    btn.innerHTML = mobileSheetCloseIconSvg();
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tryCloseTranslationModal(modal);
+    });
+    host.appendChild(btn);
+    // Put it first so it stays at the top of the sheet content.
+    modal.insertAdjacentElement("afterbegin", host);
+  }
+
+  function setMobileTranslateSheetOpen(isOpen) {
+    state.mobileTranslateSheet.open = Boolean(isOpen);
+    document.body.classList.toggle("translation-mobile-sheet-open", Boolean(isOpen));
+    try {
+      // Some modals compute width off the root scroller; clamp at the document level too.
+      if (document && document.documentElement) {
+        document.documentElement.style.overflowX = isOpen ? "hidden" : "";
+      }
+    } catch (_e) { }
+    if (!isOpen) {
+      unlockMobileSelection();
+    }
+  }
+
+  function applyMobileSheetInlineStyles(modal) {
+    if (!modal || !modal.style) return;
+    // Inline styles win over most site CSS and avoid layout overflows on mobile.
+    modal.style.position = "fixed";
+    modal.style.left = "0";
+    modal.style.right = "0";
+    modal.style.bottom = "0";
+    modal.style.top = "auto";
+    modal.style.width = "100vw";
+    modal.style.maxWidth = "100vw";
+    modal.style.minWidth = "0";
+    modal.style.margin = "0";
+    modal.style.boxSizing = "border-box";
+    modal.style.overflowX = "hidden";
+    // Keep existing height logic from CSS; just ensure it doesn't exceed viewport.
+    if (!modal.style.maxHeight) modal.style.maxHeight = "82vh";
+  }
+
+  function installMobileTranslateBottomSheetObserver() {
+    if (state.mobileTranslateSheet.installed) return;
+    state.mobileTranslateSheet.installed = true;
+
+    function sync() {
+      if (!isMobileReaderViewport()) {
+        if (state.mobileTranslateSheet.open) setMobileTranslateSheetOpen(false);
+        return;
+      }
+      var modal = findTranslationModalCandidate();
+      // Heuristic: consider it open if present and visible.
+      var open =
+        Boolean(modal) &&
+        modal.offsetParent !== null &&
+        window.getComputedStyle(modal).display !== "none" &&
+        window.getComputedStyle(modal).visibility !== "hidden";
+
+      if (open && !state.mobileTranslateSheet.open) {
+        setMobileTranslateSheetOpen(true);
+        applyMobileSheetInlineStyles(modal);
+        ensureMobileSheetCloseButton(modal);
+      } else if (!open && state.mobileTranslateSheet.open) {
+        setMobileTranslateSheetOpen(false);
+      } else if (open) {
+        applyMobileSheetInlineStyles(modal);
+        ensureMobileSheetCloseButton(modal);
+      }
+    }
+
+    var observer = new MutationObserver(function () {
+      sync();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    window.addEventListener("resize", sync);
+
+    // Initial check.
+    sync();
+  }
+
+  function hasMobileTabs() {
+    return Boolean(state.mobileTabs && state.mobileTabs.wordsButton && state.mobileTabs.isTabsViewport);
+  }
+
+  function isWordsTabVisibleOnMobile() {
+    if (!hasMobileTabs()) return false;
+    if (!state.mobileTabs.isTabsViewport()) return false;
+    var sidebar = getHistorySidebarElement();
+    if (!sidebar) return false;
+    return !isSidebarHidden(sidebar);
+  }
+
+  function setWordsTabHasNew(hasNew) {
+    if (!hasMobileTabs()) return;
+    state.mobileTabs.hasNewWords = Boolean(hasNew);
+    state.mobileTabs.wordsButton.classList.toggle("translation-words-tab_has-new", Boolean(hasNew));
+  }
+
+  function flushPendingHistoryAnimations() {
+    if (!hasMobileTabs()) return;
+    if (!state.mobileTabs.isTabsViewport()) return;
+    if (!isWordsTabVisibleOnMobile()) return;
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return;
+    var pending = Array.from(list.querySelectorAll("app-history-item.translation-history-item_pending"));
+    if (!pending.length) return;
+
+    // Make sure we end up at the latest added items.
+    if (typeof list.scrollTop === "number" && typeof list.scrollHeight === "number") {
+      list.scrollTop = list.scrollHeight;
+    }
+
+    pending.forEach(function (added, idx) {
+      setTimeout(function () {
+        added.classList.remove("translation-history-item_pending");
+        added.classList.add("translation-history-item_just-added");
+        setTimeout(function () {
+          added.classList.remove("translation-history-item_just-added");
+        }, 1200);
+      }, idx * 140);
+    });
   }
 
   function sourceNodes() {
@@ -360,6 +1382,79 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z]/g, "");
+  }
+
+  function readArticleVocabGlobal() {
+    var raw = window[ARTICLE_VOCAB_GLOBAL];
+    if (!raw || typeof raw !== "object") return null;
+    return {
+      articleId: raw.articleId ? String(raw.articleId) : "",
+      words: Array.isArray(raw.words) ? raw.words : []
+    };
+  }
+
+  // Keep this indirection so we can later swap to API fetch.
+  function loadArticleVocab() {
+    if (state.articleVocab) return state.articleVocab;
+    state.articleVocab = readArticleVocabGlobal() || { articleId: "", words: [] };
+    return state.articleVocab;
+  }
+
+  function getVocabEntryByIndex(vocabIndex) {
+    if (vocabIndex == null || vocabIndex === "") return null;
+    var idx = Number(vocabIndex);
+    if (!Number.isInteger(idx) || idx < 0) return null;
+    var vocab = loadArticleVocab();
+    if (!vocab.words[idx]) return null;
+    return { index: idx, entry: vocab.words[idx] };
+  }
+
+  function getElementVocabIndex(el) {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
+    if (!el.classList || !el.classList.contains(VOCAB_MARKUP_CLASS)) return null;
+    var raw = el.getAttribute(VOCAB_MARKUP_INDEX_ATTR);
+    if (raw == null || raw === "") return null;
+    var idx = Number(raw);
+    if (!Number.isInteger(idx) || idx < 0) return null;
+    return idx;
+  }
+
+  function collectVocabRanges(root) {
+    var ranges = [];
+    var plainText = "";
+
+    function visit(node, activeVocabIndex) {
+      if (!node) return;
+      if (node.nodeType === Node.TEXT_NODE) {
+        var text = node.nodeValue || "";
+        if (!text) return;
+        var start = plainText.length;
+        plainText += text;
+        if (Number.isInteger(activeVocabIndex)) {
+          ranges.push({ start: start, end: plainText.length, vocabIndex: activeVocabIndex });
+        }
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      var ownIndex = getElementVocabIndex(node);
+      var nextIndex = Number.isInteger(ownIndex) ? ownIndex : activeVocabIndex;
+      var children = node.childNodes || [];
+      for (var i = 0; i < children.length; i += 1) {
+        visit(children[i], nextIndex);
+      }
+    }
+
+    visit(root, null);
+    return { text: plainText, ranges: ranges };
+  }
+
+  function findVocabIndexForWordRange(start, end, vocabRanges) {
+    for (var i = 0; i < vocabRanges.length; i += 1) {
+      var range = vocabRanges[i];
+      if (end <= range.start || start >= range.end) continue;
+      return range.vocabIndex;
+    }
+    return null;
   }
 
   function stemEn(word) {
@@ -442,6 +1537,14 @@
       .replace(/"/g, "&quot;");
   }
 
+  function demoAssetUrl(path) {
+    try {
+      return new URL(String(path || ""), window.location.href).toString();
+    } catch (_e) {
+      return String(path || "");
+    }
+  }
+
   function hoverSparklesSvg() {
     return (
       '<svg class="translation-hover-popover__sparkle" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">' +
@@ -466,6 +1569,9 @@
     el.id = HOVER_POPOVER_ID;
     el.className = "translation-hover-popover";
     el.setAttribute("role", "tooltip");
+    el.addEventListener("mouseleave", function () {
+      hideHoverPopover();
+    });
     document.body.appendChild(el);
     state.hoverPopoverEl = el;
     return el;
@@ -474,11 +1580,17 @@
   function hideHoverPopover() {
     if (!state.hoverPopoverEl) return;
     state.hoverPopoverEl.classList.remove("translation-hover-popover_visible");
+    state.hoverPopoverEl.classList.remove("translation-hover-popover_collapsed");
   }
 
   function positionHoverPopover(anchorEl) {
     if (!anchorEl || !anchorEl.getBoundingClientRect) return;
     var pop = ensureHoverPopover();
+    if (isMobileReaderViewport()) {
+      pop.style.left = "";
+      pop.style.top = "";
+      return;
+    }
     var pad = 10;
     var gap = 10;
     var place = function () {
@@ -489,6 +1601,17 @@
       var left = Math.round(cx - pw / 2);
       var minL = pad;
       var maxL = Math.max(pad, window.innerWidth - pad - pw);
+      // Keep the hover demo away from the right-side paragraph actions (play/translate).
+      var paragraphHost = anchorEl.closest(".translation-paragraph-play-host");
+      if (paragraphHost && paragraphHost.getBoundingClientRect) {
+        var hostRect = paragraphHost.getBoundingClientRect();
+        var actionsReserve = 92;
+        minL = Math.max(minL, Math.round(hostRect.left + pad));
+        maxL = Math.min(maxL, Math.round(hostRect.right - actionsReserve - pw));
+      }
+      if (maxL < minL) {
+        maxL = minL;
+      }
       left = Math.min(Math.max(left, minL), maxL);
       var top = rect.top - ph - gap;
       if (top < pad) {
@@ -507,38 +1630,45 @@
 
   function setHoverPopoverContent(anchorEl, opts) {
     var pop = ensureHoverPopover();
-    var title1 = opts.title1 || "";
-    var def1 = opts.def1 || "";
-    var title2 = opts.title2 || "";
-    var def2 = opts.def2 || "";
-    var loading = Boolean(opts.loading);
-    var sec2 = "";
-    if (title2 && def2) {
-      sec2 =
-        '<div class="translation-hover-popover__section">' +
-        '<div class="translation-hover-popover__head translation-hover-popover__head_only-title">' +
-        '<span class="translation-hover-popover__title">' +
-        escapeHtml(title2) +
-        "</span></div>" +
-        '<p class="translation-hover-popover__def">' +
-        escapeHtml(def2) +
-        "</p></div>";
-    }
+    var mobileToggleLabel = "Quick search demo";
+    var imgSrc = demoAssetUrl(QUICK_SEARCH_IMAGE_PATH);
     pop.innerHTML =
-      '<div class="translation-hover-popover__inner' +
-      (loading ? " translation-hover-popover__loading" : "") +
-      '">' +
-      '<div class="translation-hover-popover__section">' +
-      '<div class="translation-hover-popover__head">' +
-      hoverSparklesSvg() +
-      '<span class="translation-hover-popover__title">' +
-      escapeHtml(title1) +
-      "</span></div>" +
-      '<p class="translation-hover-popover__def">' +
-      escapeHtml(def1) +
-      "</p></div>" +
-      sec2 +
-      '<p class="translation-hover-popover__footer">Click to see more</p></div>';
+      '<button type="button" class="translation-hover-popover__demo-toggle" aria-label="Collapse quick search preview">' +
+      escapeHtml(mobileToggleLabel) +
+      "</button>" +
+      '<div class="translation-hover-popover__demo-header">' +
+      '<span class="translation-hover-popover__demo-label">Demo image</span>' +
+      '<button type="button" class="translation-hover-popover__demo-close" aria-label="Close demo image">Close</button>' +
+      "</div>" +
+      '<div class="translation-hover-popover__demo-wrap">' +
+      '<img class="translation-hover-popover__demo-image" src="' +
+      escapeHtml(imgSrc) +
+      '" alt="Quick search demo preview">' +
+      '<p class="translation-hover-popover__demo-caption">Quick search demo preview</p>' +
+      "</div>";
+    var toggleBtn = pop.querySelector(".translation-hover-popover__demo-toggle");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var collapsed = !pop.classList.contains("translation-hover-popover_collapsed");
+        pop.classList.toggle("translation-hover-popover_collapsed", collapsed);
+        toggleBtn.setAttribute("aria-label", collapsed ? "Expand quick search preview" : "Collapse quick search preview");
+      });
+    }
+    var closeBtn = pop.querySelector(".translation-hover-popover__demo-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideHoverPopover();
+      });
+    }
+    if (isMobileReaderViewport()) {
+      pop.classList.add("translation-hover-popover_collapsed");
+    } else {
+      pop.classList.remove("translation-hover-popover_collapsed");
+    }
     positionHoverPopover(anchorEl);
   }
 
@@ -549,7 +1679,7 @@
     var match;
     while ((match = re.exec(text)) !== null) {
       if (match.index > last) out.push({ type: "sep", value: text.slice(last, match.index) });
-      out.push({ type: "word", value: match[0] });
+      out.push({ type: "word", value: match[0], start: match.index, end: re.lastIndex });
       last = re.lastIndex;
     }
     if (last < text.length) out.push({ type: "sep", value: text.slice(last) });
@@ -557,15 +1687,25 @@
   }
 
   function renderTokenizedParagraph(pEl, text, side, rowIdx) {
+    var sourceMeta = side === "source" ? collectVocabRanges(pEl) : null;
+    var resolvedText = sourceMeta ? sourceMeta.text : text;
     pEl.innerHTML = "";
     pEl.classList.remove("translation-sentence_tgt");
     var tokens = [];
-    var parts = tokenizeText(text);
+    var parts = tokenizeText(resolvedText);
     var tokenIdx = 0;
     for (var i = 0; i < parts.length; i += 1) {
       if (parts[i].type === "word") {
+        var vocabIndex = sourceMeta
+          ? findVocabIndexForWordRange(parts[i].start, parts[i].end, sourceMeta.ranges)
+          : null;
+        var vocabEntry = getVocabEntryByIndex(vocabIndex);
         var span = document.createElement("span");
         span.className = "translation-token";
+        if (vocabEntry) {
+          span.classList.add("translation-token_vocab");
+          span.setAttribute("data-vocab-index", String(vocabEntry.index));
+        }
         span.setAttribute("data-row-index", String(rowIdx));
         span.setAttribute("data-side", side);
         span.setAttribute("data-token-index", String(tokenIdx));
@@ -574,7 +1714,9 @@
         tokens.push({
           el: span,
           raw: parts[i].value,
-          norm: normalizeWord(parts[i].value)
+          norm: normalizeWord(parts[i].value),
+          isVocab: Boolean(vocabEntry),
+          vocabIndex: vocabEntry ? vocabEntry.index : null
         });
         tokenIdx += 1;
       } else {
@@ -613,6 +1755,7 @@
       };
     }
     state.singleModeTokenized = true;
+    syncSavedWordHighlights();
   }
 
   function getRowDataForToken(tokenEl) {
@@ -645,9 +1788,13 @@
     applyHighlight(tokenEl);
   }
 
-  function onSingleReadingHoverMouseleave() {
+  function onSingleReadingHoverMouseleave(event) {
     if (!isHoverWordMappingEnabled()) return;
     if (state.isOpen) return;
+    var related = event && event.relatedTarget ? event.relatedTarget : null;
+    if (related && state.hoverPopoverEl && state.hoverPopoverEl.contains(related)) {
+      return;
+    }
     clearActiveHighlight();
   }
 
@@ -804,7 +1951,10 @@
   function onKaraokeWordChange(word) {
     var karaoke = state.audio.karaoke;
     if (!karaoke) return;
-    if (!word || typeof word.index !== "number") return;
+    if (!word || typeof word.index !== "number") {
+      clearKaraokeDomHighlight();
+      return;
+    }
     var domIdx = karaoke.mapByTimedWordIndex[word.index];
     if (typeof domIdx !== "number" || domIdx < 0 || !karaoke.tokenEls[domIdx]) return;
     clearKaraokeDomHighlight();
@@ -1128,7 +2278,34 @@
       playPause.textContent = "Play";
       playPause.setAttribute("aria-label", "Play");
     }
+    if (state.audio.ui.accent) {
+      state.audio.ui.accent.innerHTML =
+        '<span aria-hidden="true">' +
+        getAccentFlag(state.audio.accent) +
+        "</span><span>" +
+        getAccentLabel(state.audio.accent) +
+        "</span>";
+      state.audio.ui.accent.setAttribute("aria-label", "Accent " + getAccentLabel(state.audio.accent));
+    }
+    if (state.audio.ui.speed) {
+      state.audio.ui.speed.textContent = formatPlaybackRateLabel(state.audio.rate);
+      state.audio.ui.speed.setAttribute("aria-label", "Speed " + formatPlaybackRateLabel(state.audio.rate));
+    }
     syncTriggerButtonsUi();
+  }
+
+  function applyPlaybackRateToAudio() {
+    var nextRate = Number(state.audio.rate) || 1;
+    if (state.audio.remoteEl) {
+      try {
+        state.audio.remoteEl.playbackRate = nextRate;
+      } catch (_e) { }
+    }
+    if (state.audio.player && state.audio.player.audio) {
+      try {
+        state.audio.player.audio.playbackRate = nextRate;
+      } catch (_e2) { }
+    }
   }
 
   function ensureAudioText() {
@@ -1181,9 +2358,18 @@
     var activeLen = Math.max(0, state.audio.activeChunkLength || 0);
     var activeStart = Math.max(0, state.audio.activeChunkStart || 0);
     if (activeLen > 0) {
+      var tWindowStart = Number(state.audio.progressMediaStart) || 0;
+      var tWindowEnd = Number(state.audio.progressMediaEnd) || 0;
+      var rel;
+      if (tWindowEnd > tWindowStart) {
+        var clamped = Math.min(Math.max(el.currentTime || 0, tWindowStart), tWindowEnd);
+        rel = (clamped - tWindowStart) / (tWindowEnd - tWindowStart);
+      } else {
+        rel = Math.max(0, Math.min(1, (el.currentTime || 0) / d));
+      }
       state.audio.currentChar = Math.min(
         state.audio.totalChars,
-        activeStart + Math.round((el.currentTime / d) * activeLen)
+        activeStart + Math.round(rel * activeLen)
       );
     }
     updateAudioUi();
@@ -1211,6 +2397,9 @@
     el.preload = "auto";
     el.muted = false;
     el.volume = 1;
+    try {
+      el.playbackRate = Number(state.audio.rate) || 1;
+    } catch (_eRate) { }
     el.addEventListener("timeupdate", onRemoteAudioTimeUpdate);
     el.addEventListener("loadedmetadata", onRemoteAudioLoadedMetadata);
     el.addEventListener("ended", onRemoteAudioEnded);
@@ -1254,6 +2443,8 @@
     state.audio.isPaused = false;
     state.audio.activeChunkStart = 0;
     state.audio.activeChunkLength = 0;
+    state.audio.progressMediaStart = 0;
+    state.audio.progressMediaEnd = 0;
     resetKaraokeState();
     clearActiveTriggerButtons();
     updateAudioUi();
@@ -1267,6 +2458,8 @@
       state.audio.selectedVoice === nextVoice &&
       state.audio.selectedLanguage === nextLanguage
     ) {
+      state.audio.lang = nextLanguage;
+      applyPlaybackRateToAudio();
       return state.audio.player;
     }
     if (state.audio.player && typeof state.audio.player.stop === "function") {
@@ -1287,11 +2480,14 @@
       voice: nextVoice,
       language: nextLanguage,
       maxChunkChars: READ_ALOUD_MAX_CHUNK_CHARS,
+      preGeneratedAudioByLanguage: READ_ALOUD_PREGENERATED_AUDIO_BY_LANGUAGE,
       audio: ensureRemoteAudioEl()
     });
     state.audio.player = player;
     state.audio.selectedVoice = nextVoice;
     state.audio.selectedLanguage = nextLanguage;
+    state.audio.lang = nextLanguage;
+    applyPlaybackRateToAudio();
     return player;
   }
 
@@ -1336,15 +2532,35 @@
     await playMistralText(text);
   }
 
+  function applyReadAloudChunkProgress(ctx) {
+    if (!ctx) return;
+    state.audio.backend = "remote";
+    state.audio.activeChunkStart = Math.max(0, ctx.startChar || 0);
+    state.audio.activeChunkLength = String(ctx.chunkText || "").length;
+    state.audio.currentChar = state.audio.activeChunkStart;
+    state.audio.isPlaying = true;
+    state.audio.isPaused = false;
+    var ms = ctx.mediaTimeStart;
+    var me = ctx.mediaTimeEnd;
+    if (typeof ms === "number" && typeof me === "number" && me > ms) {
+      state.audio.progressMediaStart = ms;
+      state.audio.progressMediaEnd = me;
+    } else {
+      state.audio.progressMediaStart = 0;
+      state.audio.progressMediaEnd = 0;
+    }
+  }
+
   async function playMistralText(text) {
     text = String(text || "").trim();
     if (!text.length) throw new Error("No text to read");
     state.audio.text = text;
     state.audio.totalChars = text.length;
     state.audio.currentChar = 0;
-    var language = guessLanguageFromPage();
+    var language = getSelectedReadAloudLanguage();
     var voice = resolveVoiceForLanguage(language);
     var player = ensureReadAloudPlayer(voice, language);
+    applyPlaybackRateToAudio();
     logDebug("mistral_play_start", {
       totalChars: text.length,
       hasRemoteEl: Boolean(state.audio.remoteEl),
@@ -1362,12 +2578,7 @@
     await player.playText(text, {
       onWordChange: onKaraokeWordChange,
       onChunkStart: function (ctx) {
-        state.audio.backend = "remote";
-        state.audio.activeChunkStart = Math.max(0, ctx.startChar || 0);
-        state.audio.activeChunkLength = (ctx.chunkText || "").length;
-        state.audio.currentChar = state.audio.activeChunkStart;
-        state.audio.isPlaying = true;
-        state.audio.isPaused = false;
+        applyReadAloudChunkProgress(ctx);
         updateAudioUi();
       },
       onChunkEnd: function (ctx) {
@@ -1380,6 +2591,8 @@
     state.audio.isPaused = false;
     state.audio.activeChunkStart = state.audio.totalChars;
     state.audio.activeChunkLength = 0;
+    state.audio.progressMediaStart = 0;
+    state.audio.progressMediaEnd = 0;
     updateAudioUi();
   }
 
@@ -1423,17 +2636,150 @@
     if (!p) return;
     var text = (p.textContent || "").trim();
     if (!text) return;
-    var selection = window.getSelection ? window.getSelection() : null;
-    if (!selection) return;
-    try {
-      selection.removeAllRanges();
-      var range = document.createRange();
-      range.selectNodeContents(p);
-      selection.addRange(range);
-      ["mouseup", "click", "dblclick"].forEach(function (eventName) {
-        p.dispatchEvent(new MouseEvent(eventName, { bubbles: true, cancelable: true, view: window }));
+    showParagraphDemoModal(p);
+  }
+
+  function ensureQuickSearchDemoModal() {
+    if (state.quickSearchDemoModalEl) return state.quickSearchDemoModalEl;
+    var root = document.createElement("div");
+    root.id = QUICK_SEARCH_DEMO_MODAL_ID;
+    root.className = "translation-paragraph-demo-modal";
+    root.innerHTML =
+      '<div class="translation-paragraph-demo-modal__card" role="dialog" aria-modal="true" aria-label="Quick search demo">' +
+      '<div class="translation-paragraph-demo-modal__header">' +
+      '<span class="translation-paragraph-demo-modal__label">Demo image</span>' +
+      '<a href="#" class="translation-paragraph-demo-modal__close-link" aria-label="Close quick search demo">Close</a>' +
+      "</div>" +
+      '<img class="translation-paragraph-demo-modal__image" src="' +
+      escapeHtml(demoAssetUrl(QUICK_SEARCH_IMAGE_PATH)) +
+      '" alt="Quick search demo preview">' +
+      '<p class="translation-paragraph-demo-modal__caption">Quick search demo preview</p>' +
+      "</div>";
+    var closeLink = root.querySelector(".translation-paragraph-demo-modal__close-link");
+    if (closeLink) {
+      closeLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideQuickSearchDemoModal();
       });
-    } catch (_e) { }
+    }
+    document.addEventListener("keydown", function (event) {
+      if (!state.quickSearchDemoModalEl) return;
+      if (!state.quickSearchDemoModalEl.classList.contains("translation-paragraph-demo-modal_visible")) return;
+      if (event.key === "Escape") hideQuickSearchDemoModal();
+    });
+    document.addEventListener("mousedown", function (event) {
+      if (!state.quickSearchDemoModalEl) return;
+      if (!state.quickSearchDemoModalEl.classList.contains("translation-paragraph-demo-modal_visible")) return;
+      if (state.quickSearchDemoModalEl.contains(event.target)) return;
+      hideQuickSearchDemoModal();
+    });
+    document.body.appendChild(root);
+    state.quickSearchDemoModalEl = root;
+    return root;
+  }
+
+  function showQuickSearchDemoModal(anchorEl) {
+    var modal = ensureQuickSearchDemoModal();
+    if (!isMobileReaderViewport() && anchorEl && anchorEl.getBoundingClientRect) {
+      var rect = anchorEl.getBoundingClientRect();
+      var modalWidth = modal.offsetWidth || 420;
+      var modalHeight = modal.offsetHeight || 250;
+      var pad = 12;
+      var left = Math.round(rect.right - modalWidth);
+      if (left < pad) left = pad;
+      if (left + modalWidth > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - pad - modalWidth);
+      var top = Math.round(rect.top + 8);
+      var maxTop = window.innerHeight - pad - modalHeight;
+      if (top > maxTop) top = Math.max(pad, maxTop);
+      modal.style.left = left + "px";
+      modal.style.top = top + "px";
+      modal.style.right = "auto";
+      modal.style.bottom = "auto";
+    } else {
+      modal.style.left = "";
+      modal.style.top = "";
+      modal.style.right = "";
+      modal.style.bottom = "";
+    }
+    modal.classList.add("translation-paragraph-demo-modal_visible");
+  }
+
+  function hideQuickSearchDemoModal() {
+    if (!state.quickSearchDemoModalEl) return;
+    state.quickSearchDemoModalEl.classList.remove("translation-paragraph-demo-modal_visible");
+  }
+
+  function ensureParagraphDemoModal() {
+    if (state.paragraphDemoModalEl) return state.paragraphDemoModalEl;
+    var root = document.createElement("div");
+    root.id = PARAGRAPH_DEMO_MODAL_ID;
+    root.className = "translation-paragraph-demo-modal";
+    root.innerHTML =
+      '<div class="translation-paragraph-demo-modal__card" role="dialog" aria-modal="true" aria-label="Paragraph translation demo">' +
+      '<div class="translation-paragraph-demo-modal__header">' +
+      '<span class="translation-paragraph-demo-modal__label">Demo image</span>' +
+      '<a href="#" class="translation-paragraph-demo-modal__close-link" aria-label="Close paragraph translation demo">Close</a>' +
+      "</div>" +
+      '<img class="translation-paragraph-demo-modal__image" src="' +
+      escapeHtml(demoAssetUrl(PARAGRAPH_SEARCH_IMAGE_PATH)) +
+      '" alt="Paragraph translation demo preview">' +
+      '<p class="translation-paragraph-demo-modal__caption">Paragraph translation demo preview</p>' +
+      "</div>";
+    var closeLink = root.querySelector(".translation-paragraph-demo-modal__close-link");
+    if (closeLink) {
+      closeLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideParagraphDemoModal();
+      });
+    }
+    document.addEventListener("keydown", function (event) {
+      if (!state.paragraphDemoModalEl) return;
+      if (!state.paragraphDemoModalEl.classList.contains("translation-paragraph-demo-modal_visible")) return;
+      if (event.key === "Escape") hideParagraphDemoModal();
+    });
+    document.addEventListener("mousedown", function (event) {
+      if (!state.paragraphDemoModalEl) return;
+      if (!state.paragraphDemoModalEl.classList.contains("translation-paragraph-demo-modal_visible")) return;
+      if (state.paragraphDemoModalEl.contains(event.target)) return;
+      if (event.target && event.target.closest && event.target.closest(".translation-paragraph-translate")) return;
+      hideParagraphDemoModal();
+    });
+    document.body.appendChild(root);
+    state.paragraphDemoModalEl = root;
+    return root;
+  }
+
+  function showParagraphDemoModal(anchorEl) {
+    var modal = ensureParagraphDemoModal();
+    if (!isMobileReaderViewport() && anchorEl && anchorEl.getBoundingClientRect) {
+      var rect = anchorEl.getBoundingClientRect();
+      var modalWidth = modal.offsetWidth || 420;
+      var modalHeight = modal.offsetHeight || 250;
+      var pad = 12;
+      var left = Math.round(rect.right - modalWidth);
+      if (left < pad) left = pad;
+      if (left + modalWidth > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - pad - modalWidth);
+      var top = Math.round(rect.top + 8);
+      var maxTop = window.innerHeight - pad - modalHeight;
+      if (top > maxTop) top = Math.max(pad, maxTop);
+      modal.style.left = left + "px";
+      modal.style.top = top + "px";
+      modal.style.right = "auto";
+      modal.style.bottom = "auto";
+    } else {
+      modal.style.left = "";
+      modal.style.top = "";
+      modal.style.right = "";
+      modal.style.bottom = "";
+    }
+    modal.classList.add("translation-paragraph-demo-modal_visible");
+  }
+
+  function hideParagraphDemoModal() {
+    if (!state.paragraphDemoModalEl) return;
+    state.paragraphDemoModalEl.classList.remove("translation-paragraph-demo-modal_visible");
   }
 
   function getParagraphPlainText(p) {
@@ -1476,6 +2822,7 @@
         showAudioPlayer();
         stopAudioPlayback();
         setActiveParagraphTriggerButton(btn);
+        ensureSingleModeTokenization();
         var karaokeDom = buildKaraokeDomMap(p);
         state.audio.karaoke.paragraphEl = p;
         state.audio.karaoke.tokenEls = karaokeDom.tokenEls;
@@ -1483,9 +2830,10 @@
           karaokeDom.normalizedDomTokens,
           text
         );
-        var paragraphLanguage = guessLanguageFromPage();
+        var paragraphLanguage = getSelectedReadAloudLanguage();
         var paragraphVoice = resolveVoiceForLanguage(paragraphLanguage);
         var player = ensureReadAloudPlayer(paragraphVoice, paragraphLanguage);
+        applyPlaybackRateToAudio();
         logDebug("paragraph_player_ready", {
           paragraphIndex: paragraphIndex,
           mode: (player && typeof player.getMode === "function") ? player.getMode() : "unknown",
@@ -1502,12 +2850,23 @@
           updateAudioUi();
           player.playParagraph(text, {
             onWordChange: onKaraokeWordChange,
-            paragraphIndex: paragraphIndex
+            paragraphIndex: paragraphIndex,
+            onChunkStart: function (ctx) {
+              applyReadAloudChunkProgress(ctx);
+              updateAudioUi();
+            },
+            onChunkEnd: function (ctx) {
+              state.audio.currentChar = Math.min(state.audio.totalChars, Math.max(0, ctx.playedChars || 0));
+              updateAudioUi();
+            }
           }).then(function () {
             logDebug("paragraph_play_done", { paragraphIndex: paragraphIndex });
             state.audio.currentChar = state.audio.totalChars;
             state.audio.isPlaying = false;
             state.audio.isPaused = false;
+            state.audio.activeChunkLength = 0;
+            state.audio.progressMediaStart = 0;
+            state.audio.progressMediaEnd = 0;
             updateAudioUi();
           }).catch(function (err) {
             if (err && err.name === "AbortError") return;
@@ -1558,6 +2917,7 @@
       if (state.audio.isPaused || (!state.audio.isPlaying && rel.currentTime > 0)) {
         state.audio.isPlaying = true;
         state.audio.isPaused = false;
+        applyPlaybackRateToAudio();
         rel.play().catch(function () { });
         updateAudioUi();
         return;
@@ -1592,10 +2952,11 @@
       '<div class="translation-audio-player__toolbar">' +
       '<div class="translation-audio-player__main">' +
       '<div class="translation-audio-player__adjustment">' +
-      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_dialect" data-audio-action="dialect" aria-label="Dialect">' +
-      "<span>EN</span>" +
-      '<span class="translation-audio-player__dialect-chevron" aria-hidden="true">&#8250;</span>' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_dialect" data-audio-action="dialect" aria-label="Accent US">' +
+      '<span aria-hidden="true">🇺🇸</span><span>US</span>' +
       "</button>" +
+      '<button type="button" class="translation-audio-player__btn" data-audio-action="speed" aria-label="Speed 1x">1x</button>' +
+      '<span class="translation-audio-player__dialect-chevron" aria-hidden="true">&#8250;</span>' +
       "</div>" +
       '<div class="translation-audio-player__control">' +
       '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="back" aria-label="Back 15 seconds">' +
@@ -1622,6 +2983,8 @@
     state.audio.ui = {
       root: root,
       playPause: root.querySelector('[data-audio-action="play-pause"]'),
+      accent: root.querySelector('[data-audio-action="dialect"]'),
+      speed: root.querySelector('[data-audio-action="speed"]'),
       back: root.querySelector('[data-audio-action="back"]'),
       forward: root.querySelector('[data-audio-action="forward"]'),
       stop: root.querySelector('[data-audio-action="stop"]'),
@@ -1631,6 +2994,15 @@
       total: root.querySelector('[data-audio-time="total"]')
     };
     state.audio.ui.playPause.addEventListener("click", pauseOrResumeAudio);
+    state.audio.ui.accent.addEventListener("click", function () {
+      toggleReadAloudAccent();
+    });
+    state.audio.ui.speed.addEventListener("click", function () {
+      state.audio.rate = cyclePlaybackRate(state.audio.rate);
+      applyPlaybackRateToAudio();
+      updateAudioUi();
+      updateMobileCommandBarUi();
+    });
     state.audio.ui.back.addEventListener("click", function () {
       var jumpChars = Math.round(15 * 13 * state.audio.rate);
       seekAudioTo(state.audio.currentChar - jumpChars);
@@ -1773,33 +3145,8 @@
     return button;
   }
 
-  function createHoverToggleButton() {
-    var button = document.createElement("button");
-    button.type = "button";
-    button.className = "translation-mode-button";
-    button.setAttribute("aria-label", "Toggle word hover hints and translation popover");
-    button.setAttribute("title", "Toggle interactive mode");
-    button.setAttribute("data-tooltip", "Toggle interactive mode");
-    button.setAttribute("aria-pressed", "true");
-    button.innerHTML =
-      '<svg class="translation-mode-logo" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">' +
-      '<g clip-path="url(#translation-interactive-icon-clip)">' +
-      '<path d="M6 16H9.33333M16 6V9.33333M11.3333 11.3333L8.88889 8.88889M20.6667 11.3333L23.1111 8.88889M11.3333 20.6667L8.88889 23.1111M16 16L26 19.3333L21.5556 21.5556L19.3333 26L16 16Z" stroke="#607D8B" stroke-width="2.22222" stroke-linecap="round" stroke-linejoin="round"></path>' +
-      "</g>" +
-      "<defs>" +
-      '<clipPath id="translation-interactive-icon-clip"><rect width="24" height="24" fill="white" transform="translate(4 4)"></rect></clipPath>' +
-      "</defs>" +
-      "</svg>";
-    return button;
-  }
-
-  function syncHoverToggleUi(hoverBtn) {
-    var btn = hoverBtn || state.hoverToggleButton;
-    if (!btn) return;
-    var on = isHoverWordMappingEnabled();
-    btn.setAttribute("aria-pressed", on ? "true" : "false");
-    btn.classList.toggle("translation-mode-button_active", on);
-    document.body.classList.toggle("translation-hover-disabled", !on);
+  function syncHoverToggleUi() {
+    document.body.classList.toggle("translation-hover-disabled", !isHoverWordMappingEnabled());
   }
 
   function findDarkModeBtn() {
@@ -1882,6 +3229,7 @@
     nodes[0].parentNode.insertBefore(wrap, nodes[0]);
     state.inlineWrap = wrap;
     attachHoverHandlers(wrap);
+    syncSavedWordHighlights();
     return wrap;
   }
 
@@ -1937,6 +3285,21 @@
     state.activeHighlight = null;
   }
 
+  function normalizeTokenWordForSavedState(word) {
+    var clean = String(word || "").replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, "");
+    return normalizeHistoryWord(clean);
+  }
+
+  function syncSavedWordHighlights() {
+    var savedWords = getSavedHistoryWordsSet();
+    var tokens = document.querySelectorAll('.translation-token[data-side="source"]');
+    Array.prototype.forEach.call(tokens, function (tokenEl) {
+      var key = normalizeTokenWordForSavedState(tokenEl ? tokenEl.textContent : "");
+      var isSaved = Boolean(key) && savedWords.has(key);
+      tokenEl.classList.toggle("translation-token_saved", isSaved);
+    });
+  }
+
   function findBestMatchIndex(sourceTokenNorm, targetTokens, translatedNorm) {
     if (translatedNorm) {
       for (var exactIdx = 0; exactIdx < targetTokens.length; exactIdx += 1) {
@@ -1986,108 +3349,8 @@
     if (!isHoverWordMappingEnabled()) return;
     var rowData = getRowDataForToken(tokenEl);
     if (!rowData) return;
-    var side = tokenEl.getAttribute("data-side");
-    var tokenIndex = Number(tokenEl.getAttribute("data-token-index"));
-    var sourceToken;
-    var targetMatchIdx = -1;
-    if (side === "source") {
-      sourceToken = rowData.sourceTokens[tokenIndex];
-      if (!sourceToken) return;
-      logDebug("hover_source_token", {
-        rowIndex: tokenEl.getAttribute("data-row-index"),
-        tokenIndex: tokenIndex,
-        raw: sourceToken.raw,
-        norm: sourceToken.norm
-      });
-      var requestId = ++state.hoverRequestId;
-      setHoverPopoverContent(tokenEl, {
-        title1: sourceToken.raw,
-        def1: "Translating…",
-        loading: true
-      });
-      var translated = await translateHoverWord(sourceToken.raw);
-      var translatedNorm = translated.normalized || "";
-      if (requestId !== state.hoverRequestId) {
-        logDebug("hover_request_stale", { requestId: requestId, currentRequestId: state.hoverRequestId });
-        return;
-      }
-      targetMatchIdx = findBestMatchIndex(sourceToken.norm, rowData.targetTokens, translatedNorm);
-      var defPrimary =
-        translated.display ||
-        (!supportsTranslatorApi()
-          ? "Translation unavailable in this browser."
-          : "No quick translation returned for this word.");
-      var title2 = "";
-      var def2 = "";
-      if (targetMatchIdx >= 0 && rowData.targetTokens[targetMatchIdx]) {
-        var tw = rowData.targetTokens[targetMatchIdx].raw;
-        title2 = tw;
-        def2 = "Aligned word in the French column for this sentence.";
-      }
-      setHoverPopoverContent(tokenEl, {
-        title1: sourceToken.raw,
-        def1: defPrimary,
-        title2: title2,
-        def2: def2,
-        loading: false
-      });
-      if (targetMatchIdx >= 0 && rowData.targetTokens[targetMatchIdx]) {
-        logDebug("hover_match_token", {
-          sourceRaw: sourceToken.raw,
-          translatedNorm: translatedNorm,
-          targetRaw: rowData.targetTokens[targetMatchIdx].raw,
-          targetNorm: rowData.targetTokens[targetMatchIdx].norm,
-          targetIndex: targetMatchIdx
-        });
-        state.activeHighlight = null;
-      } else if (rowData.targetP) {
-        logWarn("hover_match_fallback_sentence", {
-          sourceRaw: sourceToken.raw,
-          sourceNorm: sourceToken.norm,
-          translatedNorm: translatedNorm
-        });
-        state.activeHighlight = null;
-      } else {
-        state.activeHighlight = null;
-      }
-    } else {
-      var targetToken = rowData.targetTokens[tokenIndex];
-      if (!targetToken) return;
-      logDebug("hover_target_token", {
-        rowIndex: tokenEl.getAttribute("data-row-index"),
-        tokenIndex: tokenIndex,
-        raw: targetToken.raw,
-        norm: targetToken.norm
-      });
-      targetMatchIdx = findBestMatchIndex(targetToken.norm, rowData.sourceTokens, "");
-      var tTitle2 = "";
-      var tDef2 = "";
-      var tDef1 = "No single-word match in the English column for this sentence.";
-      if (targetMatchIdx >= 0 && rowData.sourceTokens[targetMatchIdx]) {
-        var sw = rowData.sourceTokens[targetMatchIdx].raw;
-        tDef1 = "Aligned English word for this sentence: " + sw + ".";
-        tTitle2 = sw;
-        tDef2 = "French token you hovered: " + targetToken.raw + ".";
-      }
-      setHoverPopoverContent(tokenEl, {
-        title1: targetToken.raw,
-        def1: tDef1,
-        title2: tTitle2,
-        def2: tDef2,
-        loading: false
-      });
-      if (targetMatchIdx >= 0 && rowData.sourceTokens[targetMatchIdx]) {
-        logDebug("hover_reverse_match_token", {
-          targetRaw: targetToken.raw,
-          sourceRaw: rowData.sourceTokens[targetMatchIdx].raw,
-          sourceIndex: targetMatchIdx
-        });
-        state.activeHighlight = null;
-      } else {
-        logWarn("hover_reverse_no_match", { targetRaw: targetToken.raw, targetNorm: targetToken.norm });
-        state.activeHighlight = null;
-      }
-    }
+    setHoverPopoverContent(tokenEl, {});
+    state.activeHighlight = null;
   }
 
   function attachHoverHandlers(wrap) {
@@ -2098,7 +3361,11 @@
       clearActiveHighlight();
       applyHighlight(tokenEl);
     });
-    wrap.addEventListener("mouseleave", function () {
+    wrap.addEventListener("mouseleave", function (event) {
+      var related = event && event.relatedTarget ? event.relatedTarget : null;
+      if (related && state.hoverPopoverEl && state.hoverPopoverEl.contains(related)) {
+        return;
+      }
       clearActiveHighlight();
     });
   }
@@ -2109,7 +3376,381 @@
       .toLowerCase();
   }
 
-  function createHistoryItemElement(word) {
+  function historyVocabIconSvg() {
+    return (
+      '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none">' +
+      '<g clip-path="url(#translation-vocab-badge-clip)">' +
+      '<path fill-rule="evenodd" clip-rule="evenodd" d="M1.53658 7.60148C1.32294 6.47688 2.06142 5.39202 3.18602 5.17838L9.4281 3.99259C9.25833 4.31723 9.12133 4.66537 9.0226 5.03383L6.42586 14.725C6.23224 15.4476 6.20477 16.1754 6.32004 16.868C6.31369 17.4412 6.4465 17.9977 6.69415 18.4954L5.7499 18.6748C4.6253 18.8884 3.54044 18.1499 3.3268 17.0253L1.53658 7.60148ZM7.81186 19.8099L6.02984 20.1484C4.09137 20.5167 2.2214 19.2437 1.85316 17.3053L0.0629339 7.88142C-0.305312 5.94295 0.967607 4.07298 2.90608 3.70474L9.42811 2.46577C9.85205 2.38523 10.2727 2.38319 10.6751 2.44944C11.1003 2.51944 11.5051 2.66569 11.8718 2.87614C12.4373 2.73698 13.0449 2.73441 13.6472 2.89579L21.1243 4.89928C23.0302 5.40996 24.1612 7.369 23.6505 9.2749L20.8214 19.8332C20.3107 21.7391 18.3517 22.8702 16.4458 22.3595L8.96871 20.356C8.54076 20.2413 8.15187 20.0536 7.81186 19.8099ZM9.57041 19.1506L16.7874 21.0844C17.9892 21.4064 19.2244 20.6933 19.5464 19.4916L22.3755 8.93326C22.6975 7.73153 21.9843 6.4963 20.7826 6.1743L13.3055 4.17082C12.1038 3.84881 10.8686 4.56198 10.5466 5.76371L7.75497 16.1821C7.78392 16.9046 8.03299 17.5931 8.4524 18.1614C8.74685 18.5603 9.12526 18.9 9.57041 19.1506Z" fill="currentColor"></path>' +
+      '<path d="M12.6445 14.4432L14.8186 13.6068L16.2755 15.4161C16.3834 15.5501 16.4995 15.6227 16.6237 15.6338C16.7493 15.6399 16.8544 15.5988 16.9388 15.5108C17.0232 15.4228 17.0604 15.2945 17.0503 15.1258L16.9049 12.7884L19.0903 11.9717C19.2311 11.9209 19.3252 11.8382 19.3725 11.7237C19.4263 11.6053 19.427 11.4893 19.3744 11.3757C19.3271 11.2634 19.2182 11.1845 19.0479 11.1388L16.7888 10.5584L16.6765 8.22153C16.6753 8.06079 16.6267 7.94267 16.5308 7.86718C16.4362 7.78652 16.3278 7.75748 16.2056 7.78005C16.0899 7.79884 15.9863 7.87616 15.8945 8.01201L14.6366 9.9817L12.3899 9.35482C12.2247 9.31056 12.091 9.32451 11.9887 9.39667C11.8915 9.47021 11.8341 9.57099 11.8164 9.69901C11.8052 9.82325 11.8447 9.94446 11.9347 10.0626L13.421 11.8549L12.1264 13.8065C12.0399 13.9437 12.0105 14.0741 12.0382 14.1977C12.0673 14.3162 12.1378 14.4042 12.2495 14.4618C12.3627 14.5142 12.4944 14.508 12.6445 14.4432Z" fill="currentColor"></path>' +
+      "</g>" +
+      '<defs><clipPath id="translation-vocab-badge-clip"><rect width="24" height="24" fill="white"></rect></clipPath></defs>' +
+      "</svg>"
+    );
+  }
+
+  function applyHistoryVocabBadge(host, vocabIndex) {
+    if (!host) return;
+    var idx = Number(vocabIndex);
+    if (!Number.isInteger(idx) || idx < 0) return;
+    if (!getVocabEntryByIndex(idx)) return;
+    var wordEl = host.querySelector(".history-item__word");
+    if (!wordEl || !wordEl.parentElement) return;
+    var existing = host.querySelector(".translation-history-vocab-badge");
+    if (existing) return;
+    var badge = document.createElement("button");
+    badge.type = "button";
+    badge.className = "translation-history-vocab-badge";
+    badge.setAttribute("aria-label", VOCAB_TOOLTIP_TEXT);
+    badge.setAttribute("title", VOCAB_TOOLTIP_TEXT);
+    badge.setAttribute("data-tooltip", VOCAB_TOOLTIP_TEXT);
+    badge.setAttribute("data-vocab-index", String(idx));
+    badge.innerHTML = historyVocabIconSvg();
+    wordEl.parentElement.appendChild(badge);
+  }
+
+  function getVocabularyTermsFromArticle() {
+    var words = loadArticleVocab().words || [];
+    var seen = new Set();
+    var out = [];
+    for (var i = 0; i < words.length; i += 1) {
+      var row = words[i];
+      var term = "";
+      if (typeof row === "string") {
+        term = row;
+      } else if (row && typeof row === "object") {
+        term = String(row.term || row.word || row.label || "").trim();
+      }
+      var key = normalizeHistoryWord(term);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ term: term, vocabIndex: i });
+    }
+    return out;
+  }
+
+  function getSavedHistoryWordsSet() {
+    var saved = new Set();
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return saved;
+    var items = list.querySelectorAll("app-history-item .history-item__word");
+    Array.prototype.forEach.call(items, function (el) {
+      var key = normalizeHistoryWord(el ? el.textContent : "");
+      if (key) saved.add(key);
+    });
+    return saved;
+  }
+
+  function getSavedHistoryWordsInOrder() {
+    var out = [];
+    var seen = new Set();
+    var list = document.querySelector(".history-sidebar__list");
+    if (!list) return out;
+    var items = list.querySelectorAll("app-history-item .history-item__word");
+    Array.prototype.forEach.call(items, function (el) {
+      var term = String(el ? el.textContent : "").trim();
+      var key = normalizeHistoryWord(term);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      out.push(term);
+    });
+    return out;
+  }
+
+  function ensureReadingStatsSectionRoot() {
+    var content = document.querySelector(".reading-list__content");
+    if (!content || !content.parentElement) return null;
+    var container = content.parentElement;
+    var finishBlock = container.querySelector("app-reading-finish-block");
+    if (finishBlock) finishBlock.remove();
+    var existing = container.querySelector(".translation-reading-stats");
+    if (existing) {
+      if (existing.parentElement !== container) {
+        container.appendChild(existing);
+      }
+      return existing;
+    }
+    var section = document.createElement("section");
+    section.className = "translation-reading-stats skip-highlight";
+    section.innerHTML =
+      '<div class="translation-reading-stats__top">' +
+      '<div class="translation-reading-stats__ring" style="--reading-stats-progress:0%"><span class="translation-reading-stats__ring-value">0/3</span></div>' +
+      '<div class="translation-reading-stats__copy">' +
+      '<div class="translation-reading-stats__title-row">' +
+      '<span class="translation-reading-stats__badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.27L20.4 9.11L16.2 13.2L17.2 19L12 16.27L6.8 19L7.8 13.2L3.6 9.11L9.4 8.27L12 3Z" fill="currentColor"></path></svg></span>' +
+      '<h3 class="translation-reading-stats__title">You have discovered 0 words</h3>' +
+      "</div>" +
+      '<p class="translation-reading-stats__subtitle">Save at least 3 words to unlock practice.</p>' +
+      "</div>" +
+      "</div>" +
+      '<button type="button" class="translation-reading-stats__cta translation-reading-stats__cta_disabled" disabled>Still 3 words to discover</button>' +
+      '<p class="translation-reading-stats__hint">Saved words are prioritized first in practice.</p>';
+    container.appendChild(section);
+    section.addEventListener("click", function (event) {
+      var cta = event.target && event.target.closest
+        ? event.target.closest(".translation-reading-stats__cta")
+        : null;
+      if (!cta || cta.disabled) return;
+      launchPracticeSavedWordsFlow();
+    });
+    return section;
+  }
+
+  function getVocabularyFillTerms(excluded, maxCount) {
+    var out = [];
+    var terms = getVocabularyTermsFromArticle();
+    for (var i = 0; i < terms.length && out.length < maxCount; i += 1) {
+      var key = normalizeHistoryWord(terms[i].term);
+      if (!key || excluded.has(key)) continue;
+      excluded.add(key);
+      out.push(terms[i]);
+    }
+    return out;
+  }
+
+  function getFlashcardsHref() {
+    var link = document.querySelector(".history-sidebar__flashcards a");
+    if (!link) return "";
+    return String(link.getAttribute("href") || "").trim();
+  }
+
+  function launchPracticeSavedWordsFlow() {
+    var savedWords = getSavedHistoryWordsInOrder();
+    var usedKeys = new Set();
+    for (var i = 0; i < savedWords.length; i += 1) {
+      var savedKey = normalizeHistoryWord(savedWords[i]);
+      if (savedKey) usedKeys.add(savedKey);
+    }
+    if (savedWords.length < PRACTICE_SAVED_WORDS_MIN) {
+      var fillers = getVocabularyFillTerms(usedKeys, PRACTICE_SAVED_WORDS_MIN - savedWords.length);
+      for (var j = 0; j < fillers.length; j += 1) {
+        addWordToHistorySidebar(fillers[j].term, {
+          word: fillers[j].term,
+          isVocab: true,
+          vocabIndex: fillers[j].vocabIndex
+        });
+        savedWords.push(fillers[j].term);
+      }
+    }
+    try {
+      sessionStorage.setItem(
+        "READER_PRACTICE_WORD_QUEUE",
+        JSON.stringify({
+          createdAt: Date.now(),
+          minWords: PRACTICE_SAVED_WORDS_MIN,
+          words: savedWords
+        })
+      );
+    } catch (_e) { }
+    var flashcardsHref = getFlashcardsHref();
+    if (flashcardsHref) {
+      window.location.assign(flashcardsHref);
+    }
+  }
+
+  function syncReadingStatsSection() {
+    var section = ensureReadingStatsSectionRoot();
+    if (!section) return;
+    var discoveredCount = getSavedHistoryWordsInOrder().length;
+    var capped = Math.min(discoveredCount, PRACTICE_SAVED_WORDS_MIN);
+    var remaining = Math.max(0, PRACTICE_SAVED_WORDS_MIN - discoveredCount);
+    var progressBase = Math.round((capped / PRACTICE_SAVED_WORDS_MIN) * 100);
+    var progressPercent = discoveredCount > PRACTICE_SAVED_WORDS_MIN ? 100 : progressBase;
+    var title = section.querySelector(".translation-reading-stats__title");
+    var subtitle = section.querySelector(".translation-reading-stats__subtitle");
+    var ring = section.querySelector(".translation-reading-stats__ring");
+    var ringValue = section.querySelector(".translation-reading-stats__ring-value");
+    var badge = section.querySelector(".translation-reading-stats__badge");
+    var cta = section.querySelector(".translation-reading-stats__cta");
+    var hint = section.querySelector(".translation-reading-stats__hint");
+    var hasMastered = discoveredCount > PRACTICE_SAVED_WORDS_MIN;
+    section.classList.toggle("translation-reading-stats_mastered", hasMastered);
+    if (title) title.textContent = "You have discovered " + String(discoveredCount) + " words";
+    if (subtitle) {
+      subtitle.textContent = remaining > 0
+        ? "Save at least 3 words to unlock practice."
+        : hasMastered
+          ? "Excellent! The more words you save, the more you progress."
+          : "Great momentum. Your practice set is ready.";
+    }
+    if (ring) ring.style.setProperty("--reading-stats-progress", String(progressPercent) + "%");
+    if (ringValue) {
+      ringValue.textContent = hasMastered
+        ? String(discoveredCount)
+        : String(capped) + "/" + String(PRACTICE_SAVED_WORDS_MIN);
+    }
+    if (badge) {
+      badge.innerHTML = hasMastered
+        ? '<svg viewBox="0 0 24 24" fill="none"><path d="M7 3H14C15.1 3 16 3.9 16 5V15C16 16.1 15.1 17 14 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3Z" stroke="currentColor" stroke-width="2"></path><path d="M16 5H17C18.1 5 19 5.9 19 7V19L16 17L13 19V17" stroke="currentColor" stroke-width="2"></path></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.27L20.4 9.11L16.2 13.2L17.2 19L12 16.27L6.8 19L7.8 13.2L3.6 9.11L9.4 8.27L12 3Z" fill="currentColor"></path></svg>';
+    }
+    if (cta) {
+      if (remaining > 0) {
+        cta.disabled = true;
+        cta.classList.add("translation-reading-stats__cta_disabled");
+        cta.textContent = "Still " + String(remaining) + " words to discover";
+      } else {
+        cta.disabled = false;
+        cta.classList.remove("translation-reading-stats__cta_disabled");
+        cta.textContent = hasMastered ? "Practice your top saved words" : "Practice saved words";
+      }
+    }
+    if (hint) {
+      hint.textContent = "Saved words are prioritized first in practice.";
+    }
+  }
+
+  function clearVocabularyPreviewFocus() {
+    if (!state.vocabPreview || !state.vocabPreview.tokenEl) return;
+    state.vocabPreview.tokenEl.classList.remove("translation-token_vocab-focus");
+    state.vocabPreview.tokenEl = null;
+    state.vocabPreview.vocabIndex = null;
+  }
+
+  function focusVocabularyTokenInText(vocabIndex) {
+    var idx = Number(vocabIndex);
+    if (!Number.isInteger(idx) || idx < 0) {
+      clearVocabularyPreviewFocus();
+      return;
+    }
+    if (state.vocabPreview && state.vocabPreview.vocabIndex === idx && state.vocabPreview.tokenEl) {
+      return;
+    }
+    clearVocabularyPreviewFocus();
+    var selector = '.translation-token_vocab[data-vocab-index="' + String(idx) + '"]';
+    var tokenEl = document.querySelector(selector);
+    if (!tokenEl) return;
+    tokenEl.classList.add("translation-token_vocab-focus");
+    state.vocabPreview.tokenEl = tokenEl;
+    state.vocabPreview.vocabIndex = idx;
+    if (typeof tokenEl.scrollIntoView === "function") {
+      tokenEl.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+    }
+  }
+
+  function ensureVocabularySectionRoot() {
+    var sidebar = document.querySelector(".history-sidebar");
+    if (!sidebar) return null;
+    var existing = sidebar.querySelector(".translation-vocab-section");
+    var historyList = sidebar.querySelector(".history-sidebar__list");
+    if (existing) {
+      // Keep the section near the words list (after it) so it stays visible and in expected order.
+      if (historyList && historyList.parentElement) {
+        var desiredParent = historyList.parentElement;
+        var isRightParent = existing.parentElement === desiredParent;
+        var isRightPosition = historyList.nextSibling === existing;
+        if (!isRightParent || !isRightPosition) {
+          desiredParent.insertBefore(existing, historyList.nextSibling);
+        }
+      }
+      return existing;
+    }
+    var section = document.createElement("div");
+    section.className = "translation-vocab-section";
+    section.innerHTML =
+      '<h4 class="translation-vocab-section__title">Key vocabulary</h4>' +
+      '<div class="translation-vocab-section__list"></div>';
+    if (historyList && historyList.parentElement) {
+      historyList.parentElement.insertBefore(section, historyList.nextSibling);
+    } else {
+      var flashcards = sidebar.querySelector(".history-sidebar__flashcards");
+      if (flashcards && flashcards.parentElement) {
+        flashcards.parentElement.insertBefore(section, flashcards);
+      } else {
+        sidebar.appendChild(section);
+      }
+    }
+    section.addEventListener("click", function (event) {
+      var bubble = event.target && event.target.closest
+        ? event.target.closest(".translation-vocab-item")
+        : null;
+      if (!bubble || !section.contains(bubble)) return;
+      var term = String(bubble.getAttribute("data-term") || "").trim();
+      if (!term) return;
+      var vocabIndex = Number(bubble.getAttribute("data-vocab-index"));
+      addWordToHistorySidebar(term, {
+        word: term,
+        isVocab: Number.isInteger(vocabIndex) && vocabIndex >= 0,
+        vocabIndex: Number.isInteger(vocabIndex) && vocabIndex >= 0 ? vocabIndex : null
+      });
+    });
+    section.addEventListener("mouseover", function (event) {
+      var bubble = event.target && event.target.closest
+        ? event.target.closest(".translation-vocab-item")
+        : null;
+      if (!bubble || !section.contains(bubble)) return;
+      var vocabIndex = Number(bubble.getAttribute("data-vocab-index"));
+      focusVocabularyTokenInText(vocabIndex);
+    });
+    section.addEventListener("mouseout", function (event) {
+      var related = event.relatedTarget || null;
+      if (related && section.contains(related)) return;
+      clearVocabularyPreviewFocus();
+    });
+    return section;
+  }
+
+  function syncHistoryListHeightForVocabulary(sidebar, historyList, hasTerms) {
+    if (!sidebar || !historyList) return;
+    if (!hasTerms) {
+      historyList.style.maxHeight = "";
+      historyList.style.overflowY = "";
+      return;
+    }
+    var parent = historyList.parentElement;
+    if (!parent) return;
+    var parentHeight = parent.getBoundingClientRect().height;
+    if (!parentHeight || parentHeight <= 0) return;
+    var taken = 0;
+    var children = parent.children || [];
+    for (var i = 0; i < children.length; i += 1) {
+      var child = children[i];
+      if (!child || child === historyList) continue;
+      if (child.offsetParent === null) continue;
+      var rect = child.getBoundingClientRect();
+      var style = window.getComputedStyle ? window.getComputedStyle(child) : null;
+      var mt = style ? parseFloat(style.marginTop || "0") || 0 : 0;
+      var mb = style ? parseFloat(style.marginBottom || "0") || 0 : 0;
+      taken += rect.height + mt + mb;
+    }
+    var available = Math.floor(parentHeight - taken - 8);
+    if (available <= 0) {
+      historyList.style.maxHeight = "";
+      return;
+    }
+    historyList.style.maxHeight = String(Math.max(available, 120)) + "px";
+    historyList.style.overflowY = "auto";
+  }
+
+  function syncVocabularySection() {
+    var section = ensureVocabularySectionRoot();
+    if (!section) return;
+    var sidebar = section.closest ? section.closest(".history-sidebar") : null;
+    var historyList = sidebar ? sidebar.querySelector(".history-sidebar__list") : null;
+    var list = section.querySelector(".translation-vocab-section__list");
+    if (!list) return;
+    var terms = getVocabularyTermsFromArticle();
+    var savedWords = getSavedHistoryWordsSet();
+    list.innerHTML = "";
+    for (var i = 0; i < terms.length; i += 1) {
+      var termKey = normalizeHistoryWord(terms[i].term);
+      if (termKey && savedWords.has(termKey)) continue;
+      var item = document.createElement("button");
+      item.type = "button";
+      item.className = "translation-vocab-item";
+      item.textContent = terms[i].term;
+      item.setAttribute("data-term", terms[i].term);
+      item.setAttribute("data-vocab-index", String(terms[i].vocabIndex));
+      list.appendChild(item);
+    }
+    section.style.display = terms.length ? "" : "none";
+    syncHistoryListHeightForVocabulary(sidebar, historyList, terms.length > 0);
+    if (!syncVocabularySection._resizeBound) {
+      window.addEventListener("resize", syncVocabularySection);
+      syncVocabularySection._resizeBound = true;
+    }
+  }
+
+  function createHistoryItemElement(word, opts) {
     var template = document.querySelector(".history-sidebar__list app-history-item");
     var host = template
       ? template.cloneNode(true)
@@ -2128,6 +3769,11 @@
     }
     var wordEl = host.querySelector(".history-item__word");
     if (wordEl) wordEl.textContent = word;
+    var vocabIndex = opts && opts.vocabIndex;
+    if (vocabIndex != null) {
+      host.setAttribute("data-vocab-index", String(vocabIndex));
+      applyHistoryVocabBadge(host, vocabIndex);
+    }
     var translationsEl = host.querySelector(".history-item__translations");
     if (translationsEl && !String(translationsEl.textContent || "").trim()) {
       translationsEl.textContent = " ";
@@ -2174,6 +3820,28 @@
     if (!countEl) return;
     var itemCount = list.querySelectorAll("app-history-item .history-item__word").length;
     countEl.textContent = String(itemCount);
+    syncWordsTabCount(itemCount);
+    syncReadingStatsSection();
+  }
+
+  function syncWordsTabCount(count) {
+    if (!hasMobileTabs()) return;
+    var wordsButton = state.mobileTabs.wordsButton;
+    if (!wordsButton) return;
+    var raw = String(wordsButton.textContent || "");
+    var next = raw;
+    if (/\(\s*\d+\s*\)/.test(raw)) {
+      next = raw.replace(/\(\s*\d+\s*\)/, "(" + String(count) + ")");
+    } else if (/\bwords\b/i.test(raw)) {
+      // If the snapshot ever changes to "Words" without count, append it.
+      next = raw.replace(/\bwords\b/i, function (m) {
+        return m + " (" + String(count) + ")";
+      });
+    } else {
+      // Fallback: don't risk corrupting unknown labels/locales.
+      return;
+    }
+    if (next !== raw) wordsButton.textContent = next;
   }
 
   function removeDuplicateHistoryEntries() {
@@ -2195,31 +3863,55 @@
     syncHistoryCountFromDom();
   }
 
-  function addWordToHistorySidebar(word) {
+  function addWordToHistorySidebar(word, selectionMeta) {
     var clean = String(word || "").trim();
     if (!clean) return;
     var key = normalizeHistoryWord(clean);
     if (!key) return;
     removeDuplicateHistoryEntries();
     ensureHistoryWordCacheFromDom();
-    if (state.historyWords.has(key)) return;
     var list = document.querySelector(".history-sidebar__list");
     if (!list) return;
-    var added = createHistoryItemElement(clean);
+    var existingItem = Array.prototype.find.call(list.querySelectorAll("app-history-item"), function (item) {
+      var wordEl = item.querySelector(".history-item__word");
+      return normalizeHistoryWord(wordEl ? wordEl.textContent : "") === key;
+    });
+    if (existingItem) {
+      if (selectionMeta && selectionMeta.isVocab && Number.isInteger(selectionMeta.vocabIndex)) {
+        existingItem.setAttribute("data-vocab-index", String(selectionMeta.vocabIndex));
+        applyHistoryVocabBadge(existingItem, selectionMeta.vocabIndex);
+      }
+      syncVocabularySection();
+      syncSavedWordHighlights();
+      return;
+    }
+    var added = createHistoryItemElement(clean, selectionMeta || null);
     list.appendChild(added);
-    added.classList.add("translation-history-item_just-added");
-    // Keep latest added word visible when list overflows.
-    if (typeof added.scrollIntoView === "function") {
-      added.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    syncSavedWordHighlights();
+    var canUseMobileTabs = hasMobileTabs() && state.mobileTabs.isTabsViewport();
+    var shouldQueueForWordsTab = canUseMobileTabs && !isWordsTabVisibleOnMobile();
+    if (shouldQueueForWordsTab) {
+      added.classList.add("translation-history-item_pending");
+      setWordsTabHasNew(true);
+    } else {
+      added.classList.add("translation-history-item_just-added");
+      // Keep latest added word visible when list overflows.
+      if (typeof added.scrollIntoView === "function") {
+        added.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+      if (typeof list.scrollTop === "number" && typeof list.scrollHeight === "number") {
+        list.scrollTop = list.scrollHeight;
+      }
+      setTimeout(function () {
+        added.classList.remove("translation-history-item_just-added");
+      }, 1200);
+      // If we're already on Words tab, the dot should not linger.
+      if (canUseMobileTabs) setWordsTabHasNew(false);
     }
-    if (typeof list.scrollTop === "number" && typeof list.scrollHeight === "number") {
-      list.scrollTop = list.scrollHeight;
-    }
-    setTimeout(function () {
-      added.classList.remove("translation-history-item_just-added");
-    }, 1200);
     state.historyWords.add(key);
     syncHistoryCountFromDom();
+    syncVocabularySection();
+    syncSavedWordHighlights();
   }
 
   function installHistoryDedupObserver() {
@@ -2227,8 +3919,12 @@
     if (!list || list.dataset.dualTranslationDedupInstalled === "1") return;
     list.dataset.dualTranslationDedupInstalled = "1";
     removeDuplicateHistoryEntries();
+    syncVocabularySection();
+    syncSavedWordHighlights();
     var observer = new MutationObserver(function () {
       removeDuplicateHistoryEntries();
+      syncVocabularySection();
+      syncSavedWordHighlights();
     });
     observer.observe(list, { childList: true, subtree: true });
   }
@@ -2237,16 +3933,29 @@
     var selected = String(window.getSelection ? window.getSelection().toString() : "").trim();
     if (selected) {
       var first = selected.split(/\s+/)[0] || "";
-      return first.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, "");
+      var cleaned = first.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, "");
+      return { word: cleaned, isVocab: false, vocabIndex: null };
     }
     var tokenEl = event && event.target && event.target.closest
       ? event.target.closest(".translation-token")
       : null;
-    if (tokenEl) return String(tokenEl.textContent || "").trim();
-    return "";
+    if (tokenEl) {
+      var rawIndex = Number(tokenEl.getAttribute("data-vocab-index"));
+      var isVocab = Number.isInteger(rawIndex) && rawIndex >= 0;
+      return {
+        word: String(tokenEl.textContent || "").trim(),
+        isVocab: isVocab,
+        vocabIndex: isVocab ? rawIndex : null,
+        tokenEl: tokenEl
+      };
+    }
+    return { word: "", isVocab: false, vocabIndex: null, tokenEl: null };
   }
 
   function onReaderWordActivate(event) {
+    if (event && event.target && event.target.closest && event.target.closest(".translation-mobile-commandbar")) {
+      return;
+    }
     if (
       event &&
       event.target &&
@@ -2262,9 +3971,12 @@
     if (!root || !root.contains(event.target)) return;
     // Single-click selection can be applied after the event dispatch.
     setTimeout(function () {
-      var word = readWordFromClickEvent(event);
-      if (!word) return;
-      addWordToHistorySidebar(word);
+      var selection = readWordFromClickEvent(event);
+      if (!selection.word) return;
+      addWordToHistorySidebar(selection.word, selection);
+      if (isMobileReaderViewport()) {
+        showQuickSearchDemoModal(selection.tokenEl || event.target || null);
+      }
     }, 0);
   }
 
@@ -2351,36 +4063,124 @@
     });
   }
 
+  function installMobileReaderTabsFix() {
+    var tabsRoot = document.querySelector(".reader-view-tabs");
+    if (!tabsRoot) return;
+    if (tabsRoot.dataset.dualTranslationMobileTabsFixInstalled === "1") return;
+
+    var buttons = Array.from(tabsRoot.querySelectorAll(".reader-view-tabs__button"));
+    if (buttons.length < 2) return;
+
+    var view =
+      document.querySelector(".reader-view-page__view_with-sidebar") ||
+      document.querySelector(".reader-view-page__view");
+    var sidebar =
+      document.querySelector(".reader-view-page__history-sidebar") ||
+      document.querySelector("app-reader-view-word-sidebar");
+    if (!view || !sidebar) return;
+
+    tabsRoot.dataset.dualTranslationMobileTabsFixInstalled = "1";
+
+    var textButton =
+      buttons.find(function (b) {
+        return /\btext\b/i.test(String(b.textContent || ""));
+      }) || buttons[0];
+    var wordsButton =
+      buttons.find(function (b) {
+        return /\bwords\b/i.test(String(b.textContent || ""));
+      }) || buttons[1];
+
+    var mql =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(max-width: 1023px)")
+        : null;
+
+    function isTabsViewport() {
+      if (mql) return mql.matches;
+      return window.innerWidth <= 1023;
+    }
+
+    function setActiveTab(tabName) {
+      var isMobile = isTabsViewport();
+      if (!isMobile) {
+        // Desktop/tablet layout: show both panes and keep "Text" visually active.
+        view.classList.remove("reader-view-page__view_hidden");
+        sidebar.classList.remove("reader-view-page__history-sidebar_hidden");
+        buttons.forEach(function (b) {
+          b.classList.toggle("reader-view-tabs__button_active", b === textButton);
+        });
+        setWordsTabHasNew(false);
+        return;
+      }
+
+      var showWords = tabName === "words";
+      view.classList.toggle("reader-view-page__view_hidden", showWords);
+      sidebar.classList.toggle("reader-view-page__history-sidebar_hidden", !showWords);
+      buttons.forEach(function (b) {
+        b.classList.toggle(
+          "reader-view-tabs__button_active",
+          showWords ? b === wordsButton : b === textButton
+        );
+      });
+      if (showWords) {
+        setWordsTabHasNew(false);
+        flushPendingHistoryAnimations();
+      }
+    }
+
+    textButton.addEventListener("click", function () {
+      setActiveTab("text");
+    });
+    wordsButton.addEventListener("click", function () {
+      setActiveTab("words");
+    });
+
+    function onViewportChange() {
+      var activeIsWords = wordsButton.classList.contains("reader-view-tabs__button_active");
+      setActiveTab(activeIsWords ? "words" : "text");
+    }
+
+    if (mql && typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", onViewportChange);
+    } else {
+      window.addEventListener("resize", onViewportChange);
+    }
+
+    // Initialize to the currently marked active tab (fallback: Text).
+    state.mobileTabs = {
+      wordsButton: wordsButton,
+      textButton: textButton,
+      isTabsViewport: isTabsViewport,
+      hasNewWords: false
+    };
+    onViewportChange();
+  }
+
   function install() {
     ensureStyles();
+    loadArticleVocab();
     if (typeof window[HOVER_FEATURE_FLAG] === "undefined") {
       window[HOVER_FEATURE_FLAG] = true;
     }
     printConsoleHelp();
     logDebug("feature_flags", { hoverWordMap: isHoverWordMappingEnabled(), flagName: HOVER_FEATURE_FLAG });
 
-    var hoverBtn = createHoverToggleButton();
     var openBtn = isDualTranslationEnabled() ? createToggleButton() : null;
     var darkBtn = findDarkModeBtn();
     var darkHost = darkBtn && typeof darkBtn.closest === "function" ? darkBtn.closest("app-button") : null;
     if (darkHost && darkHost.parentElement) {
-      darkHost.insertAdjacentElement("afterend", hoverBtn);
-      if (openBtn) hoverBtn.insertAdjacentElement("afterend", openBtn);
+      if (openBtn) darkHost.insertAdjacentElement("afterend", openBtn);
     } else if (darkBtn && darkBtn.parentElement) {
-      darkBtn.insertAdjacentElement("afterend", hoverBtn);
-      if (openBtn) hoverBtn.insertAdjacentElement("afterend", openBtn);
+      if (openBtn) darkBtn.insertAdjacentElement("afterend", openBtn);
     } else {
       var header = document.querySelector("header.reading-view-header") || document.querySelector("header");
       if (header) {
-        header.appendChild(hoverBtn);
         if (openBtn) header.appendChild(openBtn);
       } else {
-        document.body.appendChild(hoverBtn);
         if (openBtn) document.body.appendChild(openBtn);
       }
     }
 
-    state.hoverToggleButton = hoverBtn;
     state.dualToggleButton = openBtn;
     syncHoverToggleUi();
 
@@ -2398,13 +4198,6 @@
     }
     onMobileDualViewportChange();
 
-    hoverBtn.addEventListener("click", function () {
-      window[HOVER_FEATURE_FLAG] = !isHoverWordMappingEnabled();
-      syncHoverToggleUi();
-      clearActiveHighlight();
-      logDebug("hover_toggle_click", { enabled: isHoverWordMappingEnabled() });
-    });
-
     if (openBtn) {
       openBtn.addEventListener("click", function () {
         if (isMobileViewport()) return;
@@ -2420,10 +4213,17 @@
     document.addEventListener("dblclick", onReaderWordActivate, true);
 
     installHistoryToggleFix();
+    installMobileReaderTabsFix();
     installHistoryDedupObserver();
+    syncVocabularySection();
+    syncReadingStatsSection();
     installListenButtonAudioWatcher();
     attachSingleModeHoverHandlers();
     installParagraphPlayButtons();
+    installMobileParagraphSelection();
+    installMobileHeaderAutoHide();
+    installMobileCommandBar();
+    installMobileTranslateBottomSheetObserver();
 
     if (openBtn && shouldAutoOpenDualOnLoad() && !isMobileViewport()) {
       requestAnimationFrame(function () {

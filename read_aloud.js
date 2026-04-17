@@ -184,6 +184,7 @@
         maxChunkChars: 2000,
         audio: null,
         preGeneratedAudioUrl: "/reader_v2.mp3",
+        preGeneratedAudioByLanguage: null,
         preGeneratedTranscriptUrl: "/read_aloud_transcript.json"
       },
       options || {}
@@ -199,7 +200,10 @@
     var karaokeState = {
       activeWordIndex: -1,
       onTimeUpdate: null,
-      onEnded: null
+      onEnded: null,
+      onPlaying: null,
+      onPause: null,
+      tickRaf: 0
     };
 
     audio.addEventListener("playing", function () {
@@ -227,11 +231,35 @@
     });
 
     function clearKaraokeListeners() {
+      if (karaokeState.tickRaf) {
+        try {
+          cancelAnimationFrame(karaokeState.tickRaf);
+        } catch (_eCancel) { }
+        karaokeState.tickRaf = 0;
+      }
       if (karaokeState.onTimeUpdate) audio.removeEventListener("timeupdate", karaokeState.onTimeUpdate);
       if (karaokeState.onEnded) audio.removeEventListener("ended", karaokeState.onEnded);
+      if (karaokeState.onPlaying) audio.removeEventListener("playing", karaokeState.onPlaying);
+      if (karaokeState.onPause) audio.removeEventListener("pause", karaokeState.onPause);
       karaokeState.activeWordIndex = -1;
       karaokeState.onTimeUpdate = null;
       karaokeState.onEnded = null;
+      karaokeState.onPlaying = null;
+      karaokeState.onPause = null;
+    }
+
+    function resolvePreGeneratedAudioUrl() {
+      var byLanguage = cfg.preGeneratedAudioByLanguage;
+      if (byLanguage && typeof byLanguage === "object") {
+        var normalized = String(cfg.language || "")
+          .trim()
+          .replace(/_/g, "-")
+          .toLowerCase();
+        if (normalized && byLanguage[normalized]) return String(byLanguage[normalized]);
+        var base = normalized ? normalized.split("-")[0] : "";
+        if (base && byLanguage[base]) return String(byLanguage[base]);
+      }
+      return cfg.preGeneratedAudioUrl;
     }
 
     async function loadPreGeneratedData() {
@@ -247,12 +275,19 @@
           for (var i = 0; i < segments.length; i += 1) {
             var seg = segments[i];
             var segText = String(seg && seg.text ? seg.text : "");
+            var segStart = Number(seg && seg.start != null ? seg.start : 0);
+            var segEnd = Number(seg && seg.end != null ? seg.end : segStart);
+            var segDuration = Math.max(0, segEnd - segStart);
             var tokens = textToTokens(segText);
+            if (!tokens.length) continue;
+            var slice = segDuration / tokens.length;
             for (var t = 0; t < tokens.length; t += 1) {
+              var tokenStart = segStart + t * slice;
+              var tokenEnd = t === tokens.length - 1 ? segEnd : segStart + (t + 1) * slice;
               timedWords.push({
                 token: tokens[t],
-                start: Number(seg.start || 0),
-                end: Number(seg.end || seg.start || 0),
+                start: tokenStart,
+                end: Math.max(tokenStart, tokenEnd),
                 segmentIndex: i
               });
             }
@@ -295,7 +330,7 @@
       var cb = callbacks || {};
       var searchIndex = 0;
       var offsetSec = Number(window.READ_ALOUD_TRANSCRIPT_OFFSET_SEC || 0);
-      karaokeState.onTimeUpdate = function () {
+      function syncKaraokeToCurrentTime() {
         // Convert audio time to transcript timeline (offset lets us calibrate drift).
         var audioCurrent = Number(audio.currentTime || 0);
         var current = audioCurrent - offsetSec;
@@ -319,11 +354,44 @@
             cb.onWordChange(active >= 0 ? Object.assign({ index: active }, timedWords[active]) : null);
           }
         }
+      }
+      karaokeState.onTimeUpdate = syncKaraokeToCurrentTime;
+      function scheduleKaraokeFrame() {
+        if (karaokeState.tickRaf) return;
+        karaokeState.tickRaf = requestAnimationFrame(function karaokeFrame() {
+          karaokeState.tickRaf = 0;
+          if (!karaokeState.onTimeUpdate) return;
+          syncKaraokeToCurrentTime();
+          if (!audio.paused && !audio.ended) {
+            scheduleKaraokeFrame();
+          }
+        });
+      }
+      karaokeState.onPlaying = function () {
+        syncKaraokeToCurrentTime();
+        scheduleKaraokeFrame();
+      };
+      karaokeState.onPause = function () {
+        if (karaokeState.tickRaf) {
+          try {
+            cancelAnimationFrame(karaokeState.tickRaf);
+          } catch (_e2) { }
+          karaokeState.tickRaf = 0;
+        }
+        syncKaraokeToCurrentTime();
       };
       karaokeState.onEnded = function () {
+        if (karaokeState.tickRaf) {
+          try {
+            cancelAnimationFrame(karaokeState.tickRaf);
+          } catch (_e3) { }
+          karaokeState.tickRaf = 0;
+        }
         if (typeof cb.onWordChange === "function") cb.onWordChange(null);
       };
       audio.addEventListener("timeupdate", karaokeState.onTimeUpdate);
+      audio.addEventListener("playing", karaokeState.onPlaying);
+      audio.addEventListener("pause", karaokeState.onPause);
       audio.addEventListener("ended", karaokeState.onEnded);
     }
 
@@ -363,11 +431,28 @@
         if (startIdx >= 0) startAt = Number(data.timedWords[startIdx].start || 0);
       }
 
-      audio.src = cfg.preGeneratedAudioUrl;
+      var seekOnLoad = Math.max(0, Number(startAt) || 0);
+      var resumeMedia = cb.resumeMediaSeconds;
+      if (typeof resumeMedia === "number" && isFinite(resumeMedia) && resumeMedia >= 0) {
+        seekOnLoad = resumeMedia;
+      }
+      var resumePaused = Boolean(cb.resumePaused);
+
+      function clampSeekToDuration(raw) {
+        var t = Math.max(0, Number(raw) || 0);
+        var dur = audio.duration;
+        if (isFinite(dur) && dur > 0) {
+          t = Math.min(t, Math.max(0, dur - 0.05));
+        }
+        return t;
+      }
+
+      var preGeneratedAudioUrl = resolvePreGeneratedAudioUrl();
+      audio.src = preGeneratedAudioUrl;
       audio.load();
-      log("pregenerated_seek_begin", { startAt: startAt, src: cfg.preGeneratedAudioUrl });
-      if (startAt > 0) {
-        var seekTarget = Math.max(0, startAt);
+      log("pregenerated_seek_begin", { startAt: startAt, seekOnLoad: seekOnLoad, src: preGeneratedAudioUrl });
+      if (seekOnLoad > 0) {
+        var seekTarget = seekOnLoad;
         await new Promise(function (resolve) {
           var done = false;
           var attemptedSeek = false;
@@ -380,6 +465,7 @@
           }
           function onLoadedMetadata() {
             try {
+              seekTarget = clampSeekToDuration(seekOnLoad);
               audio.currentTime = seekTarget;
               attemptedSeek = true;
               log("pregenerated_seek_on_metadata", {
@@ -393,6 +479,7 @@
           function trySeekNow() {
             if (attemptedSeek) return;
             try {
+              seekTarget = clampSeekToDuration(seekOnLoad);
               audio.currentTime = seekTarget;
               attemptedSeek = true;
               log("pregenerated_seek_try_now", {
@@ -417,40 +504,60 @@
           }, 2200);
         });
       } else {
-        audio.currentTime = 0;
+        try {
+          audio.currentTime = 0;
+        } catch (_e0) { }
       }
       log("pregenerated_before_play", {
         startAt: startAt,
+        seekOnLoad: seekOnLoad,
         currentTime: audio.currentTime,
         readyState: audio.readyState
       });
       setupKaraokeTracking(selectedWords, cb);
       currentAbort = new AbortController();
+      var chunkForUi = String(cb.paragraphText || text || data.transcript || "");
+      var mediaTimeStart = 0;
+      var mediaTimeEnd = 0;
+      if (selectedWords && selectedWords.length) {
+        mediaTimeStart = Number(selectedWords[0].start || 0);
+        mediaTimeEnd = Number(selectedWords[selectedWords.length - 1].end || 0);
+      }
       if (typeof cb.onChunkStart === "function") {
         cb.onChunkStart({
-          chunkText: String(text || data.transcript || ""),
+          chunkText: chunkForUi,
           chunkIndex: 0,
-          startChar: 0
+          startChar: 0,
+          mediaTimeStart: mediaTimeStart,
+          mediaTimeEnd: mediaTimeEnd
         });
+      }
+      if (resumePaused) {
+        try {
+          audio.pause();
+        } catch (_pz) { }
+        if (karaokeState.onTimeUpdate) karaokeState.onTimeUpdate();
+        currentAbort = null;
+        return { mode: "preGenerated", startAt: startAt, seekOnLoad: seekOnLoad, paused: true };
       }
       await audio.play();
       log("pregenerated_after_play", {
         startAt: startAt,
+        seekOnLoad: seekOnLoad,
         currentTime: audio.currentTime,
         readyState: audio.readyState,
         duration: audio.duration
       });
       await waitForAudioEndOrAbort(currentAbort.signal);
       if (typeof cb.onChunkEnd === "function") {
-        var fullText = String(text || data.transcript || "");
         cb.onChunkEnd({
-          chunkText: fullText,
+          chunkText: chunkForUi,
           chunkIndex: 0,
-          playedChars: fullText.length
+          playedChars: chunkForUi.length
         });
       }
       currentAbort = null;
-      return { mode: "preGenerated", startAt: startAt };
+      return { mode: "preGenerated", startAt: startAt, seekOnLoad: seekOnLoad, paused: false };
     }
 
     async function fetchChunkAudioUrl(chunk, signal) {
