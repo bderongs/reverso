@@ -185,7 +185,8 @@
         audio: null,
         preGeneratedAudioUrl: "/reader_v2.mp3",
         preGeneratedAudioByLanguage: null,
-        preGeneratedTranscriptUrl: "/read_aloud_transcript.json"
+        preGeneratedTranscriptUrl: "/reader_v2_mp3_transcript.json",
+        preGeneratedTranscriptByLanguage: null
       },
       options || {}
     );
@@ -198,7 +199,7 @@
     var runtimeMode = cfg.mode === "preGenerated" ? "preGenerated" : "streaming";
     var preGeneratedDataPromise = null;
     var karaokeState = {
-      activeWordIndex: -1,
+      activeSegmentIndex: -1,
       onTimeUpdate: null,
       onEnded: null,
       onPlaying: null,
@@ -241,30 +242,38 @@
       if (karaokeState.onEnded) audio.removeEventListener("ended", karaokeState.onEnded);
       if (karaokeState.onPlaying) audio.removeEventListener("playing", karaokeState.onPlaying);
       if (karaokeState.onPause) audio.removeEventListener("pause", karaokeState.onPause);
-      karaokeState.activeWordIndex = -1;
+      karaokeState.activeSegmentIndex = -1;
       karaokeState.onTimeUpdate = null;
       karaokeState.onEnded = null;
       karaokeState.onPlaying = null;
       karaokeState.onPause = null;
     }
 
-    function resolvePreGeneratedAudioUrl() {
-      var byLanguage = cfg.preGeneratedAudioByLanguage;
-      if (byLanguage && typeof byLanguage === "object") {
+    function languageKeyedLookup(map, fallback) {
+      if (map && typeof map === "object") {
         var normalized = String(cfg.language || "")
           .trim()
           .replace(/_/g, "-")
           .toLowerCase();
-        if (normalized && byLanguage[normalized]) return String(byLanguage[normalized]);
+        if (normalized && map[normalized]) return String(map[normalized]);
         var base = normalized ? normalized.split("-")[0] : "";
-        if (base && byLanguage[base]) return String(byLanguage[base]);
+        if (base && map[base]) return String(map[base]);
       }
-      return cfg.preGeneratedAudioUrl;
+      return String(fallback || "");
+    }
+
+    function resolvePreGeneratedAudioUrl() {
+      return languageKeyedLookup(cfg.preGeneratedAudioByLanguage, cfg.preGeneratedAudioUrl);
+    }
+
+    function resolvePreGeneratedTranscriptUrl() {
+      return languageKeyedLookup(cfg.preGeneratedTranscriptByLanguage, cfg.preGeneratedTranscriptUrl);
     }
 
     async function loadPreGeneratedData() {
       if (preGeneratedDataPromise) return preGeneratedDataPromise;
-      preGeneratedDataPromise = fetch(cfg.preGeneratedTranscriptUrl)
+      var transcriptUrl = resolvePreGeneratedTranscriptUrl();
+      preGeneratedDataPromise = fetch(transcriptUrl)
         .then(function (res) {
           if (!res.ok) throw new Error("Transcript request failed (" + res.status + ")");
           return res.json();
@@ -272,30 +281,38 @@
         .then(function (data) {
           var segments = Array.isArray(data && data.segments) ? data.segments : [];
           var timedWords = [];
+          var timedSegments = [];
+          var segmentTimedWordSpan = [];
           for (var i = 0; i < segments.length; i += 1) {
             var seg = segments[i];
             var segText = String(seg && seg.text ? seg.text : "");
             var segStart = Number(seg && seg.start != null ? seg.start : 0);
             var segEnd = Number(seg && seg.end != null ? seg.end : segStart);
-            var segDuration = Math.max(0, segEnd - segStart);
             var tokens = textToTokens(segText);
             if (!tokens.length) continue;
-            var slice = segDuration / tokens.length;
+            timedSegments.push({
+              segmentIndex: i,
+              start: segStart,
+              end: Math.max(segStart, segEnd)
+            });
+            var fromIdx = timedWords.length;
             for (var t = 0; t < tokens.length; t += 1) {
-              var tokenStart = segStart + t * slice;
-              var tokenEnd = t === tokens.length - 1 ? segEnd : segStart + (t + 1) * slice;
               timedWords.push({
                 token: tokens[t],
-                start: tokenStart,
-                end: Math.max(tokenStart, tokenEnd),
                 segmentIndex: i
               });
             }
+            segmentTimedWordSpan[i] = {
+              from: fromIdx,
+              to: timedWords.length - 1
+            };
           }
           return {
             transcript: String((data && data.text) || ""),
             paragraphs: splitParagraphs((data && data.text) || ""),
-            timedWords: timedWords
+            timedWords: timedWords,
+            timedSegments: timedSegments,
+            segmentTimedWordSpan: segmentTimedWordSpan
           };
         });
       return preGeneratedDataPromise;
@@ -324,41 +341,49 @@
       return -1;
     }
 
-    function setupKaraokeTracking(timedWords, callbacks) {
+    function setupSegmentKaraokeTracking(timedSegments, segmentTimedWordSpan, callbacks) {
       clearKaraokeListeners();
-      if (!timedWords || !timedWords.length) return;
+      if (!timedSegments || !timedSegments.length) return;
       var cb = callbacks || {};
-      var searchIndex = 0;
       var offsetSec = Number(window.READ_ALOUD_TRANSCRIPT_OFFSET_SEC || 0);
       function syncKaraokeToCurrentTime() {
-        // Convert audio time to transcript timeline (offset lets us calibrate drift).
         var audioCurrent = Number(audio.currentTime || 0);
         var current = audioCurrent - offsetSec;
-        while (searchIndex + 1 < timedWords.length && timedWords[searchIndex + 1].start <= current) {
-          searchIndex += 1;
-        }
-        while (searchIndex > 0 && timedWords[searchIndex].start > current) {
-          searchIndex -= 1;
-        }
-        var active = karaokeState.activeWordIndex;
-        if (timedWords[searchIndex] && timedWords[searchIndex].start <= current) {
-          var nextStart = timedWords[searchIndex + 1] ? timedWords[searchIndex + 1].start : Infinity;
-          // Keep word active until just before next word to avoid flicker on timestamp gaps.
-          if (current <= nextStart + 0.15) {
-            active = searchIndex;
+        var active = -1;
+        for (var si = 0; si < timedSegments.length; si += 1) {
+          var sg = timedSegments[si];
+          var t0 = Number(sg && sg.start != null ? sg.start : 0);
+          var t1 = Number(sg && sg.end != null ? sg.end : t0);
+          if (current + 1e-4 >= t0 && current <= t1 + 0.12) {
+            active = sg.segmentIndex;
+            break;
           }
         }
-        if (active !== karaokeState.activeWordIndex) {
-          karaokeState.activeWordIndex = active;
+        if (active !== karaokeState.activeSegmentIndex) {
+          karaokeState.activeSegmentIndex = active;
           if (typeof cb.onWordChange === "function") {
-            cb.onWordChange(active >= 0 ? Object.assign({ index: active }, timedWords[active]) : null);
+            if (active < 0) {
+              cb.onWordChange(null);
+            } else {
+              var span = segmentTimedWordSpan[active];
+              if (!span) {
+                cb.onWordChange(null);
+              } else {
+                cb.onWordChange({
+                  kind: "segment",
+                  segmentIndex: active,
+                  timedWordIndexFrom: span.from,
+                  timedWordIndexTo: span.to
+                });
+              }
+            }
           }
         }
       }
       karaokeState.onTimeUpdate = syncKaraokeToCurrentTime;
       function scheduleKaraokeFrame() {
         if (karaokeState.tickRaf) return;
-        karaokeState.tickRaf = requestAnimationFrame(function karaokeFrame() {
+        karaokeState.tickRaf = requestAnimationFrame(function karaokeSegFrame() {
           karaokeState.tickRaf = 0;
           if (!karaokeState.onTimeUpdate) return;
           syncKaraokeToCurrentTime();
@@ -375,7 +400,7 @@
         if (karaokeState.tickRaf) {
           try {
             cancelAnimationFrame(karaokeState.tickRaf);
-          } catch (_e2) { }
+          } catch (_eSegPause) { }
           karaokeState.tickRaf = 0;
         }
         syncKaraokeToCurrentTime();
@@ -384,9 +409,10 @@
         if (karaokeState.tickRaf) {
           try {
             cancelAnimationFrame(karaokeState.tickRaf);
-          } catch (_e3) { }
+          } catch (_eSegEnd) { }
           karaokeState.tickRaf = 0;
         }
+        karaokeState.activeSegmentIndex = -1;
         if (typeof cb.onWordChange === "function") cb.onWordChange(null);
       };
       audio.addEventListener("timeupdate", karaokeState.onTimeUpdate);
@@ -399,8 +425,11 @@
       var cb = callbacks || {};
       var data = await loadPreGeneratedData();
       var allTokens = data.timedWords.map(function (w) { return w.token; });
-      var selectedWords = data.timedWords;
+      var timedSegmentsAll = Array.isArray(data.timedSegments) ? data.timedSegments : [];
+      var segmentSpan = data.segmentTimedWordSpan || [];
       var startAt = 0;
+      var timedWordSliceStart = 0;
+      var firstSegIdx = 0;
       var paragraphText = typeof cb.paragraphText === "string" ? cb.paragraphText : "";
       var paragraphIndex = typeof cb.paragraphIndex === "number" ? cb.paragraphIndex : -1;
       if (paragraphText) {
@@ -414,13 +443,20 @@
         });
         var idx = findParagraphStartIndex(allTokens, paragraphTokens);
         if (idx >= 0) {
-          startAt = Number(data.timedWords[idx].start || 0);
-          selectedWords = data.timedWords.slice(idx);
+          firstSegIdx = Number(data.timedWords[idx].segmentIndex || 0);
+          for (var zi = 0; zi < timedSegmentsAll.length; zi += 1) {
+            if (timedSegmentsAll[zi].segmentIndex === firstSegIdx) {
+              startAt = Number(timedSegmentsAll[zi].start || 0);
+              break;
+            }
+          }
+          timedWordSliceStart = idx;
           log("paragraph_match", {
             tokenCount: paragraphTokens.length,
             startTokenIndex: idx,
             startAt: startAt,
-            paragraphIndex: paragraphIndex
+            paragraphIndex: paragraphIndex,
+            firstSegIdx: firstSegIdx
           });
         } else {
           log("paragraph_match_miss", { tokenCount: paragraphTokens.length, paragraphIndex: paragraphIndex });
@@ -428,7 +464,47 @@
       } else if (text) {
         var tokens = textToTokens(text);
         var startIdx = findTokenSequenceIndex(allTokens, tokens.slice(0, Math.min(tokens.length, 24)));
-        if (startIdx >= 0) startAt = Number(data.timedWords[startIdx].start || 0);
+        if (startIdx >= 0) {
+          firstSegIdx = Number(data.timedWords[startIdx].segmentIndex || 0);
+          for (var zj = 0; zj < timedSegmentsAll.length; zj += 1) {
+            if (timedSegmentsAll[zj].segmentIndex === firstSegIdx) {
+              startAt = Number(timedSegmentsAll[zj].start || 0);
+              break;
+            }
+          }
+          timedWordSliceStart = startIdx;
+        }
+      }
+
+      var segPlayStart = 0;
+      for (var si = 0; si < timedSegmentsAll.length; si += 1) {
+        if (timedSegmentsAll[si].segmentIndex >= firstSegIdx) {
+          segPlayStart = si;
+          break;
+        }
+      }
+      var timedSegmentsForPlay = timedSegmentsAll.slice(segPlayStart);
+
+      var wrappedCallbacks = Object.assign({}, cb);
+      if (typeof cb.onWordChange === "function") {
+        var base = timedWordSliceStart;
+        var origWord = cb.onWordChange;
+        wrappedCallbacks.onWordChange = function (word) {
+          if (!word) {
+            origWord(null);
+            return;
+          }
+          if (word.kind === "segment") {
+            origWord({
+              kind: "segment",
+              segmentIndex: word.segmentIndex,
+              paragraphTimedWordFrom: Math.max(0, word.timedWordIndexFrom - base),
+              paragraphTimedWordTo: Math.max(0, word.timedWordIndexTo - base)
+            });
+            return;
+          }
+          origWord(word);
+        };
       }
 
       var seekOnLoad = Math.max(0, Number(startAt) || 0);
@@ -514,14 +590,14 @@
         currentTime: audio.currentTime,
         readyState: audio.readyState
       });
-      setupKaraokeTracking(selectedWords, cb);
+      setupSegmentKaraokeTracking(timedSegmentsForPlay, segmentSpan, wrappedCallbacks);
       currentAbort = new AbortController();
       var chunkForUi = String(cb.paragraphText || text || data.transcript || "");
       var mediaTimeStart = 0;
       var mediaTimeEnd = 0;
-      if (selectedWords && selectedWords.length) {
-        mediaTimeStart = Number(selectedWords[0].start || 0);
-        mediaTimeEnd = Number(selectedWords[selectedWords.length - 1].end || 0);
+      if (timedSegmentsForPlay.length) {
+        mediaTimeStart = Number(timedSegmentsForPlay[0].start || 0);
+        mediaTimeEnd = Number(timedSegmentsForPlay[timedSegmentsForPlay.length - 1].end || 0);
       }
       if (typeof cb.onChunkStart === "function") {
         cb.onChunkStart({

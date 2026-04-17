@@ -1,0 +1,222 @@
+{
+  "model": "voxtral-mini-latest",
+  "text": "Simone Weil was born on July 13th, 1927 in Nice, France, into a secular Jewish family that emphasized education and civic duty. Her childhood was filled with curiosity and an eagerness to learn, but the peaceful life she knew was soon shattered by the horrors of World War II. In 1944, at just 16 years old, she and her family were arrested by the Gestapo and deported to Auschwitz-Birkenau. Her father and brother were sent to the Baltic states where they perished, while Simone, her mother and her sister were forced to endure the brutalities of the concentration camp. The experience of the Holocaust left an indelible mark on her, shaping her lifelong dedication to justice, human dignity and European unity. Despite the trauma, she emerged from the war with resilience, determined to rebuild her life. She pursued law and political science at the Institut d'études politiques in Paris, where she met and married Antoine Veil, a fellow student. Together, they navigated post-war France, where Simone embarked on a career in law and public service. She began her career as a magistrate in the Ministry of Justice, where she worked on prison reform and the rights of detainees. Her keen sense of justice and unwavering moral compass quickly set her apart. But it was in the 1970s that she truly stepped into the public spotlight. In 1974, as Minister of Health under President Valéry Giscard d'Estaing, She spearheaded one of the most controversial legislative battles in French history, the legalization of abortion. At a time when abortion was illegal and clandestine procedures led to thousands of deaths, she became the face of a movement that sought to grant women the right to control their own bodies. Facing virulent opposition, including sexist and anti-Semitic attacks, Vale stood her ground with remarkable courage. Her impassioned speech before the National Assembly, in which she described the suffering of women forced into unsafe abortions, remains one of the defining moments of modern French history. The Veil Law was passed in 1975, a landmark victory for women's rights. Her influence extended far beyond France. In 1979, she became the first woman to preside over the European Parliament, reinforcing her belief that European unity was essential to preventing the horrors of war from ever recurring. She dedicated herself to strengthening European cooperation, championing human rights, and ensuring that the memory of the Holocaust remained alive so that history would not repeat itself. Throughout her career, Vale continued to advocate for social justice, immigration rights and equality. She served on France's Constitutional Council and remained an outspoken voice on contemporary issues, always guiding by her unwavering principles. Her legacy was cemented in 2008, when she was inducted into the Académie Française, one of the highest honours in French intellectual life. Upon her death in 2017, she was honoured with a state funeral and later interred at the Panthéon. Alongside other great figures of French history, a recognition of her immense contribution to the nation. Simone Weil's life was one of extraordinary resilience, courage and conviction. From the depths of Auschwitz to the heights of political power, she never ceased fighting for justice, women's rights and European unity. Her story is a testament to the power of determination and the enduring importance of remembering history to shape a better future.",
+  "segments": [
+    {
+      "type": "transcription_segment",
+      "text": "Simone Weil was born on July 13th, 1927 in Nice, France, into a secular Jewish family that emphasized education and civic duty.",
+      "start": 0.1,
+      "end": 10.2,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her childhood was filled with curiosity and an eagerness to learn, but the peaceful life she knew was soon shattered by the horrors of World War II.",
+      "start": 10.7,
+      "end": 18.8,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " In 1944, at just 16 years old, she and her family were arrested by the Gestapo and deported to Auschwitz-Birkenau.",
+      "start": 19.2,
+      "end": 27.4,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her father and brother were sent to the Baltic states where they perished, while Simone, her mother and her sister were forced to endure the brutalities of the concentration camp.",
+      "start": 27.8,
+      "end": 37.5,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " The experience of the Holocaust left an indelible mark on her, shaping her lifelong dedication to justice, human dignity and European unity.",
+      "start": 37.7,
+      "end": 46.6,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Despite the trauma, she emerged from the war with resilience, determined to rebuild her life.",
+      "start": 47,
+      "end": 52.4,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " She pursued law and political science at the Institut d'études politiques in Paris, where she met and married Antoine Veil, a fellow student.",
+      "start": 52.8,
+      "end": 60.8,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Together, they navigated post-war France, where Simone embarked on a career in law and public service.",
+      "start": 61.2,
+      "end": 67.1,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " She began her career as a magistrate in the Ministry of Justice, where she worked on prison reform and the rights of detainees.",
+      "start": 67.5,
+      "end": 73.8,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her keen sense of justice and unwavering moral compass quickly set her apart.",
+      "start": 74.3,
+      "end": 78.9,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " But it was in the 1970s that she truly stepped into the public spotlight.",
+      "start": 79.2,
+      "end": 84,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " In 1974, as Minister of Health under President Valéry Giscard d'Estaing,",
+      "start": 84.4,
+      "end": 90,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": "She spearheaded one of the most controversial legislative battles in French history, the legalization of abortion.",
+      "start": 90.6,
+      "end": 97.9,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " At a time when abortion was illegal and clandestine procedures led to thousands of deaths, she became the face of a movement that sought to grant women the right to control their own bodies.",
+      "start": 98.4,
+      "end": 109.8,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Facing virulent opposition, including sexist and anti-Semitic attacks, Vale stood her ground with remarkable courage.",
+      "start": 110.4,
+      "end": 118.6,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her impassioned speech before the National Assembly, in which she described the suffering of women forced into unsafe abortions, remains one of the defining moments of modern French history.",
+      "start": 119.1,
+      "end": 130.7,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " The Veil Law was passed in 1975, a landmark victory for women's rights.",
+      "start": 131.2,
+      "end": 137.2,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her influence extended far beyond France.",
+      "start": 137.6,
+      "end": 140.2,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " In 1979, she became the first woman to preside over the European Parliament, reinforcing her belief that European unity was essential to preventing the horrors of war from ever recurring.",
+      "start": 140.6,
+      "end": 153.1,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " She dedicated herself to strengthening European cooperation, championing human rights, and ensuring that the memory of the Holocaust remained alive so that history would not repeat itself.",
+      "start": 153.6,
+      "end": 165.2,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Throughout her career, Vale continued to advocate for social justice, immigration rights and equality.",
+      "start": 165.6,
+      "end": 172.1,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " She served on France's Constitutional Council and remained an outspoken voice on contemporary issues, always guiding",
+      "start": 172.7,
+      "end": 180,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": "by her unwavering principles.",
+      "start": 180.2,
+      "end": 182.1,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her legacy was cemented in 2008, when she was inducted into the Académie Française, one of the highest honours in French intellectual life.",
+      "start": 182.6,
+      "end": 191.5,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Upon her death in 2017, she was honoured with a state funeral and later interred at the Panthéon.",
+      "start": 192,
+      "end": 198.7,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Alongside other great figures of French history, a recognition of her immense contribution to the nation.",
+      "start": 199.2,
+      "end": 205.1,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Simone Weil's life was one of extraordinary resilience, courage and conviction.",
+      "start": 205.7,
+      "end": 211,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " From the depths of Auschwitz to the heights of political power, she never ceased fighting for justice, women's rights and European unity.",
+      "start": 211.4,
+      "end": 220,
+      "speaker_id": "speaker_1"
+    },
+    {
+      "type": "transcription_segment",
+      "text": " Her story is a testament to the power of determination and the enduring importance of remembering history to shape a better future.",
+      "start": 220.5,
+      "end": 228.6,
+      "speaker_id": "speaker_1"
+    }
+  ],
+  "usage": {
+    "promptTokens": 15,
+    "completionTokens": 977,
+    "totalTokens": 992,
+    "promptAudioSeconds": 228,
+    "additionalProperties": {
+      "request_count": 3
+    }
+  },
+  "language": null,
+  "additionalProperties": {
+    "type": "transcription.done"
+  }
+}

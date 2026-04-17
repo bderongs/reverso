@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  var STYLE_ID = "translation-mode-style";
+  var STYLE_ID = "translation-mode-style-v2";
+  /** Bump when paragraph DOM shape changes (e.g. sep spans for karaoke). */
+  var SINGLE_MODE_DOM_REV = 1;
   var LOG_PREFIX = "[dual-translation]";
   var HOVER_FEATURE_FLAG = "DUAL_TRANSLATION_HOVER_WORD_MAP";
   var INTER_FONT_ID = "translation-hover-inter-font";
@@ -15,6 +17,7 @@
   var VOCAB_MARKUP_INDEX_ATTR = "data-vocab-index";
   var VOCAB_TOOLTIP_TEXT = "This word comes from a vocabulary list";
   var PRACTICE_SAVED_WORDS_MIN = 3;
+  var MOBILE_FIRST_WORD_TIP_STORAGE_KEY = "reader_update_mobile_first_word_tip_v1";
   var READ_ALOUD_CONFIG = window.READ_ALOUD_VOICE_CONFIG || {};
   var READ_ALOUD_ENDPOINT = "/read-aloud/stream";
   var READ_ALOUD_MAX_CHUNK_CHARS = 2000;
@@ -28,7 +31,18 @@
       "en-us": READ_ALOUD_CONFIG.preGeneratedAudioUrlUs || "/reader_v2_us.mp3",
       "en-gb": READ_ALOUD_PREGENERATED_AUDIO_URL
     };
+  var READ_ALOUD_PREGENERATED_TRANSCRIPT_URL =
+    READ_ALOUD_CONFIG.preGeneratedTranscriptUrl || "/reader_v2_mp3_transcript.json";
+  var READ_ALOUD_PREGENERATED_TRANSCRIPT_BY_LANGUAGE =
+    READ_ALOUD_CONFIG.preGeneratedTranscriptByLanguage || {
+      "en-us": READ_ALOUD_CONFIG.preGeneratedTranscriptUrlUs || "/reader_v2_mp3_us_transcript.json",
+      "en-gb": READ_ALOUD_PREGENERATED_TRANSCRIPT_URL
+    };
   var listenInstallInfoLogged = { noConfig: false, noButton: false };
+  /** Keeps the read-aloud progress slider in sync (timeupdate alone is too sparse on some WebKit builds). */
+  var playbackProgressRafId = 0;
+  /** Range inputs use 0…SCALE so thumb position = time ratio (matches displayed mm:ss, not char index). */
+  var PLAYBACK_PROGRESS_RANGE_SCALE = 10000;
   /** Aligns with grid media query in ensureStyles: dual columns collapse at this width. */
   var MOBILE_DUAL_MAX_WIDTH = 900;
   var mobileDualMql =
@@ -44,6 +58,7 @@
     dualToggleButton: null,
     inlineWrap: null,
     singleModeTokenized: false,
+    singleModeDomRev: 0,
     paragraphPlayInstalled: false,
     singleRowByIndex: null,
     singleModeHoverListenerAttached: false,
@@ -76,10 +91,12 @@
       playBtn: null,
       accentBtn: null,
       speedBtn: null,
-      translateBtn: null,
       collapseBtn: null,
-      expandBtn: null,
-      collapsed: false,
+      fabBtn: null,
+      progressSeek: null,
+      progressCurrent: null,
+      progressTotal: null,
+      collapsed: true,
       lastPlayedParagraph: null
     },
     mobileTranslateSheet: {
@@ -118,8 +135,17 @@
         paragraphEl: null,
         tokenEls: [],
         mapByTimedWordIndex: [],
-        activeDomTokenIndex: -1
-      }
+        activeDomTokenIndex: -1,
+        activeKaraokeDomIndices: [],
+        activeKaraokeEls: []
+      },
+      /** True while user drags the playback range (avoid RAF overwriting the thumb). */
+      playbackRangePointerDown: false,
+      /**
+       * Pre-generated: one MP3 for the whole article; paragraph play only seeks `currentTime`.
+       * When true, the seek bar and clocks use 0..duration (not the active paragraph segment window).
+       */
+      progressUiFullMediaTimeline: false
     }
   };
 
@@ -189,6 +215,8 @@
   }
 
   function ensureStyles() {
+    var legacyStyle = document.getElementById("translation-mode-style");
+    if (legacyStyle && legacyStyle.parentNode) legacyStyle.parentNode.removeChild(legacyStyle);
     if (document.getElementById(STYLE_ID)) return;
     var style = document.createElement("style");
     style.id = STYLE_ID;
@@ -212,13 +240,16 @@
       ".translation-inline-col{min-width:0}" +
       ".translation-inline-col p{margin:0;line-height:1.65;text-align:start;white-space:pre-wrap;overflow-wrap:anywhere}" +
       ".translation-token{border-radius:4px;padding:0 1px;transition:background-color .12s ease}" +
+      ".translation-sep{display:inline;font:inherit;color:inherit;white-space:normal;vertical-align:baseline;pointer-events:none}" +
       ".translation-inline-orig .translation-token{cursor:pointer}" +
       "body.translation-hover-disabled .translation-inline-wrap .translation-token{cursor:default}" +
       ".translation-token_src{background:rgba(21,124,213,.2)}" +
       ".translation-token_tgt{background:rgba(255,190,92,.35)}" +
       ".translation-token_vocab{background:#c9e3fb}" +
       ".translation-token_vocab-focus{background:#b7daf9!important;box-shadow:0 0 0 2px rgba(102,153,204,.35);border-radius:6px}" +
-      ".translation-token_karaoke{background:rgba(21,124,213,.28)!important}" +
+      ".translation-token_karaoke,.translation-sep_karaoke{background:rgba(21,124,213,.28)!important;border-radius:0!important;padding:0!important;margin:0!important;box-shadow:none!important;-webkit-box-decoration-break:clone;box-decoration-break:clone}" +
+      ".translation-karaoke-run-edge_start{border-top-left-radius:4px!important;border-bottom-left-radius:4px!important;padding-left:1px!important}" +
+      ".translation-karaoke-run-edge_end{border-top-right-radius:4px!important;border-bottom-right-radius:4px!important;padding-right:1px!important}" +
       ".translation-token_pop{background:#fef9c3!important;border-radius:4px}" +
       ".translation-token_saved{background:#e6dfd5!important;border-radius:4px}" +
       ".translation-hover-popover{position:fixed;z-index:100000;box-sizing:border-box;width:min(360px,calc(100vw - 24px));max-width:360px;padding:10px;background:#fff;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.1),0 12px 28px rgba(0,0,0,.06);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.45;color:#1f2937;pointer-events:auto;opacity:0;visibility:hidden;transition:opacity .12s ease}" +
@@ -298,7 +329,7 @@
       ".translation-audio-player__progress{display:flex;align-items:center;gap:8px;padding:0 2px 2px}" +
       ".translation-audio-player__time{min-width:42px;font:12px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b)}" +
       ".translation-audio-player__time_total{text-align:right}" +
-      ".translation-audio-player__seek{flex:1;min-width:0;height:14px;background:transparent;-webkit-appearance:none;appearance:none}" +
+      ".translation-audio-player__seek{flex:1;min-width:72px;width:100%;height:14px;background:transparent;-webkit-appearance:none;appearance:none;box-sizing:border-box}" +
       ".translation-audio-player__seek:focus{outline:none}" +
       ".translation-audio-player__seek::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
       ".translation-audio-player__seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;margin-top:-4px;background:var(--new-blue-700,#2a8bdf);border:0}" +
@@ -441,13 +472,17 @@
       ".history-sidebar .history-sidebar__list{overflow:auto}" +
       ".translation-paragraph_selected{position:relative;background:rgba(250,204,21,.10);border-radius:10px}" +
       ".translation-paragraph_selected::before{content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:999px;background:rgba(250,204,21,.55)}" +
-      "body.translation-mobile-commandbar-open .reading-list__content{padding-bottom:132px}" +
-      "body.translation-mobile-commandbar-open.translation-mobile-commandbar-collapsed .reading-list__content{padding-bottom:72px}" +
+      "body.translation-mobile-commandbar-open .reading-list__content{padding-bottom:168px}" +
+      "body.translation-mobile-commandbar-open.translation-mobile-commandbar-collapsed .reading-list__content{padding-bottom:88px}" +
       ".translation-mobile-commandbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:950;display:none;box-sizing:border-box;max-width:calc(100vw - 24px);overflow-x:hidden}" +
       ".translation-mobile-commandbar_visible{display:block}" +
-      ".translation-mobile-commandbar_collapsed{left:50%;right:auto;transform:translateX(-50%);max-width:unset;overflow:visible}" +
+      ".translation-mobile-commandbar_collapsed{" +
+      "left:auto;right:calc(12px + env(safe-area-inset-right, 0px));" +
+      "bottom:calc(12px + env(safe-area-inset-bottom, 0px));" +
+      "transform:none;max-width:none;width:auto;overflow:visible" +
+      "}" +
       ".translation-mobile-commandbar__inner{" +
-      "display:flex;align-items:center;justify-content:space-between;gap:10px;" +
+      "display:flex;flex-direction:column;align-items:stretch;gap:8px;" +
       "position:relative;" +
       "padding:12px 12px 10px;border-radius:16px;" +
       "background:var(--background-base-secondary,#fcf4e9);color:var(--text-base-primary,#1a1a1a);" +
@@ -455,6 +490,26 @@
       "box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.1));" +
       "max-width:100%;box-sizing:border-box;overflow:hidden" +
       "}" +
+      ".translation-mobile-commandbar__top{" +
+      "display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;" +
+      "position:relative;min-height:44px;padding-right:36px;box-sizing:border-box;width:100%" +
+      "}" +
+      ".translation-mobile-commandbar__progress{" +
+      "display:flex;align-items:center;gap:8px;padding:2px 0 0;width:100%;min-width:0;box-sizing:border-box" +
+      "}" +
+      ".translation-mobile-commandbar__time{" +
+      "min-width:40px;font:12px/1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "color:var(--text-base-secondary,#607d8b)" +
+      "}" +
+      ".translation-mobile-commandbar__time_total{text-align:right}" +
+      ".translation-mobile-commandbar__seek{" +
+      "flex:1;min-width:72px;width:100%;height:14px;background:transparent;-webkit-appearance:none;appearance:none;box-sizing:border-box" +
+      "}" +
+      ".translation-mobile-commandbar__seek:focus{outline:none}" +
+      ".translation-mobile-commandbar__seek::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
+      ".translation-mobile-commandbar__seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;margin-top:-4px;background:var(--new-blue-700,#2a8bdf);border:0}" +
+      ".translation-mobile-commandbar__seek::-moz-range-track{height:4px;border-radius:999px;background:var(--line-gray-primary,#dee4e7)}" +
+      ".translation-mobile-commandbar__seek::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--new-blue-700,#2a8bdf);border:0}" +
       ".translation-mobile-commandbar_collapsed .translation-mobile-commandbar__inner{display:none}" +
       ".translation-mobile-commandbar__hint{font:600 13px/1.2 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text-base-secondary,#607d8b);margin-right:auto;padding-right:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".translation-mobile-commandbar__collapse{" +
@@ -464,14 +519,14 @@
       "}" +
       ".translation-mobile-commandbar__collapse:hover{background:var(--line-gray-secondary,#eaeef1)}" +
       ".translation-mobile-commandbar__collapse svg{display:block;width:18px;height:18px}" +
-      ".translation-mobile-commandbar__expand{" +
+      ".translation-mobile-commandbar__fab{" +
       "display:none;appearance:none;border:1px solid var(--line-gray-primary,#d4d9e3);" +
       "background:#472c1f;color:#fff;border-radius:999px;" +
-      "width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;" +
-      "box-shadow:0 -1px 16px 0 var(--light-grey-a-2,rgba(34,44,49,.18));-webkit-tap-highlight-color:transparent" +
+      "width:56px;height:56px;align-items:center;justify-content:center;cursor:pointer;" +
+      "box-shadow:0 4px 20px rgba(34,44,49,.22);-webkit-tap-highlight-color:transparent" +
       "}" +
-      ".translation-mobile-commandbar__expand svg{display:block;width:18px;height:18px}" +
-      ".translation-mobile-commandbar_collapsed .translation-mobile-commandbar__expand{display:inline-flex}" +
+      ".translation-mobile-commandbar__fab svg{display:block;width:24px;height:24px}" +
+      ".translation-mobile-commandbar_collapsed .translation-mobile-commandbar__fab{display:inline-flex}" +
       ".translation-mobile-commandbar__group{display:flex;align-items:center;gap:10px}" +
       ".translation-mobile-commandbar__btn{" +
       "appearance:none;" +
@@ -564,6 +619,16 @@
       "width:8px;height:8px;border-radius:999px;" +
       "background:#ef4444;" +
       "box-shadow:0 0 0 2px var(--background-base-header, #fff);" +
+      "}" +
+      "[_nghost-ng-c1863009740]{position:fixed;left:0;right:0;width:100%;max-width:100%;box-sizing:border-box;display:flex;flex-direction:row;align-items:stretch;background:var(--line-blue-primary);height:auto;min-height:40px;top:48px;z-index:899;padding:22px 0}" +
+      "[_nghost-ng-c1863009740] .reading-top-tip[_ngcontent-ng-c1863009740]{width:100%;max-width:100%;height:auto;min-height:0;flex:1;box-sizing:border-box;display:flex;flex-direction:row;place-content:center;align-items:center;justify-content:space-between;padding:0 calc(12px + env(safe-area-inset-right,0px)) 0 calc(12px + env(safe-area-inset-left,0px))}" +
+      "[_nghost-ng-c1863009740] .reading-top-tip__text[_ngcontent-ng-c1863009740]{flex:1 1 auto;min-width:0;margin:0;padding:6px 10px 6px 0;color:var(--text-base-invert-blue);font-size:14px;font-weight:500;line-height:20px;white-space:normal;text-align:left}" +
+      "[_nghost-ng-c1863009740] .reading-top-tip__actions[_ngcontent-ng-c1863009740]{display:flex;align-items:center;gap:8px;margin:0;flex-shrink:0;align-self:center}" +
+      "[_nghost-ng-c1863009740] .reading-top-tip__button[_ngcontent-ng-c1863009740] .button{padding:6px 14px;min-height:28px;height:auto;box-sizing:border-box;border-radius:8px;white-space:nowrap}" +
+      "[_nghost-ng-c1863009740] .reading-top-tip__button[_ngcontent-ng-c1863009740] .button__text{font-size:12px;font-weight:500;line-height:16px}" +
+      "app-reader-top-tip[data-reader-mobile-first-word-tip]{display:none!important}" +
+      "@media (max-width:1023px){" +
+      "app-reader-top-tip[data-reader-mobile-first-word-tip].translation-mobile-first-word-tip--show{display:flex!important}" +
       "}" +
       "@keyframes translation-history-item-flash{" +
       "0%{background:color-mix(in srgb, var(--background-base-primary,#e6eef6) 50%, transparent)}" +
@@ -706,6 +771,7 @@
       if (shouldHide === state.mobileHeaderAutoHide.hidden) return;
       state.mobileHeaderAutoHide.hidden = shouldHide;
       document.body.classList.toggle("translation-mobile-header-hidden", shouldHide);
+      scheduleMobileFirstWordTipLayout();
     }
 
     function scheduleUpdate() {
@@ -751,14 +817,6 @@
     return (
       '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
       '<path d="M5.527 7.364a.8.8 0 0 1 1.131 0L10 10.706l3.343-3.342a.8.8 0 0 1 1.131 1.131l-3.909 3.91a.8.8 0 0 1-1.131 0l-3.91-3.91a.8.8 0 0 1 0-1.131Z" fill="currentColor"></path>' +
-      "</svg>"
-    );
-  }
-
-  function mobileBarChevronUpIcon() {
-    return (
-      '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<path d="M14.473 12.636a.8.8 0 0 1-1.131 0L10 9.294l-3.343 3.342a.8.8 0 0 1-1.131-1.131l3.909-3.91a.8.8 0 0 1 1.131 0l3.91 3.91a.8.8 0 0 1 0 1.131Z" fill="currentColor"></path>' +
       "</svg>"
     );
   }
@@ -853,6 +911,7 @@
     var language = getSelectedReadAloudLanguage();
     var voice = resolveVoiceForLanguage(language);
     var player = ensureReadAloudPlayer(voice, language);
+    setPlaybackProgressUiFromPlayer(player);
     applyPlaybackRateToAudio();
 
     state.audio.backend = "remote";
@@ -883,6 +942,7 @@
       state.audio.backend = null;
       state.audio.progressMediaStart = 0;
       state.audio.progressMediaEnd = 0;
+      state.audio.progressUiFullMediaTimeline = false;
       resetKaraokeState();
       updateAudioUi();
       updateMobileCommandBarUi();
@@ -912,6 +972,7 @@
       state.audio.isPlaying = false;
       state.audio.isPaused = false;
       state.audio.backend = null;
+      state.audio.progressUiFullMediaTimeline = false;
       resetKaraokeState();
       updateAudioUi();
       updateMobileCommandBarUi();
@@ -943,8 +1004,14 @@
     if (!state.mobileCommandBar.root) return;
     var isPlaying = Boolean(state.audio.remoteEl && state.audio.remoteEl.src && state.audio.isPlaying && !state.audio.isPaused);
     if (!state.mobileCommandBar.playBtn) return;
-    state.mobileCommandBar.playBtn.innerHTML = isPlaying ? mobileBarPauseIcon() : mobileBarPlayIcon();
+    var transportIcon = isPlaying ? mobileBarPauseIcon() : mobileBarPlayIcon();
+    state.mobileCommandBar.playBtn.innerHTML = transportIcon;
     state.mobileCommandBar.playBtn.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+    if (state.mobileCommandBar.fabBtn) {
+      state.mobileCommandBar.fabBtn.innerHTML = transportIcon;
+      state.mobileCommandBar.fabBtn.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+      state.mobileCommandBar.fabBtn.setAttribute("title", isPlaying ? "Pause" : "Play");
+    }
     if (state.mobileCommandBar.accentBtn) {
       state.mobileCommandBar.accentBtn.textContent = getAccentFlag(state.audio.accent);
       state.mobileCommandBar.accentBtn.setAttribute("aria-label", "Accent " + getAccentLabel(state.audio.accent));
@@ -996,6 +1063,7 @@
     var paragraphLanguage = getSelectedReadAloudLanguage();
     var paragraphVoice = resolveVoiceForLanguage(paragraphLanguage);
     var player = ensureReadAloudPlayer(paragraphVoice, paragraphLanguage);
+    setPlaybackProgressUiFromPlayer(player);
     applyPlaybackRateToAudio();
 
     if (player && typeof player.playParagraph === "function") {
@@ -1029,6 +1097,7 @@
           state.audio.activeChunkLength = 0;
           state.audio.progressMediaStart = 0;
           state.audio.progressMediaEnd = 0;
+          state.audio.progressUiFullMediaTimeline = false;
           updateAudioUi();
           updateMobileCommandBarUi();
           unlockMobileSelection();
@@ -1041,6 +1110,7 @@
           state.audio.activeChunkLength = 0;
           state.audio.progressMediaStart = 0;
           state.audio.progressMediaEnd = 0;
+          state.audio.progressUiFullMediaTimeline = false;
           resetKaraokeState();
           updateAudioUi();
           updateMobileCommandBarUi();
@@ -1058,14 +1128,6 @@
       });
   }
 
-  function translateSelectedParagraphFromCommandBar() {
-    var p = getSelectedParagraphForMobileActions();
-    if (!p) return;
-    lockMobileSelection();
-    setSelectedParagraph(p);
-    openParagraphTranslationModal(p);
-  }
-
   function installMobileCommandBar() {
     if (state.mobileCommandBar.installed) return;
     state.mobileCommandBar.installed = true;
@@ -1074,23 +1136,26 @@
     root.className = "translation-mobile-commandbar";
     root.innerHTML =
       '<div class="translation-mobile-commandbar__inner">' +
-      '<span class="translation-mobile-commandbar__hint">Tap any word to get a definition</span>' +
+      '<div class="translation-mobile-commandbar__top">' +
       '<div class="translation-mobile-commandbar__group">' +
       '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="play" aria-label="Play">' +
       mobileBarPlayIcon() +
       "</button>" +
       '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="accent" aria-label="Accent US" title="Accent US">🇺🇸</button>' +
       '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="speed" aria-label="Speed 1x" title="Speed 1x">1x</button>' +
-      '<button type="button" class="translation-mobile-commandbar__btn" data-mobile-bar="translate" aria-label="Translate">' +
-      paragraphTranslateIconSvg() +
-      "</button>" +
       "</div>" +
       '<button type="button" class="translation-mobile-commandbar__collapse" data-mobile-bar="collapse" aria-label="Collapse controls">' +
       mobileBarChevronDownIcon() +
       "</button>" +
       "</div>" +
-      '<button type="button" class="translation-mobile-commandbar__expand" data-mobile-bar="expand" aria-label="Expand controls">' +
-      mobileBarChevronUpIcon() +
+      '<div class="translation-mobile-commandbar__progress">' +
+      '<span class="translation-mobile-commandbar__time" data-mobile-bar-time="current">0:00</span>' +
+      '<input class="translation-mobile-commandbar__seek" type="range" min="0" max="0" value="0" step="1" data-mobile-bar-seek="1" aria-label="Playback progress" />' +
+      '<span class="translation-mobile-commandbar__time translation-mobile-commandbar__time_total" data-mobile-bar-time="total">0:00</span>' +
+      "</div>" +
+      "</div>" +
+      '<button type="button" class="translation-mobile-commandbar__fab" data-mobile-bar="fab" aria-label="Play" title="Play">' +
+      mobileBarPlayIcon() +
       "</button>";
     document.body.appendChild(root);
 
@@ -1098,9 +1163,11 @@
     state.mobileCommandBar.playBtn = root.querySelector('[data-mobile-bar="play"]');
     state.mobileCommandBar.accentBtn = root.querySelector('[data-mobile-bar="accent"]');
     state.mobileCommandBar.speedBtn = root.querySelector('[data-mobile-bar="speed"]');
-    state.mobileCommandBar.translateBtn = root.querySelector('[data-mobile-bar="translate"]');
     state.mobileCommandBar.collapseBtn = root.querySelector('[data-mobile-bar="collapse"]');
-    state.mobileCommandBar.expandBtn = root.querySelector('[data-mobile-bar="expand"]');
+    state.mobileCommandBar.fabBtn = root.querySelector('[data-mobile-bar="fab"]');
+    state.mobileCommandBar.progressSeek = root.querySelector('[data-mobile-bar-seek="1"]');
+    state.mobileCommandBar.progressCurrent = root.querySelector('[data-mobile-bar-time="current"]');
+    state.mobileCommandBar.progressTotal = root.querySelector('[data-mobile-bar-time="total"]');
 
     function stopEvent(e) {
       if (!e) return;
@@ -1123,22 +1190,24 @@
       updateAudioUi();
       updateMobileCommandBarUi();
     });
-    state.mobileCommandBar.translateBtn.addEventListener("click", function (e) {
-      stopEvent(e);
-      translateSelectedParagraphFromCommandBar();
-    });
     state.mobileCommandBar.collapseBtn.addEventListener("click", function (e) {
       stopEvent(e);
       state.mobileCommandBar.collapsed = true;
       root.classList.add("translation-mobile-commandbar_collapsed");
       document.body.classList.add("translation-mobile-commandbar-collapsed");
     });
-    state.mobileCommandBar.expandBtn.addEventListener("click", function (e) {
+    state.mobileCommandBar.fabBtn.addEventListener("click", function (e) {
       stopEvent(e);
       state.mobileCommandBar.collapsed = false;
       root.classList.remove("translation-mobile-commandbar_collapsed");
       document.body.classList.remove("translation-mobile-commandbar-collapsed");
+      playSelectedParagraphFromCommandBar();
     });
+    if (state.mobileCommandBar.progressSeek) {
+      state.mobileCommandBar.progressSeek.addEventListener("input", handlePlaybackRangeInput);
+      state.mobileCommandBar.progressSeek.addEventListener("change", handlePlaybackRangeInput);
+      bindPlaybackRangeInputGuards(state.mobileCommandBar.progressSeek);
+    }
 
     function syncVisibility() {
       // Be defensive: viewport sizing can lag behind initial navigation/resize.
@@ -1393,10 +1462,45 @@
     };
   }
 
+  function discoverVocabWordsFromDom() {
+    var root =
+      document.querySelector(".reading-list__content") ||
+      document.querySelector(".reading-text__content") ||
+      document.querySelector("app-reader-view-content") ||
+      document.body;
+    var nodes = root.querySelectorAll("." + VOCAB_MARKUP_CLASS + "[" + VOCAB_MARKUP_INDEX_ATTR + "]");
+    if (!nodes.length) return [];
+    var byIndex = Object.create(null);
+    var maxIdx = -1;
+    Array.prototype.forEach.call(nodes, function (el) {
+      var idx = Number(el.getAttribute(VOCAB_MARKUP_INDEX_ATTR));
+      if (!Number.isInteger(idx) || idx < 0) return;
+      var term = String(el.textContent || "").trim();
+      if (!term) return;
+      if (byIndex[idx] == null) byIndex[idx] = term;
+      if (idx > maxIdx) maxIdx = idx;
+    });
+    if (maxIdx < 0) return [];
+    var words = new Array(maxIdx + 1);
+    for (var i = 0; i <= maxIdx; i += 1) {
+      words[i] = byIndex[i] != null ? { term: byIndex[i] } : null;
+    }
+    return words;
+  }
+
   // Keep this indirection so we can later swap to API fetch.
   function loadArticleVocab() {
     if (state.articleVocab) return state.articleVocab;
-    state.articleVocab = readArticleVocabGlobal() || { articleId: "", words: [] };
+    var fromWindow = readArticleVocabGlobal();
+    var words =
+      fromWindow && Array.isArray(fromWindow.words) ? fromWindow.words.slice() : [];
+    if (!words.length) {
+      words = discoverVocabWordsFromDom();
+    }
+    state.articleVocab = {
+      articleId: fromWindow && fromWindow.articleId ? String(fromWindow.articleId) : "",
+      words: words
+    };
     return state.articleVocab;
   }
 
@@ -1720,7 +1824,10 @@
         });
         tokenIdx += 1;
       } else {
-        pEl.appendChild(document.createTextNode(parts[i].value));
+        var sep = document.createElement("span");
+        sep.className = "translation-sep";
+        sep.textContent = parts[i].value;
+        pEl.appendChild(sep);
       }
     }
     return tokens;
@@ -1737,14 +1844,22 @@
     );
   }
 
+  /** Collapses pretty-print / layout whitespace so it is not turned into visible breaks in .translation-sep. */
+  function normalizeReadingParagraphPlainText(raw) {
+    return String(raw || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   function ensureSingleModeTokenization() {
-    if (state.singleModeTokenized) return;
+    if (state.singleModeTokenized && state.singleModeDomRev === SINGLE_MODE_DOM_REV) return;
+    state.singleModeTokenized = false;
     state.sourceNodes = [];
     state.singleRowByIndex = Object.create(null);
     var nodes = sourceNodes();
     for (var i = 0; i < nodes.length; i += 1) {
       var p = nodes[i];
-      var text = (p.textContent || "").trim();
+      var text = normalizeReadingParagraphPlainText(p.textContent);
       p.classList.add("translation-inline-orig");
       var sourceTokens = renderTokenizedParagraph(p, text, "source", i);
       state.singleRowByIndex[String(i)] = {
@@ -1755,6 +1870,7 @@
       };
     }
     state.singleModeTokenized = true;
+    state.singleModeDomRev = SINGLE_MODE_DOM_REV;
     syncSavedWordHighlights();
   }
 
@@ -1881,11 +1997,36 @@
     state.audio.activeParagraphBtn = null;
   }
 
+  function stripKaraokeRunFromEl(el) {
+    if (!el || !el.classList) return;
+    el.classList.remove("translation-token_karaoke");
+    el.classList.remove("translation-sep_karaoke");
+    el.classList.remove("translation-karaoke-run-edge_start");
+    el.classList.remove("translation-karaoke-run-edge_end");
+  }
+
   function clearKaraokeDomHighlight() {
     var karaoke = state.audio.karaoke;
-    if (!karaoke || !karaoke.tokenEls || !karaoke.tokenEls.length) {
-      if (karaoke) karaoke.activeDomTokenIndex = -1;
+    if (!karaoke) return;
+    if (karaoke.activeKaraokeEls && karaoke.activeKaraokeEls.length) {
+      for (var ri = 0; ri < karaoke.activeKaraokeEls.length; ri += 1) {
+        stripKaraokeRunFromEl(karaoke.activeKaraokeEls[ri]);
+      }
+      karaoke.activeKaraokeEls = [];
+    }
+    if (!karaoke.tokenEls || !karaoke.tokenEls.length) {
+      karaoke.activeDomTokenIndex = -1;
+      karaoke.activeKaraokeDomIndices = [];
       return;
+    }
+    if (karaoke.activeKaraokeDomIndices && karaoke.activeKaraokeDomIndices.length) {
+      for (var hi = 0; hi < karaoke.activeKaraokeDomIndices.length; hi += 1) {
+        var domI = karaoke.activeKaraokeDomIndices[hi];
+        if (karaoke.tokenEls[domI]) {
+          karaoke.tokenEls[domI].classList.remove("translation-token_karaoke");
+        }
+      }
+      karaoke.activeKaraokeDomIndices = [];
     }
     if (karaoke.activeDomTokenIndex >= 0 && karaoke.tokenEls[karaoke.activeDomTokenIndex]) {
       karaoke.tokenEls[karaoke.activeDomTokenIndex].classList.remove("translation-token_karaoke");
@@ -1898,6 +2039,8 @@
     state.audio.karaoke.paragraphEl = null;
     state.audio.karaoke.tokenEls = [];
     state.audio.karaoke.mapByTimedWordIndex = [];
+    state.audio.karaoke.activeKaraokeDomIndices = [];
+    state.audio.karaoke.activeKaraokeEls = [];
   }
 
   function normalizeKaraokeToken(token) {
@@ -1951,15 +2094,81 @@
   function onKaraokeWordChange(word) {
     var karaoke = state.audio.karaoke;
     if (!karaoke) return;
-    if (!word || typeof word.index !== "number") {
+    if (!word) {
       clearKaraokeDomHighlight();
       return;
     }
-    var domIdx = karaoke.mapByTimedWordIndex[word.index];
-    if (typeof domIdx !== "number" || domIdx < 0 || !karaoke.tokenEls[domIdx]) return;
+    if (word.kind === "segment") {
+      var from = word.paragraphTimedWordFrom;
+      var to = word.paragraphTimedWordTo;
+      if (typeof from !== "number" || typeof to !== "number" || from > to) {
+        clearKaraokeDomHighlight();
+        return;
+      }
+      clearKaraokeDomHighlight();
+      var map = karaoke.mapByTimedWordIndex;
+      var domHits = [];
+      for (var ti = from; ti <= to; ti += 1) {
+        if (ti >= map.length) break;
+        var domIdx = map[ti];
+        if (typeof domIdx !== "number" || domIdx < 0 || !karaoke.tokenEls[domIdx]) continue;
+        domHits.push(domIdx);
+      }
+      if (!domHits.length) {
+        karaoke.activeDomTokenIndex = -1;
+        return;
+      }
+      domHits.sort(function (a, b) {
+        return a - b;
+      });
+      var minD = domHits[0];
+      var maxD = domHits[domHits.length - 1];
+      var startEl = karaoke.tokenEls[minD];
+      var endEl = karaoke.tokenEls[maxD];
+      if (!startEl || !endEl || !startEl.parentNode || startEl.parentNode !== endEl.parentNode) {
+        for (var d = minD; d <= maxD; d += 1) {
+          if (!karaoke.tokenEls[d]) continue;
+          karaoke.tokenEls[d].classList.add("translation-token_karaoke");
+        }
+        karaoke.activeKaraokeDomIndices = [];
+        for (var d2 = minD; d2 <= maxD; d2 += 1) {
+          if (karaoke.tokenEls[d2]) karaoke.activeKaraokeDomIndices.push(d2);
+        }
+        karaoke.activeDomTokenIndex = -1;
+        return;
+      }
+      var runEls = [];
+      var cur = startEl;
+      while (cur) {
+        if (cur.nodeType === 1) {
+          if (cur.classList.contains("translation-token")) {
+            cur.classList.add("translation-token_karaoke");
+            runEls.push(cur);
+          } else if (cur.classList.contains("translation-sep")) {
+            cur.classList.add("translation-sep_karaoke");
+            runEls.push(cur);
+          }
+        }
+        if (cur === endEl) break;
+        cur = cur.nextSibling;
+      }
+      if (runEls.length) {
+        runEls[0].classList.add("translation-karaoke-run-edge_start");
+        runEls[runEls.length - 1].classList.add("translation-karaoke-run-edge_end");
+      }
+      karaoke.activeKaraokeEls = runEls;
+      karaoke.activeDomTokenIndex = -1;
+      return;
+    }
+    if (typeof word.index !== "number") {
+      clearKaraokeDomHighlight();
+      return;
+    }
+    var domIdxSingle = karaoke.mapByTimedWordIndex[word.index];
+    if (typeof domIdxSingle !== "number" || domIdxSingle < 0 || !karaoke.tokenEls[domIdxSingle]) return;
     clearKaraokeDomHighlight();
-    karaoke.tokenEls[domIdx].classList.add("translation-token_karaoke");
-    karaoke.activeDomTokenIndex = domIdx;
+    karaoke.tokenEls[domIdxSingle].classList.add("translation-token_karaoke");
+    karaoke.activeDomTokenIndex = domIdxSingle;
   }
 
   function prepareGlobalKaraokeMap(fullText) {
@@ -2243,9 +2452,234 @@
     );
   }
 
+  function isAudioSeekRangeFocused() {
+    var el = document.activeElement;
+    if (!el || String(el.tagName || "").toLowerCase() !== "input") return false;
+    if (String(el.type || "").toLowerCase() !== "range") return false;
+    return el.getAttribute("data-audio-seek") === "1" || el.getAttribute("data-mobile-bar-seek") === "1";
+  }
+
+  /** While `<audio>` is seeking, `currentTime` is unreliable — assigning the range from it snaps the thumb left. */
+  function shouldAssignPlaybackRangeFromMedia() {
+    if (isAudioSeekRangeFocused()) return false;
+    if (state.audio.playbackRangePointerDown) return false;
+    var el = state.audio.remoteEl;
+    if (el && el.seeking) return false;
+    return true;
+  }
+
+  function bindPlaybackRangeInputGuards(rangeEl) {
+    if (!rangeEl || rangeEl.dataset.playbackRangeGuards === "1") return;
+    rangeEl.dataset.playbackRangeGuards = "1";
+    function onPointerDown() {
+      state.audio.playbackRangePointerDown = true;
+    }
+    rangeEl.addEventListener("pointerdown", onPointerDown);
+    // WebKit on iOS: scrubbing a range may not emit pointer events reliably; touch* mirrors the guard.
+    rangeEl.addEventListener("touchstart", onPointerDown, { passive: true });
+    function onPointerRelease() {
+      state.audio.playbackRangePointerDown = false;
+      if (state.audio.backend === "remote" && state.audio.remoteEl) {
+        requestAnimationFrame(function () {
+          updateAudioUi();
+        });
+      }
+    }
+    rangeEl.addEventListener("pointerup", onPointerRelease);
+    rangeEl.addEventListener("pointercancel", onPointerRelease);
+    rangeEl.addEventListener("lostpointercapture", onPointerRelease);
+    rangeEl.addEventListener("touchend", onPointerRelease, { passive: true });
+    rangeEl.addEventListener("touchcancel", onPointerRelease, { passive: true });
+  }
+
+  function syncAudioProgressCharFromMediaTime() {
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl) return;
+    if (!state.audio.totalChars) return;
+    var activeLen = Math.max(0, state.audio.activeChunkLength || 0);
+    var activeStart = Math.max(0, state.audio.activeChunkStart || 0);
+    if (activeLen <= 0) return;
+    var el = state.audio.remoteEl;
+    var ct = Number(el.currentTime);
+    if (!isFinite(ct)) return;
+    var wStart = Number(state.audio.progressMediaStart) || 0;
+    var wEnd = Number(state.audio.progressMediaEnd) || 0;
+    var rel;
+    if (wEnd > wStart) {
+      var clamped = Math.min(Math.max(ct, wStart), wEnd);
+      rel = (clamped - wStart) / (wEnd - wStart);
+    } else {
+      var dur = el.duration;
+      if (!isFinite(dur) || dur <= 0) return;
+      rel = Math.max(0, Math.min(1, ct / dur));
+    }
+    state.audio.currentChar = Math.min(
+      state.audio.totalChars,
+      activeStart + Math.round(rel * activeLen)
+    );
+  }
+
+  function getRemoteMediaDurationSeconds() {
+    var dur = state.audio.remoteDuration > 0 ? state.audio.remoteDuration : 0;
+    var el = state.audio.remoteEl;
+    if (el && isFinite(el.duration) && el.duration > 0) {
+      dur = el.duration;
+    }
+    return dur > 0 ? dur : 0;
+  }
+
+  /** Match progress UI to read_aloud mode: full file for pre-generated, segment window otherwise. */
+  function setPlaybackProgressUiFromPlayer(player) {
+    state.audio.progressUiFullMediaTimeline = Boolean(
+      player && typeof player.getMode === "function" && player.getMode() === "preGenerated"
+    );
+  }
+
+  function getPlaybackTimeSpanBounds() {
+    if (state.audio.backend === "remote" && state.audio.progressUiFullMediaTimeline) {
+      var fullDur = getRemoteMediaDurationSeconds();
+      if (fullDur > 0) {
+        return { start: 0, end: fullDur, span: fullDur };
+      }
+      return { start: 0, end: 0, span: 0 };
+    }
+    var wStart = Number(state.audio.progressMediaStart) || 0;
+    var wEnd = Number(state.audio.progressMediaEnd) || 0;
+    var dur = state.audio.remoteDuration > 0 ? state.audio.remoteDuration : 0;
+    if (state.audio.backend === "remote" && wEnd > wStart) {
+      var right = dur > 0 ? Math.min(wEnd, dur) : wEnd;
+      return { start: wStart, end: right, span: Math.max(0, right - wStart) };
+    }
+    if (state.audio.backend === "remote" && dur > 0) {
+      return { start: 0, end: dur, span: dur };
+    }
+    var tot = getEstimatedTotalSeconds();
+    return { start: 0, end: tot, span: Math.max(0, tot) };
+  }
+
+  /** Head position in seconds (same basis as the clock / thumb ratio). */
+  function getPlaybackHeadSeconds() {
+    if (state.audio.backend === "remote" && state.audio.remoteEl) {
+      var el = state.audio.remoteEl;
+      var ct = Number(el.currentTime);
+      if (isFinite(ct)) {
+        var b = getPlaybackTimeSpanBounds();
+        if (b.span > 0) {
+          return Math.min(Math.max(ct, b.start), b.end);
+        }
+        // Before the paragraph window / duration are known, span can be 0; still prefer real media time
+        // over char-based estimate — otherwise the thumb snaps left until metadata catches up.
+        var dur =
+          state.audio.remoteDuration > 0
+            ? state.audio.remoteDuration
+            : isFinite(el.duration) && el.duration > 0
+              ? el.duration
+              : 0;
+        if (dur > 0) {
+          return Math.max(0, Math.min(ct, dur));
+        }
+      }
+    }
+    return getEstimatedCurrentSeconds();
+  }
+
+  function assignPlaybackProgressRangeFromTimeRatio(rangeEl) {
+    if (!rangeEl) return;
+    var scale = PLAYBACK_PROGRESS_RANGE_SCALE;
+    var b = getPlaybackTimeSpanBounds();
+    var ratio;
+    if (b.span > 0) {
+      ratio = (getPlaybackHeadSeconds() - b.start) / b.span;
+    } else {
+      var tot = getEstimatedTotalSeconds();
+      var cur = getPlaybackHeadSeconds();
+      ratio = tot > 0 ? cur / tot : 0;
+    }
+    ratio = Math.max(0, Math.min(1, ratio));
+    var v = Math.round(ratio * scale);
+    rangeEl.setAttribute("min", "0");
+    rangeEl.setAttribute("max", String(scale));
+    rangeEl.setAttribute("step", "1");
+    try {
+      rangeEl.valueAsNumber = v;
+    } catch (_err) {
+      rangeEl.value = String(v);
+    }
+  }
+
+  function seekPlaybackToMediaTime(seconds) {
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl) return;
+    var b = getPlaybackTimeSpanBounds();
+    var el = state.audio.remoteEl;
+    var t = b.span > 0 ? Math.min(Math.max(Number(seconds) || 0, b.start), b.end) : Number(seconds) || 0;
+    var cap = isFinite(el.duration) && el.duration > 0 ? el.duration : 0;
+    if (!cap && state.audio.remoteDuration > 0) cap = state.audio.remoteDuration;
+    if (!cap && b.end > 0) cap = b.end;
+    if (!cap) cap = t;
+    try {
+      el.currentTime = Math.max(0, Math.min(t, cap));
+    } catch (_e) { }
+    syncAudioProgressCharFromMediaTime();
+    updateAudioUi();
+  }
+
+  function handlePlaybackRangeInput(event) {
+    var target = event.target;
+    if (!target) return;
+    var scale = Number(target.max) || PLAYBACK_PROGRESS_RANGE_SCALE;
+    var val = Number(target.value) || 0;
+    var ratio = scale > 0 ? val / scale : 0;
+    var b = getPlaybackTimeSpanBounds();
+    var targetSec = b.span > 0 ? b.start + ratio * b.span : 0;
+    seekPlaybackToMediaTime(targetSec);
+  }
+
+  function stopPlaybackProgressRaf() {
+    if (!playbackProgressRafId) return;
+    try {
+      cancelAnimationFrame(playbackProgressRafId);
+    } catch (_c) { }
+    playbackProgressRafId = 0;
+  }
+
+  function stepPlaybackProgressRaf() {
+    playbackProgressRafId = 0;
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl || !state.audio.remoteEl.src) return;
+    if (!state.audio.isPlaying || state.audio.isPaused) return;
+    paintPlaybackProgressSlidersAndTimes();
+    playbackProgressRafId = requestAnimationFrame(stepPlaybackProgressRaf);
+  }
+
+  function startPlaybackProgressRaf() {
+    stopPlaybackProgressRaf();
+    playbackProgressRafId = requestAnimationFrame(stepPlaybackProgressRaf);
+  }
+
+  /** Re-paint after play/seek: first frames often run before `currentTime` matches the segment. */
+  function schedulePlaybackProgressUiDeferred() {
+    function tick() {
+      if (state.audio.backend !== "remote" || !state.audio.remoteEl || !state.audio.remoteEl.src) return;
+      updateAudioUi();
+    }
+    requestAnimationFrame(function () {
+      requestAnimationFrame(tick);
+    });
+    setTimeout(tick, 120);
+    setTimeout(tick, 320);
+  }
+
   function getEstimatedTotalSeconds() {
-    if (state.audio.backend === "remote" && state.audio.remoteDuration > 0) {
-      return state.audio.remoteDuration;
+    if (state.audio.backend === "remote" && state.audio.progressUiFullMediaTimeline) {
+      var fd = getRemoteMediaDurationSeconds();
+      if (fd > 0) return fd;
+    }
+    if (state.audio.backend === "remote") {
+      var wStart = Number(state.audio.progressMediaStart) || 0;
+      var wEnd = Number(state.audio.progressMediaEnd) || 0;
+      var dur = state.audio.remoteDuration > 0 ? state.audio.remoteDuration : 0;
+      if (wEnd > wStart) {
+        return dur > 0 ? Math.min(wEnd, dur) : wEnd;
+      }
+      if (dur > 0) return dur;
     }
     var cps = 13 * (state.audio.rate || 1);
     if (!state.audio.totalChars || cps <= 0) return 0;
@@ -2253,6 +2687,17 @@
   }
 
   function getEstimatedCurrentSeconds() {
+    var wStart = Number(state.audio.progressMediaStart) || 0;
+    var wEnd = Number(state.audio.progressMediaEnd) || 0;
+    var activeLen = Math.max(0, state.audio.activeChunkLength || 0);
+    var activeStart = Math.max(0, state.audio.activeChunkStart || 0);
+    if (state.audio.backend === "remote" && wEnd > wStart && activeLen > 0) {
+      var p = (state.audio.currentChar - activeStart) / activeLen;
+      p = Math.max(0, Math.min(1, p));
+      var t = wStart + p * (wEnd - wStart);
+      var dur = state.audio.remoteDuration > 0 ? state.audio.remoteDuration : 0;
+      return dur > 0 ? Math.min(Math.max(0, t), dur) : Math.max(0, t);
+    }
     if (state.audio.backend === "remote" && state.audio.remoteDuration > 0 && state.audio.totalChars > 0) {
       return (state.audio.currentChar / state.audio.totalChars) * state.audio.remoteDuration;
     }
@@ -2261,16 +2706,40 @@
     return (state.audio.currentChar / state.audio.totalChars) * total;
   }
 
+  function paintPlaybackProgressSlidersAndTimes() {
+    if (shouldAssignPlaybackRangeFromMedia()) {
+      syncAudioProgressCharFromMediaTime();
+    }
+    var headSec = getPlaybackHeadSeconds();
+    var totalSec = getEstimatedTotalSeconds();
+    if (state.mobileCommandBar.progressSeek) {
+      if (shouldAssignPlaybackRangeFromMedia()) {
+        assignPlaybackProgressRangeFromTimeRatio(state.mobileCommandBar.progressSeek);
+      }
+      if (state.mobileCommandBar.progressCurrent) {
+        state.mobileCommandBar.progressCurrent.textContent = formatTime(headSec);
+      }
+      if (state.mobileCommandBar.progressTotal) {
+        state.mobileCommandBar.progressTotal.textContent = formatTime(totalSec);
+      }
+    }
+    if (state.audio.ui && state.audio.ui.seek) {
+      if (shouldAssignPlaybackRangeFromMedia()) {
+        assignPlaybackProgressRangeFromTimeRatio(state.audio.ui.seek);
+      }
+      if (state.audio.ui.current) {
+        state.audio.ui.current.textContent = formatTime(headSec);
+      }
+      if (state.audio.ui.total) {
+        state.audio.ui.total.textContent = formatTime(totalSec);
+      }
+    }
+  }
+
   function updateAudioUi() {
+    paintPlaybackProgressSlidersAndTimes();
     if (!state.audio.ui) return;
-    var seek = state.audio.ui.seek;
-    var current = state.audio.ui.current;
-    var total = state.audio.ui.total;
     var playPause = state.audio.ui.playPause;
-    seek.max = String(Math.max(0, state.audio.totalChars));
-    seek.value = String(Math.max(0, Math.min(state.audio.currentChar, state.audio.totalChars)));
-    current.textContent = formatTime(getEstimatedCurrentSeconds());
-    total.textContent = formatTime(getEstimatedTotalSeconds());
     if (state.audio.isPlaying && !state.audio.isPaused) {
       playPause.innerHTML = playerPauseIconSvg();
       playPause.setAttribute("aria-label", "Pause");
@@ -2309,10 +2778,12 @@
   }
 
   function ensureAudioText() {
-    if (state.audio.text) return state.audio.text;
-    state.audio.text = sourceParagraphs().join("\n\n");
-    state.audio.totalChars = state.audio.text.length;
-    return state.audio.text;
+    // Always rebuild from the live DOM. Do not cache: paragraph play sets state.audio.text to one
+    // paragraph only; the main Listen button + prepareGlobalKaraokeMap need the full article string.
+    var built = sourceParagraphs().join("\n\n");
+    state.audio.text = built;
+    state.audio.totalChars = built.length;
+    return built;
   }
 
   function normalizeLanguageCode(input) {
@@ -2352,26 +2823,6 @@
 
   function onRemoteAudioTimeUpdate() {
     if (state.audio.backend !== "remote" || !state.audio.remoteEl) return;
-    var el = state.audio.remoteEl;
-    var d = el.duration;
-    if (!state.audio.totalChars || !isFinite(d) || d <= 0) return;
-    var activeLen = Math.max(0, state.audio.activeChunkLength || 0);
-    var activeStart = Math.max(0, state.audio.activeChunkStart || 0);
-    if (activeLen > 0) {
-      var tWindowStart = Number(state.audio.progressMediaStart) || 0;
-      var tWindowEnd = Number(state.audio.progressMediaEnd) || 0;
-      var rel;
-      if (tWindowEnd > tWindowStart) {
-        var clamped = Math.min(Math.max(el.currentTime || 0, tWindowStart), tWindowEnd);
-        rel = (clamped - tWindowStart) / (tWindowEnd - tWindowStart);
-      } else {
-        rel = Math.max(0, Math.min(1, (el.currentTime || 0) / d));
-      }
-      state.audio.currentChar = Math.min(
-        state.audio.totalChars,
-        activeStart + Math.round(rel * activeLen)
-      );
-    }
     updateAudioUi();
   }
 
@@ -2380,9 +2831,11 @@
     var d = state.audio.remoteEl.duration;
     if (isFinite(d) && d > 0) state.audio.remoteDuration = d;
     updateAudioUi();
+    schedulePlaybackProgressUiDeferred();
   }
 
   function onRemoteAudioEnded() {
+    stopPlaybackProgressRaf();
     if (state.audio.backend !== "remote") return;
     if (state.audio.currentChar >= state.audio.totalChars) {
       state.audio.isPlaying = false;
@@ -2402,6 +2855,11 @@
     } catch (_eRate) { }
     el.addEventListener("timeupdate", onRemoteAudioTimeUpdate);
     el.addEventListener("loadedmetadata", onRemoteAudioLoadedMetadata);
+    el.addEventListener("seeked", function () {
+      if (state.audio.backend === "remote") {
+        updateAudioUi();
+      }
+    });
     el.addEventListener("ended", onRemoteAudioEnded);
     el.addEventListener("playing", function () {
       logDebug("remote_audio_playing", {
@@ -2411,6 +2869,12 @@
         volume: el.volume,
         readyState: el.readyState
       });
+      startPlaybackProgressRaf();
+      schedulePlaybackProgressUiDeferred();
+    });
+    el.addEventListener("pause", function () {
+      stopPlaybackProgressRaf();
+      updateAudioUi();
     });
     el.addEventListener("error", function () {
       var mediaErr = el.error;
@@ -2425,6 +2889,8 @@
   }
 
   function stopAudioPlayback() {
+    stopPlaybackProgressRaf();
+    state.audio.playbackRangePointerDown = false;
     if (state.audio.player && typeof state.audio.player.stop === "function") {
       try {
         state.audio.player.stop();
@@ -2445,6 +2911,7 @@
     state.audio.activeChunkLength = 0;
     state.audio.progressMediaStart = 0;
     state.audio.progressMediaEnd = 0;
+    state.audio.progressUiFullMediaTimeline = false;
     resetKaraokeState();
     clearActiveTriggerButtons();
     updateAudioUi();
@@ -2480,7 +2947,10 @@
       voice: nextVoice,
       language: nextLanguage,
       maxChunkChars: READ_ALOUD_MAX_CHUNK_CHARS,
+      preGeneratedAudioUrl: READ_ALOUD_PREGENERATED_AUDIO_URL,
       preGeneratedAudioByLanguage: READ_ALOUD_PREGENERATED_AUDIO_BY_LANGUAGE,
+      preGeneratedTranscriptUrl: READ_ALOUD_PREGENERATED_TRANSCRIPT_URL,
+      preGeneratedTranscriptByLanguage: READ_ALOUD_PREGENERATED_TRANSCRIPT_BY_LANGUAGE,
       audio: ensureRemoteAudioEl()
     });
     state.audio.player = player;
@@ -2560,6 +3030,7 @@
     var language = getSelectedReadAloudLanguage();
     var voice = resolveVoiceForLanguage(language);
     var player = ensureReadAloudPlayer(voice, language);
+    setPlaybackProgressUiFromPlayer(player);
     applyPlaybackRateToAudio();
     logDebug("mistral_play_start", {
       totalChars: text.length,
@@ -2593,6 +3064,7 @@
     state.audio.activeChunkLength = 0;
     state.audio.progressMediaStart = 0;
     state.audio.progressMediaEnd = 0;
+    state.audio.progressUiFullMediaTimeline = false;
     updateAudioUi();
   }
 
@@ -2833,6 +3305,7 @@
         var paragraphLanguage = getSelectedReadAloudLanguage();
         var paragraphVoice = resolveVoiceForLanguage(paragraphLanguage);
         var player = ensureReadAloudPlayer(paragraphVoice, paragraphLanguage);
+        setPlaybackProgressUiFromPlayer(player);
         applyPlaybackRateToAudio();
         logDebug("paragraph_player_ready", {
           paragraphIndex: paragraphIndex,
@@ -2867,6 +3340,7 @@
             state.audio.activeChunkLength = 0;
             state.audio.progressMediaStart = 0;
             state.audio.progressMediaEnd = 0;
+            state.audio.progressUiFullMediaTimeline = false;
             updateAudioUi();
           }).catch(function (err) {
             if (err && err.name === "AbortError") return;
@@ -2876,6 +3350,7 @@
             state.audio.isPlaying = false;
             state.audio.isPaused = false;
             state.audio.backend = null;
+            state.audio.progressUiFullMediaTimeline = false;
             resetKaraokeState();
             updateAudioUi();
           });
@@ -2929,19 +3404,26 @@
     var bounded = Math.max(0, Math.min(charIndex || 0, state.audio.totalChars));
     state.audio.currentChar = bounded;
     updateAudioUi();
-    if (
-      state.audio.backend === "remote" &&
-      state.audio.remoteEl &&
-      state.audio.remoteDuration > 0 &&
-      state.audio.totalChars > 0
-    ) {
-      var rel = state.audio.remoteEl;
-      var t = (bounded / state.audio.totalChars) * state.audio.remoteDuration;
-      var cap = isFinite(rel.duration) && rel.duration > 0 ? rel.duration : state.audio.remoteDuration;
-      try {
-        rel.currentTime = Math.max(0, Math.min(t, cap));
-      } catch (_e) { }
+    if (state.audio.backend !== "remote" || !state.audio.remoteEl || state.audio.totalChars <= 0) return;
+    var wStart = Number(state.audio.progressMediaStart) || 0;
+    var wEnd = Number(state.audio.progressMediaEnd) || 0;
+    var frac = bounded / state.audio.totalChars;
+    var el = state.audio.remoteEl;
+    var t;
+    if (wEnd > wStart) {
+      t = wStart + frac * (wEnd - wStart);
+    } else if (state.audio.remoteDuration > 0) {
+      t = frac * state.audio.remoteDuration;
+    } else {
+      return;
     }
+    var cap = isFinite(el.duration) && el.duration > 0 ? el.duration : 0;
+    if (!cap && state.audio.remoteDuration > 0) cap = state.audio.remoteDuration;
+    if (!cap && wEnd > wStart) cap = wEnd;
+    if (!cap) return;
+    try {
+      el.currentTime = Math.max(0, Math.min(t, cap));
+    } catch (_e) { }
   }
 
   function ensureAudioPlayer() {
@@ -3026,13 +3508,9 @@
         updateAudioUi();
       });
     }
-    state.audio.ui.seek.addEventListener("input", function (event) {
-      state.audio.currentChar = Number(event.target.value) || 0;
-      updateAudioUi();
-    });
-    state.audio.ui.seek.addEventListener("change", function (event) {
-      seekAudioTo(Number(event.target.value) || 0);
-    });
+    state.audio.ui.seek.addEventListener("input", handlePlaybackRangeInput);
+    state.audio.ui.seek.addEventListener("change", handlePlaybackRangeInput);
+    bindPlaybackRangeInputGuards(state.audio.ui.seek);
     updateAudioUi();
     return state.audio.ui;
   }
@@ -3213,7 +3691,7 @@
       row.appendChild(right);
       bisect.appendChild(row);
 
-      var sourceText = (nodes[i].textContent || "").trim();
+      var sourceText = normalizeReadingParagraphPlainText(nodes[i].textContent);
       var sourceTokens = renderTokenizedParagraph(pL, sourceText, "source", i);
       var rowData = {
         sourceP: pL,
@@ -3482,8 +3960,7 @@
       '<p class="translation-reading-stats__subtitle">Save at least 3 words to unlock practice.</p>' +
       "</div>" +
       "</div>" +
-      '<button type="button" class="translation-reading-stats__cta translation-reading-stats__cta_disabled" disabled>Still 3 words to discover</button>' +
-      '<p class="translation-reading-stats__hint">Saved words are prioritized first in practice.</p>';
+      '<button type="button" class="translation-reading-stats__cta translation-reading-stats__cta_disabled" disabled>Still 3 words to discover</button>';
     container.appendChild(section);
     section.addEventListener("click", function (event) {
       var cta = event.target && event.target.closest
@@ -3731,9 +4208,11 @@
     var terms = getVocabularyTermsFromArticle();
     var savedWords = getSavedHistoryWordsSet();
     list.innerHTML = "";
+    var visibleCount = 0;
     for (var i = 0; i < terms.length; i += 1) {
       var termKey = normalizeHistoryWord(terms[i].term);
       if (termKey && savedWords.has(termKey)) continue;
+      visibleCount += 1;
       var item = document.createElement("button");
       item.type = "button";
       item.className = "translation-vocab-item";
@@ -3742,8 +4221,8 @@
       item.setAttribute("data-vocab-index", String(terms[i].vocabIndex));
       list.appendChild(item);
     }
-    section.style.display = terms.length ? "" : "none";
-    syncHistoryListHeightForVocabulary(sidebar, historyList, terms.length > 0);
+    section.style.display = visibleCount ? "" : "none";
+    syncHistoryListHeightForVocabulary(sidebar, historyList, visibleCount > 0);
     if (!syncVocabularySection._resizeBound) {
       window.addEventListener("resize", syncVocabularySection);
       syncVocabularySection._resizeBound = true;
@@ -3813,12 +4292,42 @@
     });
   }
 
+  function getHistorySidebarListContentAttr(listEl) {
+    var list = listEl || document.querySelector(".history-sidebar__list");
+    if (!list || !list.attributes) return "_ngcontent-ng-c1983502280";
+    var attrs = list.attributes;
+    for (var i = 0; i < attrs.length; i += 1) {
+      var name = attrs[i].name;
+      if (name.indexOf("_ngcontent-") === 0) return name;
+    }
+    return "_ngcontent-ng-c1983502280";
+  }
+
+  function ensureHistorySidebarEmptyPlaceholder(list) {
+    if (!list) return null;
+    var existing = list.querySelector(".history-sidebar__empty[data-reader-history-empty]");
+    if (existing) return existing;
+    var wrap = document.createElement("div");
+    wrap.className = "history-sidebar__empty";
+    wrap.setAttribute("data-reader-history-empty", "1");
+    wrap.innerHTML =
+      '<div class="history-sidebar__empty-emoji">👆</div>' +
+      '<span class="history-sidebar__empty-text"> Click on any unknown word to look it up</span>';
+    applyScopedContentAttr(wrap, getHistorySidebarListContentAttr(list));
+    list.insertBefore(wrap, list.firstChild);
+    return wrap;
+  }
+
   function syncHistoryCountFromDom() {
     var list = document.querySelector(".history-sidebar__list");
     if (!list) return;
+    var itemCount = list.querySelectorAll("app-history-item .history-item__word").length;
+    var emptyEl = ensureHistorySidebarEmptyPlaceholder(list);
+    if (emptyEl) {
+      emptyEl.style.display = itemCount ? "none" : "";
+    }
     var countEl = document.querySelector(".reading-view-header__history-count");
     if (!countEl) return;
-    var itemCount = list.querySelectorAll("app-history-item .history-item__word").length;
     countEl.textContent = String(itemCount);
     syncWordsTabCount(itemCount);
     syncReadingStatsSection();
@@ -4042,6 +4551,242 @@
     logDebug("history_sidebar_fallback_toggle", { becameVisible: hidden });
   }
 
+  function getAppReaderViewPageContentAttr() {
+    var page = document.querySelector("app-reader-view-page");
+    if (!page || !page.attributes) return "_ngcontent-ng-c1400609795";
+    var attrs = page.attributes;
+    for (var i = 0; i < attrs.length; i += 1) {
+      var name = attrs[i].name;
+      if (name.indexOf("_ngcontent-") === 0) return name;
+    }
+    return "_ngcontent-ng-c1400609795";
+  }
+
+  function isMobileFirstWordTipDismissed() {
+    try {
+      return window.localStorage.getItem(MOBILE_FIRST_WORD_TIP_STORAGE_KEY) === "1";
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function getReadingListContainerForTip() {
+    return (
+      document.querySelector(".reading-list__container.main-content") ||
+      document.querySelector(".reading-list__container")
+    );
+  }
+
+  function disconnectMobileFirstWordTipResizeObserver(tipEl) {
+    if (!tipEl) return;
+    var ob = tipEl._readerTipResizeOb;
+    if (ob && typeof ob.disconnect === "function") ob.disconnect();
+    tipEl._readerTipResizeOb = null;
+  }
+
+  function connectMobileFirstWordTipResizeObserver(tipEl) {
+    if (!tipEl || typeof ResizeObserver === "undefined") return;
+    disconnectMobileFirstWordTipResizeObserver(tipEl);
+    var ob = new ResizeObserver(function () {
+      scheduleMobileFirstWordTipLayout();
+    });
+    ob.observe(tipEl);
+    tipEl._readerTipResizeOb = ob;
+  }
+
+  var mobileFirstWordTipLayoutScheduled = false;
+  function scheduleMobileFirstWordTipLayout() {
+    if (mobileFirstWordTipLayoutScheduled) return;
+    mobileFirstWordTipLayoutScheduled = true;
+    requestAnimationFrame(function () {
+      mobileFirstWordTipLayoutScheduled = false;
+      syncMobileFirstWordTipDock();
+      syncMobileFirstWordTipReadingPadding();
+    });
+  }
+
+  function syncMobileFirstWordTipDock() {
+    var tip = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+    if (!tip) return;
+    if (!tip.classList.contains("translation-mobile-first-word-tip--show") || !isMobileReaderViewport()) {
+      tip.style.top = "";
+      return;
+    }
+    function isDisplayed(el) {
+      if (!el || !window.getComputedStyle) return false;
+      return window.getComputedStyle(el).display !== "none";
+    }
+    var row = document.querySelector(".reader-view-tabs");
+    var tabsHost = document.querySelector("app-reader-view-tabs");
+    var anchor = isDisplayed(row) ? row : isDisplayed(tabsHost) ? tabsHost : null;
+    if (!anchor || typeof anchor.getBoundingClientRect !== "function") {
+      tip.style.top = "";
+      return;
+    }
+    var br = anchor.getBoundingClientRect();
+    if (!br || br.height < 2) {
+      tip.style.top = "";
+      return;
+    }
+    tip.style.top = Math.max(0, Math.ceil(br.bottom)) + "px";
+  }
+
+  function syncMobileFirstWordTipReadingPadding() {
+    var container = getReadingListContainerForTip();
+    if (!container) return;
+    var tip = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+    var visible = Boolean(tip && tip.classList.contains("translation-mobile-first-word-tip--show"));
+    if (!tip || !visible) {
+      container.style.paddingTop = "";
+      return;
+    }
+    var tipRect = tip.getBoundingClientRect();
+    var cRect = container.getBoundingClientRect();
+    var raw = Math.max(0, Math.ceil(tipRect.bottom - cRect.top));
+    var tipH = Math.ceil(tipRect.height);
+    var pad = Math.min(raw, Math.max(tipH + 24, 96));
+    container.style.paddingTop = pad ? pad + "px" : "";
+  }
+
+  function dismissMobileFirstWordTip() {
+    try {
+      window.localStorage.setItem(MOBILE_FIRST_WORD_TIP_STORAGE_KEY, "1");
+    } catch (_e) { }
+    var tip = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+    disconnectMobileFirstWordTipResizeObserver(tip);
+    if (tip && tip.parentNode) tip.parentNode.removeChild(tip);
+    syncMobileFirstWordTipReadingPadding();
+  }
+
+  function ensureMobileFirstWordTipElement() {
+    if (isMobileFirstWordTipDismissed()) return null;
+    var existing = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+    if (existing) return existing;
+    var container = getReadingListContainerForTip();
+    if (!container) return null;
+
+    var pageContentAttr = getAppReaderViewPageContentAttr();
+    var tipInnerContentAttr = "_ngcontent-ng-c1863009740";
+    var buttonContentAttr = "_ngcontent-ng-c1248365913";
+
+    var host = document.createElement("app-reader-top-tip");
+    host.setAttribute("data-reader-mobile-first-word-tip", "1");
+    if (pageContentAttr) host.setAttribute(pageContentAttr, "");
+    host.setAttribute("_nghost-ng-c1863009740", "");
+
+    var inner = document.createElement("div");
+    inner.className = "reading-top-tip wrappers_full-width full-screen";
+    inner.setAttribute(tipInnerContentAttr, "");
+
+    var text = document.createElement("span");
+    text.className = "reading-top-tip__text";
+    text.setAttribute(tipInnerContentAttr, "");
+    text.textContent = "Tap any word to look it up and add it to your saved words! 👇";
+
+    var actions = document.createElement("div");
+    actions.className = "reading-top-tip__actions";
+    actions.setAttribute(tipInnerContentAttr, "");
+
+    var appBtn = document.createElement("app-button");
+    appBtn.setAttribute("size", "small");
+    appBtn.className = "reading-top-tip__button reading-top-tip__button_ok";
+    appBtn.setAttribute(tipInnerContentAttr, "");
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "OK");
+    btn.className = "button button_small button_light button_rectangle";
+    if (buttonContentAttr) btn.setAttribute(buttonContentAttr, "");
+
+    var okText = document.createElement("span");
+    okText.className = "button__text";
+    okText.textContent = "OK";
+    if (buttonContentAttr) okText.setAttribute(buttonContentAttr, "");
+
+    btn.appendChild(okText);
+    appBtn.appendChild(btn);
+    actions.appendChild(appBtn);
+    inner.appendChild(text);
+    inner.appendChild(actions);
+    host.appendChild(inner);
+
+    host.addEventListener("click", function (event) {
+      var okRoot = event.target && event.target.closest ? event.target.closest(".reading-top-tip__button_ok") : null;
+      if (!okRoot || !host.contains(okRoot)) return;
+      dismissMobileFirstWordTip();
+    });
+
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function syncMobileFirstWordTip() {
+    if (typeof window.READER_MOBILE_FIRST_WORD_TIP_DISABLED !== "undefined" && window.READER_MOBILE_FIRST_WORD_TIP_DISABLED) {
+      syncMobileFirstWordTipReadingPadding();
+      return;
+    }
+    if (isMobileFirstWordTipDismissed()) {
+      var stale = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+      disconnectMobileFirstWordTipResizeObserver(stale);
+      if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+      syncMobileFirstWordTipReadingPadding();
+      return;
+    }
+    var tip = document.querySelector("app-reader-top-tip[data-reader-mobile-first-word-tip]");
+    if (!isMobileReaderViewport()) {
+      if (tip) {
+        tip.classList.remove("translation-mobile-first-word-tip--show");
+        tip.style.top = "";
+      }
+      syncMobileFirstWordTipReadingPadding();
+      return;
+    }
+    var el = ensureMobileFirstWordTipElement();
+    if (el) {
+      el.classList.add("translation-mobile-first-word-tip--show");
+      syncMobileFirstWordTipDock();
+      connectMobileFirstWordTipResizeObserver(el);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          scheduleMobileFirstWordTipLayout();
+        });
+      });
+    } else {
+      syncMobileFirstWordTipReadingPadding();
+    }
+  }
+
+  function installMobileFirstWordTip() {
+    if (document.body.dataset.readerMobileFirstWordTipInstalled === "1") return;
+    document.body.dataset.readerMobileFirstWordTipInstalled = "1";
+
+    var mql =
+      typeof window.matchMedia === "function" ? window.matchMedia("(max-width: 1023px)") : null;
+    function onLayoutChange() {
+      syncMobileFirstWordTip();
+    }
+    window.addEventListener(
+      "resize",
+      function () {
+        scheduleMobileFirstWordTipLayout();
+      },
+      { passive: true }
+    );
+    window.addEventListener(
+      "scroll",
+      function () {
+        scheduleMobileFirstWordTipLayout();
+      },
+      { passive: true, capture: true }
+    );
+    if (mql && typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", onLayoutChange);
+    } else {
+      window.addEventListener("resize", onLayoutChange);
+    }
+    syncMobileFirstWordTip();
+  }
+
   function installHistoryToggleFix() {
     var historyButton = document
       .querySelector("app-icon-double-chevron")
@@ -4126,6 +4871,7 @@
         setWordsTabHasNew(false);
         flushPendingHistoryAnimations();
       }
+      syncMobileFirstWordTip();
     }
 
     textButton.addEventListener("click", function () {
@@ -4214,6 +4960,7 @@
 
     installHistoryToggleFix();
     installMobileReaderTabsFix();
+    installMobileFirstWordTip();
     installHistoryDedupObserver();
     syncVocabularySection();
     syncReadingStatsSection();
