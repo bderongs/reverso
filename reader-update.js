@@ -506,6 +506,21 @@
       ".translation-reading-stats__cta:disabled,.translation-reading-stats__cta_disabled{" +
       "cursor:not-allowed;background:#c8d8e8;color:#35506a;filter:none" +
       "}" +
+      ".translation-listen-top-wrap{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}" +
+      ".translation-listen-top-cta{" +
+      "display:inline-flex;align-items:center;gap:6px;max-width:220px;border:1px solid #d8e8f7;border-radius:999px;" +
+      "padding:6px 10px;background:linear-gradient(90deg,#0a6cc2 0%,#157cd5 100%);color:#fff;cursor:pointer;" +
+      "font:700 12px/1.1 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;" +
+      "box-shadow:0 1px 4px rgba(10,108,194,.08);transition:filter .15s ease,opacity .15s ease,background .15s ease" +
+      "}" +
+      ".translation-listen-top-cta svg{width:14px;height:14px;display:block;color:currentColor;flex:0 0 auto}" +
+      ".translation-listen-top-cta__text{display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".translation-listen-top-cta:hover{filter:brightness(1.03)}" +
+      ".translation-listen-top-cta:focus-visible{outline:2px solid #7aa7d1;outline-offset:2px}" +
+      ".translation-listen-top-cta:disabled,.translation-listen-top-cta_disabled{" +
+      "cursor:not-allowed;background:#c8d8e8;color:#35506a;border-color:#c8d8e8;filter:none" +
+      "}" +
+      ".translation-listen-top-cta_mastered{background:linear-gradient(90deg,#0e9a58 0%,#13b56a 100%);border-color:#0e9a58}" +
       ".translation-reading-stats__hint{" +
       "margin:8px 2px 0;font:500 12px/1.3 Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#607d96" +
       "}" +
@@ -2350,6 +2365,58 @@
     }
   }
 
+  function ensureTopListenPracticeCta(listenBtn) {
+    var btn = listenBtn || getListenButton();
+    if (!btn || !btn.parentElement) return null;
+    var host = btn.parentElement;
+    host.classList.add("translation-listen-top-wrap");
+    var existing = host.querySelector(".translation-listen-top-cta");
+    if (existing) return existing;
+    var cta = document.createElement("button");
+    cta.type = "button";
+    cta.className = "translation-listen-top-cta translation-listen-top-cta_disabled";
+    cta.disabled = false;
+    cta.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3L14.6 8.27L20.4 9.11L16.2 13.2L17.2 19L12 16.27L6.8 19L7.8 13.2L3.6 9.11L9.4 8.27L12 3Z" fill="currentColor"></path></svg>' +
+      '<span class="translation-listen-top-cta__text">0/3 words saved</span>';
+    cta.setAttribute("aria-label", "Practice your saved words");
+    cta.addEventListener("click", function () {
+      var target = document.querySelector(
+        '.translation-reading-stats__variant[data-reader-cta-variant="registered"] .translation-reading-stats__cta'
+      );
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      try {
+        target.focus({ preventScroll: true });
+      } catch (_e) {
+        target.focus();
+      }
+    });
+    btn.insertAdjacentElement("afterend", cta);
+    return cta;
+  }
+
+  function syncTopListenPracticeCta() {
+    var cta = ensureTopListenPracticeCta();
+    if (!cta) return;
+    var textEl = cta.querySelector(".translation-listen-top-cta__text");
+    var discoveredCount = getSavedHistoryWordsInOrder().length;
+    var capped = Math.min(discoveredCount, PRACTICE_SAVED_WORDS_MIN);
+    var remaining = Math.max(0, PRACTICE_SAVED_WORDS_MIN - discoveredCount);
+    var hasMastered = discoveredCount > PRACTICE_SAVED_WORDS_MIN;
+    if (remaining > 0) {
+      cta.disabled = false;
+      cta.classList.add("translation-listen-top-cta_disabled");
+      cta.classList.remove("translation-listen-top-cta_mastered");
+      if (textEl) textEl.textContent = "Still " + String(remaining) + " words to discover";
+      return;
+    }
+    cta.disabled = false;
+    cta.classList.remove("translation-listen-top-cta_disabled");
+    cta.classList.toggle("translation-listen-top-cta_mastered", hasMastered);
+    if (textEl) textEl.textContent = "Practice your saved words";
+  }
+
   function sentenceCandidates(text) {
     var out = [];
     String(text || "").replace(/[^.!?]+(?:[.!?]+|$)/g, function (m) {
@@ -3632,6 +3699,8 @@
     }
     if (listenBtn.dataset.dualTranslationAudioBound === "1") return;
     listenBtn.dataset.dualTranslationAudioBound = "1";
+    ensureTopListenPracticeCta(listenBtn);
+    syncTopListenPracticeCta();
     console.info(LOG_PREFIX + " Listen: Voice API hook attached to button.");
     listenBtn.addEventListener(
       "click",
@@ -4150,7 +4219,10 @@
 
   function syncReadingStatsSection() {
     var section = ensureReadingStatsSectionRoot();
-    if (!section) return;
+    if (!section) {
+      syncTopListenPracticeCta();
+      return;
+    }
     var discoveredCount = getSavedHistoryWordsInOrder().length;
     var capped = Math.min(discoveredCount, PRACTICE_SAVED_WORDS_MIN);
     var remaining = Math.max(0, PRACTICE_SAVED_WORDS_MIN - discoveredCount);
@@ -4201,6 +4273,7 @@
         }
       }
     });
+    syncTopListenPracticeCta();
   }
 
   function clearVocabularyPreviewFocus() {
