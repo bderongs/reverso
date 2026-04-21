@@ -121,7 +121,8 @@
     },
     mobileTranslateSheet: {
       installed: false,
-      open: false
+      open: false,
+      anchorEl: null
     },
     mobileHeaderAutoHide: {
       installed: false,
@@ -1421,6 +1422,22 @@
     if (!modal.style.maxHeight) modal.style.maxHeight = "82vh";
   }
 
+  function ensureAnchorVisibleAboveMobileSheet(modal) {
+    if (!modal || !isMobileReaderViewport()) return;
+    var anchor = state.mobileTranslateSheet.anchorEl;
+    if (!anchor || !anchor.isConnected || !anchor.getBoundingClientRect) return;
+    var modalRect = modal.getBoundingClientRect();
+    if (!modalRect || !Number.isFinite(modalRect.top)) return;
+    var anchorRect = anchor.getBoundingClientRect();
+    if (!anchorRect || !Number.isFinite(anchorRect.bottom)) return;
+    var margin = 14;
+    var allowedBottom = modalRect.top - margin;
+    var overlap = anchorRect.bottom - allowedBottom;
+    if (overlap <= 0) return;
+    // Scroll content up so the tapped word sits above the sheet.
+    window.scrollBy(0, Math.ceil(overlap));
+  }
+
   function installMobileTranslateBottomSheetObserver() {
     if (state.mobileTranslateSheet.installed) return;
     state.mobileTranslateSheet.installed = true;
@@ -1442,11 +1459,16 @@
         setMobileTranslateSheetOpen(true);
         applyMobileSheetInlineStyles(modal);
         ensureMobileSheetCloseButton(modal);
+        requestAnimationFrame(function () {
+          ensureAnchorVisibleAboveMobileSheet(modal);
+        });
       } else if (!open && state.mobileTranslateSheet.open) {
         setMobileTranslateSheetOpen(false);
+        state.mobileTranslateSheet.anchorEl = null;
       } else if (open) {
         applyMobileSheetInlineStyles(modal);
         ensureMobileSheetCloseButton(modal);
+        ensureAnchorVisibleAboveMobileSheet(modal);
       }
     }
 
@@ -4283,7 +4305,7 @@
     state.vocabPreview.vocabIndex = null;
   }
 
-  function focusVocabularyTokenInText(vocabIndex) {
+  function focusVocabularyTokenInText(vocabIndex, options) {
     var idx = Number(vocabIndex);
     if (!Number.isInteger(idx) || idx < 0) {
       clearVocabularyPreviewFocus();
@@ -4299,7 +4321,36 @@
     tokenEl.classList.add("translation-token_vocab-focus");
     state.vocabPreview.tokenEl = tokenEl;
     state.vocabPreview.vocabIndex = idx;
-    if (typeof tokenEl.scrollIntoView === "function") {
+    var shouldScrollIntoView = !(options && options.scrollIntoView === false);
+    if (shouldScrollIntoView && typeof tokenEl.scrollIntoView === "function") {
+      tokenEl.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+    }
+  }
+
+  function focusHistoryWordInText(word, options) {
+    var key = normalizeHistoryWord(word);
+    if (!key) {
+      clearVocabularyPreviewFocus();
+      return;
+    }
+    var tokens = document.querySelectorAll('.translation-token[data-side="source"]');
+    var tokenEl = null;
+    for (var i = 0; i < tokens.length; i += 1) {
+      var tokenKey = normalizeTokenWordForSavedState(tokens[i] ? tokens[i].textContent : "");
+      if (tokenKey !== key) continue;
+      tokenEl = tokens[i];
+      break;
+    }
+    if (!tokenEl) {
+      clearVocabularyPreviewFocus();
+      return;
+    }
+    clearVocabularyPreviewFocus();
+    tokenEl.classList.add("translation-token_vocab-focus");
+    state.vocabPreview.tokenEl = tokenEl;
+    state.vocabPreview.vocabIndex = null;
+    var shouldScrollIntoView = !(options && options.scrollIntoView === false);
+    if (shouldScrollIntoView && typeof tokenEl.scrollIntoView === "function") {
       tokenEl.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
     }
   }
@@ -4360,7 +4411,7 @@
         : null;
       if (!bubble || !section.contains(bubble)) return;
       var vocabIndex = Number(bubble.getAttribute("data-vocab-index"));
-      focusVocabularyTokenInText(vocabIndex);
+      focusVocabularyTokenInText(vocabIndex, { scrollIntoView: true });
     });
     section.addEventListener("mouseout", function (event) {
       var related = event.relatedTarget || null;
@@ -4707,6 +4758,42 @@
     });
   }
 
+  function installHistoryWordHoverFocusHandler(list) {
+    if (!list || list.dataset.translationHistoryWordHoverBound === "1") return;
+    list.dataset.translationHistoryWordHoverBound = "1";
+    list.addEventListener("mouseover", function (event) {
+      var wordEl = event && event.target && event.target.closest
+        ? event.target.closest(".history-item__word")
+        : null;
+      if (!wordEl || !list.contains(wordEl)) return;
+      var item = wordEl.closest ? wordEl.closest("app-history-item") : null;
+      if (!item) return;
+      var vocabIndex = Number(item.getAttribute("data-vocab-index"));
+      if (!Number.isInteger(vocabIndex) || vocabIndex < 0) {
+        // Keep the same mechanism as Key vocabulary: resolve a vocab index, then focus by index.
+        var key = normalizeHistoryWord(wordEl.textContent || "");
+        if (!key) return;
+        var terms = getVocabularyTermsFromArticle();
+        for (var i = 0; i < terms.length; i += 1) {
+          if (normalizeHistoryWord(terms[i].term) !== key) continue;
+          vocabIndex = Number(terms[i].vocabIndex);
+          break;
+        }
+      }
+      if (!Number.isInteger(vocabIndex) || vocabIndex < 0) return;
+      focusVocabularyTokenInText(vocabIndex, { scrollIntoView: true });
+    });
+    list.addEventListener("mouseout", function (event) {
+      var wordEl = event && event.target && event.target.closest
+        ? event.target.closest(".history-item__word")
+        : null;
+      if (!wordEl || !list.contains(wordEl)) return;
+      var related = event.relatedTarget || null;
+      if (related && wordEl.contains && wordEl.contains(related)) return;
+      clearVocabularyPreviewFocus();
+    });
+  }
+
   function addWordToHistorySidebar(word, selectionMeta) {
     var clean = String(word || "").trim();
     if (!clean) return;
@@ -4770,6 +4857,7 @@
     syncSavedWordHighlights();
     normalizeHistoryTranslationsPreview(list);
     installHistoryMoreInfoLinkHandler(list);
+    installHistoryWordHoverFocusHandler(list);
     var observer = new MutationObserver(function () {
       removeDuplicateHistoryEntries();
       syncVocabularySection();
@@ -4824,6 +4912,9 @@
     setTimeout(function () {
       var selection = readWordFromClickEvent(event);
       if (!selection.word) return;
+      state.mobileTranslateSheet.anchorEl =
+        selection.tokenEl ||
+        (event && event.target && event.target.nodeType === Node.ELEMENT_NODE ? event.target : null);
       addWordToHistorySidebar(selection.word, selection);
       if (isMobileReaderViewport()) {
         showQuickSearchDemoModal(selection.tokenEl || event.target || null);
