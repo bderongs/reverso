@@ -2966,7 +2966,7 @@
       playPause.innerHTML = playerPauseIconSvg();
       playPause.setAttribute("aria-label", "Pause");
     } else {
-      playPause.textContent = "Play";
+      playPause.innerHTML = paragraphPlayIconSvg();
       playPause.setAttribute("aria-label", "Play");
     }
     if (state.audio.ui.accent) {
@@ -3666,7 +3666,9 @@
       '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="back" aria-label="Back 15 seconds">' +
       '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.9604 22.2852C14.4131 22.2852 14.0234 21.9048 14.0234 21.3574C14.0234 20.8193 14.4131 20.4668 14.9604 20.4668C18.5601 20.4668 21.4453 17.5908 21.4453 14.0005C21.4453 10.4102 18.5601 7.53418 14.9604 7.53418C11.3423 7.53418 8.47559 10.3823 8.47559 13.9727C8.47559 14.585 8.52197 15.1509 8.62402 15.624L11.1289 13.1006C11.3052 12.9336 11.5 12.8408 11.7412 12.8408C12.2515 12.8408 12.6411 13.2305 12.6411 13.7222C12.6411 13.9912 12.5576 14.2046 12.3906 14.3623L8.5498 18.166C8.35498 18.3608 8.13232 18.4536 7.88184 18.4536C7.64062 18.4536 7.39941 18.3516 7.21387 18.166L3.34521 14.3623C3.16895 14.2046 3.07617 13.9819 3.07617 13.7222C3.07617 13.2305 3.48438 12.8408 3.98535 12.8408C4.22656 12.8408 4.43994 12.9336 4.60693 13.0913L6.82422 15.3364C6.74072 14.9282 6.69434 14.4551 6.69434 13.9727C6.69434 9.38037 10.3682 5.71582 14.9604 5.71582C19.562 5.71582 23.2637 9.4082 23.2637 14.0005C23.2637 18.5928 19.562 22.2852 14.9604 22.2852Z" fill="currentColor"></path></svg>' +
       "</button>" +
-      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_play" data-audio-action="play-pause" aria-label="Play or pause">Play</button>' +
+      '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_play" data-audio-action="play-pause" aria-label="Play">' +
+      paragraphPlayIconSvg() +
+      "</button>" +
       '<button type="button" class="translation-audio-player__btn translation-audio-player__btn_square" data-audio-action="forward" aria-label="Forward 15 seconds">' +
       '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.0396 5.71484C17.6318 5.71484 21.3057 9.38867 21.3057 13.9717C21.3057 14.4541 21.2593 14.9272 21.1758 15.3354L23.3931 13.0903C23.5601 12.9326 23.7734 12.8491 24.0146 12.8491C24.5156 12.8491 24.9238 13.2295 24.9238 13.7305C24.9238 13.9902 24.8311 14.2036 24.6548 14.3613L20.7861 18.1743C20.6006 18.3599 20.3594 18.4619 20.1182 18.4619C19.8677 18.4619 19.645 18.3691 19.4502 18.1743L15.6094 14.3613C15.4424 14.2036 15.3589 13.9902 15.3589 13.7305C15.3589 13.2295 15.7485 12.8491 16.2588 12.8491C16.5 12.8491 16.6948 12.9326 16.8711 13.0996L19.376 15.623C19.478 15.1499 19.5244 14.584 19.5244 13.9717C19.5244 10.3906 16.6577 7.5332 13.0396 7.5332C9.43994 7.5332 6.55469 10.4092 6.55469 13.9995C6.55469 17.5898 9.43994 20.4751 13.0396 20.4751C13.5869 20.4751 13.9766 20.8276 13.9766 21.3564C13.9766 21.9038 13.5869 22.2842 13.0396 22.2842C8.43799 22.2842 4.73633 18.5918 4.73633 13.9995C4.73633 9.40723 8.43799 5.71484 13.0396 5.71484Z" fill="currentColor"></path></svg>' +
       "</button>" +
