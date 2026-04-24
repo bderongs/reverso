@@ -2120,6 +2120,354 @@
       background-color: var(--action-secondary-default-blue) !important
     }
   </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400&family=Cinzel:wght@500;700&display=swap');
+
+    /* Content type themes (switch with ?contentType=article|dialogue|email|blog) */
+    body[data-content-type]:not([data-content-type="default"]) .reading-list__title,
+    body[data-content-type]:not([data-content-type="default"]) .reading-list__info,
+    body[data-content-type]:not([data-content-type="default"]) .reading-list__link {
+      display: none !important;
+    }
+
+    body[data-content-type]:not([data-content-type="default"]) .reading-list__actions {
+      margin-top: 12px;
+    }
+
+    body[data-content-type] .reading-list__content p {
+      transition: background-color .2s ease, border-color .2s ease;
+    }
+
+    body[data-content-type="default"] .reading-list__content p,
+    body[data-content-type="article"] .reading-list__content p {
+      font-size: 1.08rem;
+      line-height: 1.9;
+      margin-bottom: 1.1em;
+      color: #2a3d4b;
+    }
+
+    body[data-content-type="dialogue"] .reading-list__content p {
+      margin: 0 0 14px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid #d8e7f6;
+      background: #f5f9fd;
+      line-height: 1.75;
+    }
+
+    body[data-content-type="dialogue"] .reading-list__content p:nth-child(even) {
+      background: #eef6ff;
+      border-color: #c7e0ff;
+      margin-left: 22px;
+    }
+
+    body[data-content-type="dialogue"] .reading-list__content p:nth-child(odd) {
+      margin-right: 22px;
+    }
+
+    body[data-content-type="email"] .reading-list__content {
+      margin-top: 12px;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-shell {
+      font-family: "DM Sans", Roboto, Helvetica Neue, sans-serif;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e4e2dc;
+      overflow: visible;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .05), 0 12px 30px rgba(0, 0, 0, .06);
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-subject {
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid #eeede9;
+      color: #1a1916;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+      line-height: 1.3;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-sender {
+      padding: 14px 24px;
+      border-bottom: 1px solid #eeede9;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-name {
+      color: #1a1916;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-from {
+      color: #8a8780;
+      font-size: 12.5px;
+      font-family: "DM Mono", ui-monospace, monospace;
+      margin-top: 1px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-to {
+      color: #a8a49e;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-time {
+      color: #a8a49e;
+      font-size: 12px;
+      white-space: nowrap;
+      margin-top: 2px;
+      font-family: "DM Mono", ui-monospace, monospace;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-actions {
+      padding: 10px 24px 14px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #eeede9;
+      flex-wrap: wrap;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-action {
+      font-size: 12.5px;
+      background: #f5f4f1;
+      border: 1px solid #e0ded9;
+      border-radius: 100px;
+      padding: 4px 14px;
+      color: #5a5854;
+      line-height: 1.2;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body {
+      padding: 28px 24px;
+      color: #2e2d2a;
+      font-size: 15px;
+      line-height: 1.85;
+      font-family: "DM Sans", Roboto, Helvetica Neue, sans-serif;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body p {
+      margin: 0;
+      padding: 0;
+      color: inherit;
+      line-height: inherit;
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body p+p {
+      margin-top: 16px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body ul,
+    body[data-content-type="email"] .reading-list__content .email-theme-body ol {
+      margin: 0 0 16px 22px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body li+li {
+      margin-top: 6px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body strong {
+      font-weight: 500;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body .translation-paragraph-play-host {
+      padding-right: 48px;
+    }
+
+    body[data-content-type="email"] .reading-list__content .email-theme-body .translation-paragraph-actions {
+      right: 6px;
+    }
+
+    body[data-content-type="announcement"] .reading-list__content {
+      background: #fffdf7;
+      border: 1px solid #ece4d4;
+      border-radius: 12px;
+      padding: 18px 20px 16px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+    }
+
+    body[data-content-type="announcement"] .reading-list__content::before {
+      content: attr(data-announcement-title);
+      display: block;
+      text-align: center;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      line-height: 1.25;
+      text-transform: uppercase;
+      color: #2b2418;
+      margin: 2px 0 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd1b9;
+    }
+
+    body[data-content-type="announcement"] .reading-list__content p {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 1.05rem;
+      line-height: 1.9;
+      letter-spacing: .01em;
+      color: #3a3123;
+      margin-bottom: 1.05em;
+    }
+
+    @media only screen and (max-width: 767px) {
+
+      body[data-content-type="email"] .reading-list__content .email-theme-subject,
+      body[data-content-type="email"] .reading-list__content .email-theme-sender,
+      body[data-content-type="email"] .reading-list__content .email-theme-actions,
+      body[data-content-type="email"] .reading-list__content .email-theme-body {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-shell {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 2px;
+      color: #5f4a93;
+      font-size: .84rem;
+      line-height: 1.4;
+      background: #f8f3ff;
+      border: 1px solid #e6d9fb;
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      padding: 10px 12px 8px;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-author-block {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 2px;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-author-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #d7c7f4;
+      background: #fff;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-author {
+      font-weight: 600;
+      color: #4e2f96;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-dot {
+      color: #9a8bc1;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 12px;
+      padding: 0 12px 10px 60px;
+      background: #f8f3ff;
+      border: 1px solid #e6d9fb;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      border-bottom: 1px solid #d6c2f5;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-tag {
+      display: inline;
+      color: #6a46b7;
+      font-size: .7rem;
+      font-weight: 500;
+      letter-spacing: .01em;
+      padding: 0;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-tag::before {
+      content: "#";
+      margin-right: 1px;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-body {
+      border-top: 1px solid #d6c2f5;
+      padding-top: 12px;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-body p {
+      font-size: 1.1rem;
+      line-height: 1.9;
+      color: #2b2340;
+      margin-bottom: 1.15em;
+    }
+
+    body[data-content-type="blog"] .reading-list__content .blog-theme-body p:first-child::first-letter {
+      font-size: 3.15em;
+      float: left;
+      line-height: .86;
+      margin-right: 9px;
+      margin-top: 2px;
+      color: #5e3ca5;
+      font-weight: 700;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+    }
+
+    @media only screen and (max-width: 767px) {
+
+      body[data-content-type="dialogue"] .reading-list__content p:nth-child(even),
+      body[data-content-type="dialogue"] .reading-list__content p:nth-child(odd) {
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      body[data-content-type="announcement"] .reading-list__content::before {
+        font-size: 1.45rem;
+        margin-bottom: 12px;
+      }
+
+      body[data-content-type="blog"] .reading-list__content .blog-theme-meta {
+        font-size: .8rem;
+      }
+
+    }
+  </style>
   <script type="text/javascript" async=""
     src="./“Simone Veil_ A Legacy of Courage and Compassion” - Reverso_files/js"></script>
   <script type="text/javascript" async=""
@@ -2399,6 +2747,105 @@
   <script src="./voice-config.js"></script>
   <script src="./read_aloud.js"></script>
   <script src="./reader-update.js"></script>
+  <script>
+    (function applyContentTypeTheme() {
+      var allowedTypes = ["default", "dialogue", "email", "blog", "announcement"];
+      var defaultType = "default";
+
+      function getParamValue(paramName) {
+        var fromSearch = new URLSearchParams(window.location.search).get(paramName);
+        if (fromSearch) return fromSearch;
+
+        var hash = window.location.hash || "";
+        var queryIndex = hash.indexOf("?");
+        if (queryIndex === -1) return null;
+        return new URLSearchParams(hash.slice(queryIndex + 1)).get(paramName);
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      var rawType = (getParamValue("contentType") || "").toLowerCase().trim();
+      // Backward compatibility: old links using `article` map to `default`.
+      if (rawType === "article") rawType = "default";
+      var contentType = allowedTypes.indexOf(rawType) !== -1 ? rawType : defaultType;
+
+      document.body.setAttribute("data-content-type", contentType);
+      document.body.classList.add("content-type-" + contentType);
+
+      var titleEl = document.querySelector(".reading-list__title");
+      var contentEl = document.querySelector(".reading-list__content");
+      if (titleEl && contentEl) {
+        contentEl.setAttribute("data-announcement-title", titleEl.textContent.trim());
+
+        if (contentType === "email" && !contentEl.getAttribute("data-email-enhanced")) {
+          var emailSubject = getParamValue("subject") || titleEl.textContent.trim();
+          var emailFrom = getParamValue("from") || "learn@reverso.net";
+          var emailTo = getParamValue("to") || "learner@reverso.net";
+          var emailReceived = getParamValue("receivedAt") || "Today, 10:42 AM";
+          var senderName = getParamValue("senderName") || "Reverso Learn";
+          var senderInitials = getParamValue("initials") || senderName.split(/\s+/).map(function (part) { return part.charAt(0); }).join("").slice(0, 2).toUpperCase();
+          var originalBodyHtml = contentEl.innerHTML;
+
+          contentEl.innerHTML =
+            '<div class="email-theme-shell">' +
+            '<div class="email-theme-subject">' + escapeHtml(emailSubject) + '</div>' +
+            '<div class="email-theme-sender">' +
+            '<div class="email-theme-avatar">' + escapeHtml(senderInitials) + '</div>' +
+            '<div class="email-theme-meta">' +
+            '<div class="email-theme-name">' + escapeHtml(senderName) + '</div>' +
+            '<div class="email-theme-from">' + escapeHtml(emailFrom) + '</div>' +
+            '<div class="email-theme-to">To: ' + escapeHtml(emailTo) + '</div>' +
+            '</div>' +
+            '<div class="email-theme-time">' + escapeHtml(emailReceived) + '</div>' +
+            '</div>' +
+            '<div class="email-theme-actions">' +
+            '<span class="email-theme-action">Reply</span>' +
+            '<span class="email-theme-action">Reply all</span>' +
+            '<span class="email-theme-action">Forward</span>' +
+            '</div>' +
+            '<div class="email-theme-body">' + originalBodyHtml + '</div>' +
+            '</div>';
+
+          contentEl.setAttribute("data-email-enhanced", "true");
+        }
+
+        if (contentType === "blog" && !contentEl.getAttribute("data-blog-enhanced")) {
+          var blogAuthor = getParamValue("author") || "Reverso Learn";
+          var blogAuthorLogo = getParamValue("authorLogo") || "https://upload.wikimedia.org/wikipedia/commons/c/cd/Reverso_logo.jpg";
+          var blogDate = getParamValue("publishedAt") || "Apr 24, 2026";
+          var blogTagsRaw = getParamValue("tags") || "language-learning,reading,vocabulary";
+          var blogTags = blogTagsRaw.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean).slice(0, 6);
+          var originalBlogBodyHtml = contentEl.innerHTML;
+          var blogTagsHtml = blogTags.map(function (tag) {
+            return '<span class="blog-theme-tag">' + escapeHtml(tag) + '</span>';
+          }).join("");
+
+          contentEl.innerHTML =
+            '<div class="blog-theme-shell">' +
+            '<div class="blog-theme-meta">' +
+            '<span class="blog-theme-author-block">' +
+            '<img class="blog-theme-author-logo" src="' + escapeHtml(blogAuthorLogo) + '" alt="Reverso logo">' +
+            '<span class="blog-theme-author">' + escapeHtml(blogAuthor) + '</span>' +
+            '</span>' +
+            '<span class="blog-theme-dot">•</span>' +
+            '<span class="blog-theme-date">' + escapeHtml(blogDate) + '</span>' +
+            '</div>' +
+            '<div class="blog-theme-tags">' + blogTagsHtml + '</div>' +
+            '<div class="blog-theme-body">' + originalBlogBodyHtml + '</div>' +
+            '</div>';
+
+          contentEl.setAttribute("data-blog-enhanced", "true");
+        }
+      }
+    })();
+  </script>
 </body>
 
 </html>
