@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Import word list — Reverso</title>
+  <style>
+    :root {
+      --blue: #1565c0;
+      --blue-light: #e3f2fd;
+      --blue-hover: #0d47a1;
+      --green: #2e7d32;
+      --green-light: #e8f5e9;
+      --amber: #f57f17;
+      --amber-light: #fff8e1;
+      --border: #e0e0e0;
+      --text: #212121;
+      --muted: #757575;
+      --bg: #f5f7fa;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--blue);
+    }
+
+    header p {
+      font-size: .875rem;
+      color: var(--muted);
+      margin-top: .25rem;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h2 {
+      font-size: .95rem;
+      font-weight: 600;
+      margin-bottom: .75rem;
+    }
+
+    .lang-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .field {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .field label {
+      display: block;
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: .35rem;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      padding: .5rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: .9rem;
+    }
+
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-light);
+    }
+
+    .tabs {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: .45rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .tab:hover { border-color: var(--blue); color: var(--blue); }
+    .tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      padding: .75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: .9rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-light);
+    }
+
+    .hint {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: .5rem;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      color: var(--muted);
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    .dropzone strong { display: block; color: var(--text); margin-bottom: .25rem; }
+
+    .preview {
+      margin-top: .75rem;
+      max-height: 200px;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .preview img {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .actions {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      align-items: center;
+    }
+
+    .btn {
+      padding: .55rem 1.25rem;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--blue-hover); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+    .btn-success {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) { background: #1b5e20; }
+    .btn-success:disabled { opacity: .55; cursor: not-allowed; }
+
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: .4rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: .75rem 1rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .error.visible { display: block; }
+
+    /* Results */
+    #results { display: none; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .results-header h2 { font-size: 1.05rem; }
+
+    .stats {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: .75rem;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .badge-blue { background: var(--blue-light); color: var(--blue); }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-amber { background: var(--amber-light); color: var(--amber); }
+    .badge-red { background: #ffebee; color: #c62828; }
+
+    .reverso-status {
+      font-size: .75rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .reverso-status.match { color: var(--green); }
+    .reverso-status.partial { color: var(--amber); }
+    .reverso-status.mismatch { color: #c62828; }
+    .reverso-status.none, .reverso-status.error { color: var(--muted); }
+    .reverso-status.pending { color: var(--muted); font-style: italic; }
+
+    .reverso-hint {
+      display: block;
+      font-size: .7rem;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: .15rem;
+      white-space: normal;
+      max-width: 180px;
+    }
+
+    tr.reverso-mismatch td { background: #fff5f5; }
+    tr.reverso-match td { background: #f6fff6; }
+
+    .table-toolbar {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: .75rem;
+      align-items: center;
+    }
+
+    .table-toolbar .sep {
+      width: 1px;
+      height: 1.25rem;
+      background: var(--border);
+      margin: 0 .25rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .875rem;
+    }
+
+    th {
+      background: #fafafa;
+      text-align: left;
+      padding: .6rem .75rem;
+      font-weight: 600;
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: .55rem .75rem;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafcff; }
+    tr.flagged td { background: var(--amber-light); }
+    tr.unselected td { opacity: .45; }
+
+    td input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      cursor: pointer;
+      accent-color: var(--blue);
+    }
+
+    .row-num { color: var(--muted); font-size: .8rem; width: 2rem; }
+
+    .term { font-weight: 500; }
+    .translation { color: var(--text); }
+    .pos {
+      font-size: .75rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .note {
+      font-size: .75rem;
+      color: var(--amber);
+    }
+
+    .import-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+
+    .import-bar .count {
+      font-size: .875rem;
+      color: var(--muted);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #323232;
+      color: #fff;
+      padding: .75rem 1.25rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      transition: transform .3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      main { padding: 1rem; }
+      .import-bar { flex-direction: column; align-items: stretch; }
+      .import-bar .btn { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Import word list</h1>
+    <p>Paste a vocabulary list or upload a photo — we'll clean it up and get it ready to import.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="lang-row">
+        <div class="field">
+          <label for="sourceLang">Source language</label>
+          <input id="sourceLang" type="text" placeholder="e.g. English, auto-detect">
+        </div>
+        <div class="field">
+          <label for="targetLang">Target language</label>
+          <input id="targetLang" type="text" placeholder="e.g. French, auto-detect">
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="paste">Paste text</button>
+        <button class="tab" data-tab="image">Upload image</button>
+      </div>
+
+      <div id="panel-paste" class="panel active">
+        <textarea id="textInput" placeholder="Paste your word list here…
+
+Examples:
+1. apple — pomme
+2. to run — courir
+• hello → bonjour"></textarea>
+        <p class="hint">Numbered lists, bullet points, tab-separated columns, or plain lines all work.</p>
+      </div>
+
+      <div id="panel-image" class="panel">
+        <div class="dropzone" id="dropzone">
+          <strong>Drop an image here</strong>
+          or click to browse · JPG, PNG, WEBP
+          <input type="file" id="fileInput" accept="image/*" hidden>
+        </div>
+        <div class="preview" id="preview"><img id="previewImg" alt="Preview"></div>
+        <p class="hint">Tip: you can also paste an image from your clipboard (Ctrl/Cmd+V).</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="normalizeBtn">Normalize list</button>
+        <button class="btn btn-ghost" id="sampleBtn">Try sample</button>
+        <button class="btn btn-ghost" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="error" id="error"></div>
+    </section>
+
+    <section class="card" id="results">
+      <div class="results-header">
+        <div>
+          <h2>Ready to import</h2>
+          <p class="hint" id="langSummary"></p>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <div class="table-toolbar">
+        <button class="btn btn-ghost" id="selectAllBtn">Select all</button>
+        <button class="btn btn-ghost" id="deselectAllBtn">Deselect all</button>
+        <span class="sep"></span>
+        <button class="btn btn-ghost" id="copyBtn">Copy selected</button>
+        <button class="btn btn-ghost" id="csvBtn">Download CSV</button>
+        <span class="sep"></span>
+        <button class="btn btn-ghost" id="checkBtn">Check in Reverso</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="checkAll" checked></th>
+              <th>#</th>
+              <th>Term</th>
+              <th>Translation</th>
+              <th>POS</th>
+              <th>Reverso</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="import-bar">
+        <span class="count" id="selectedCount">0 words selected</span>
+        <button class="btn btn-success" id="importBtn" disabled>Import selected words</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const textInput = $("#textInput");
+    const fileInput = $("#fileInput");
+    const dropzone = $("#dropzone");
+    const preview = $("#preview");
+    const previewImg = $("#previewImg");
+    const normalizeBtn = $("#normalizeBtn");
+    const errorEl = $("#error");
+    const results = $("#results");
+    const tableBody = $("#tableBody");
+    const checkAll = $("#checkAll");
+    const importBtn = $("#importBtn");
+    const selectedCount = $("#selectedCount");
+    const toast = $("#toast");
+
+    let currentImage = null;
+    let words = [];
+    let langPair = { source: "", target: "" };
+
+    function reversoLabel(status) {
+      const labels = {
+        match: "✓ Match",
+        partial: "~ Close",
+        mismatch: "✗ Differs",
+        none: "— No result",
+        error: "! Error",
+        pending: "Checking…",
+      };
+      return labels[status] || status;
+    }
+
+    function renderTable() {
+      tableBody.innerHTML = words.map((w, i) => {
+        const rs = w.reversoStatus || "";
+        const rowClass = [
+          w.note ? "flagged" : "",
+          rs === "mismatch" ? "reverso-mismatch" : "",
+          rs === "match" ? "reverso-match" : "",
+        ].filter(Boolean).join(" ");
+
+        const reversoCell = rs
+          ? `<span class="reverso-status ${rs}">${reversoLabel(rs)}</span>${
+              w.reversoHint ? `<span class="reverso-hint">${esc(w.reversoHint)}</span>` : ""
+            }`
+          : `<span class="reverso-status none">—</span>`;
+
+        return `
+        <tr class="${rowClass}" data-id="${w.id}">
+          <td><input type="checkbox" class="row-check" data-id="${w.id}" ${w.selected ? "checked" : ""}></td>
+          <td class="row-num">${i + 1}</td>
+          <td class="term">${esc(w.term)}</td>
+          <td class="translation">${esc(w.translation)}</td>
+          <td class="pos">${esc(w.pos || "")}</td>
+          <td>${reversoCell}</td>
+          <td class="note">${esc(w.note || "")}</td>
+        </tr>`;
+      }).join("");
+
+      tableBody.querySelectorAll(".row-check").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const w = words.find((x) => x.id === +cb.dataset.id);
+          if (w) w.selected = cb.checked;
+          updateSelection();
+        });
+      });
+      updateSelection();
+    }
+
+    function updateStats() {
+      const flagged = words.filter((w) => w.note).length;
+      const checked = words.filter((w) => w.reversoStatus && w.reversoStatus !== "pending").length;
+      const matches = words.filter((w) => w.reversoStatus === "match").length;
+      const mismatches = words.filter((w) => w.reversoStatus === "mismatch").length;
+
+      let html = `<span class="badge badge-blue">${words.length} words</span>`;
+      if (flagged) html += `<span class="badge badge-amber">${flagged} flagged</span>`;
+      if (checked) {
+        html += `<span class="badge badge-green">${matches} Reverso match</span>`;
+        if (mismatches) html += `<span class="badge badge-red">${mismatches} differ</span>`;
+      } else if (!flagged) {
+        html += `<span class="badge badge-green">All clear</span>`;
+      }
+      $("#stats").innerHTML = html;
+    }
+
+    // Tabs
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        $(`#panel-${tab.dataset.tab}`).classList.add("active");
+      });
+    });
+
+    // Image upload
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) setImage(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files[0]) setImage(fileInput.files[0]);
+    });
+    document.addEventListener("paste", (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          setImage(item.getAsFile());
+          document.querySelector('[data-tab="image"]').click();
+          break;
+        }
+      }
+    });
+
+    function setImage(file) {
+      currentImage = file;
+      previewImg.src = URL.createObjectURL(file);
+      preview.style.display = "block";
+      dropzone.querySelector("strong").textContent = file.name;
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add("visible");
+    }
+
+    function hideError() {
+      errorEl.classList.remove("visible");
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    $("#sampleBtn").addEventListener("click", () => {
+      document.querySelector('[data-tab="paste"]').click();
+      textInput.value = `Vocabulary — Unit 3
+
+1. apple (n.) — la pomme
+2. to run — courir
+3. beautiful / pretty — beau, belle
+4. although — bien que
+5. spoon ??? fourchette`;
+    });
+
+    $("#clearBtn").addEventListener("click", () => {
+      textInput.value = "";
+      currentImage = null;
+      fileInput.value = "";
+      preview.style.display = "none";
+      previewImg.src = "";
+      dropzone.querySelector("strong").textContent = "Drop an image here";
+      results.style.display = "none";
+      words = [];
+      hideError();
+    });
+
+    normalizeBtn.addEventListener("click", async () => {
+      hideError();
+      const activeTab = document.querySelector(".tab.active").dataset.tab;
+      const sourceLanguage = $("#sourceLang").value.trim();
+      const targetLanguage = $("#targetLang").value.trim();
+
+      const body = { sourceLanguage, targetLanguage };
+
+      if (activeTab === "paste") {
+        const text = textInput.value.trim();
+        if (!text) return showError("Please paste a word list first.");
+        body.text = text;
+      } else {
+        if (!currentImage) return showError("Please upload or paste an image first.");
+        body.image = await fileToBase64(currentImage);
+        body.imageType = currentImage.type;
+      }
+
+      normalizeBtn.disabled = true;
+      normalizeBtn.innerHTML = '<span class="spinner"></span>Normalizing…';
+
+      try {
+        const res = await fetch("/api/normalize-word-list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Normalization failed.");
+        renderResults(data);
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        normalizeBtn.disabled = false;
+        normalizeBtn.textContent = "Normalize list";
+      }
+    });
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderResults(data) {
+      words = (data.words || []).map((w, i) => ({
+        ...w,
+        id: i,
+        selected: true,
+        reversoStatus: "",
+        reversoHint: "",
+      }));
+
+      langPair = {
+        source: data.sourceLanguage || $("#sourceLang").value.trim(),
+        target: data.targetLanguage || $("#targetLang").value.trim(),
+      };
+
+      const src = langPair.source || "—";
+      const tgt = langPair.target || "—";
+      $("#langSummary").textContent = `${src} → ${tgt}`;
+
+      updateStats();
+      renderTable();
+
+      checkAll.checked = true;
+      results.style.display = "block";
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function getSelected() {
+      return words.filter((w) => w.selected);
+    }
+
+    function updateSelection() {
+      const sel = getSelected();
+      selectedCount.textContent = `${sel.length} word${sel.length !== 1 ? "s" : ""} selected`;
+      importBtn.disabled = sel.length === 0;
+      importBtn.textContent = `Import ${sel.length} word${sel.length !== 1 ? "s" : ""}`;
+      checkAll.checked = sel.length === words.length && words.length > 0;
+      checkAll.indeterminate = sel.length > 0 && sel.length < words.length;
+
+      tableBody.querySelectorAll("tr").forEach((row) => {
+        const id = +row.dataset.id;
+        const w = words.find((x) => x.id === id);
+        row.classList.toggle("unselected", w && !w.selected);
+      });
+    }
+
+    checkAll.addEventListener("change", () => {
+      words.forEach((w) => { w.selected = checkAll.checked; });
+      tableBody.querySelectorAll(".row-check").forEach((cb) => { cb.checked = checkAll.checked; });
+      updateSelection();
+    });
+
+    $("#selectAllBtn").addEventListener("click", () => {
+      words.forEach((w) => { w.selected = true; });
+      tableBody.querySelectorAll(".row-check").forEach((cb) => { cb.checked = true; });
+      updateSelection();
+    });
+
+    $("#deselectAllBtn").addEventListener("click", () => {
+      words.forEach((w) => { w.selected = false; });
+      tableBody.querySelectorAll(".row-check").forEach((cb) => { cb.checked = false; });
+      updateSelection();
+    });
+
+    $("#copyBtn").addEventListener("click", () => {
+      const sel = getSelected();
+      if (!sel.length) return;
+      const text = sel.map((w) => `${w.term}\t${w.translation}`).join("\n");
+      navigator.clipboard.writeText(text).then(() => showToast(`Copied ${sel.length} words to clipboard`));
+    });
+
+    $("#csvBtn").addEventListener("click", () => {
+      const sel = getSelected();
+      if (!sel.length) return;
+      const header = "term,translation,pos,reverso,note\n";
+      const rows = sel.map((w) =>
+        [w.term, w.translation, w.pos || "", w.reversoHint || w.reversoStatus || "", w.note || ""]
+          .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+          .join(",")
+      ).join("\n");
+      const blob = new Blob([header + rows], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "word-list.csv";
+      a.click();
+      showToast("CSV downloaded");
+    });
+
+    $("#checkBtn").addEventListener("click", async () => {
+      if (!words.length) return;
+
+      const checkBtn = $("#checkBtn");
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = '<span class="spinner"></span>Checking…';
+
+      words.forEach((w) => {
+        w.reversoStatus = "pending";
+        w.reversoHint = "";
+      });
+      renderTable();
+
+      try {
+        const res = await fetch("/api/check-translations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sourceLanguage: langPair.source,
+            targetLanguage: langPair.target,
+            words: words.map((w) => ({ term: w.term, translation: w.translation })),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Check failed.");
+
+        const byTerm = new Map(data.results.map((r) => [r.term, r]));
+        words.forEach((w) => {
+          const r = byTerm.get(w.term);
+          if (!r) return;
+          w.reversoStatus = r.status;
+          w.reversoHint = r.note || "";
+        });
+
+        updateStats();
+        renderTable();
+        const matched = words.filter((w) => w.reversoStatus === "match").length;
+        showToast(`Checked ${words.length} words — ${matched} match Reverso`);
+      } catch (err) {
+        showError(err.message);
+        words.forEach((w) => {
+          if (w.reversoStatus === "pending") {
+            w.reversoStatus = "";
+          }
+        });
+        renderTable();
+      } finally {
+        checkBtn.disabled = false;
+        checkBtn.textContent = "Check in Reverso";
+      }
+    });
+
+    importBtn.addEventListener("click", () => {
+      const sel = getSelected();
+      if (!sel.length) return;
+      importBtn.disabled = true;
+      importBtn.innerHTML = '<span class="spinner"></span>Importing…';
+      setTimeout(() => {
+        importBtn.disabled = false;
+        updateSelection();
+        showToast(`✓ ${sel.length} word${sel.length !== 1 ? "s" : ""} imported successfully (demo)`);
+      }, 900);
+    });
+  </script>
+</body>
+</html>

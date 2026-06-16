@@ -1,0 +1,16 @@
+.env
+.env.*
+node_modules
+__pycache__
+*.pyc
+android-screenshots
+Learn
+*_files
+sparrow*.html
+France 24*
+"Simone Veil*
+"Three charts*
+article_ratings.csv
+Project goal.md
+text_quality.py
+en-nl.json
