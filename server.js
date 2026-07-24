@@ -5,10 +5,14 @@ const path = require("path");
 const { Readable } = require("stream");
 const { fetchTranscript, extractVideoId, toTimestamp } = require("./transcript");
 const READ_ALOUD_VOICE_CONFIG = require("./voice-config");
+const { mountFavoritesRoutes } = require("./Favorites/express-routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MISTRAL_TTS_MAX_RETRIES = 2;
+
+// Favourites demo + proxy (before json parser so /proxy can stream bodies).
+mountFavoritesRoutes(app);
 
 app.use(express.static(path.join(__dirname)));
 app.use(express.json({ limit: "4mb" }));
