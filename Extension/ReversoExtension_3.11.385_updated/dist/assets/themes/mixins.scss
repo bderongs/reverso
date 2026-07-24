@@ -1,0 +1,46 @@
+@use 'colors';
+
+@mixin cta-button() {
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 15px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  background: colors.$blue-400;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow:
+    0 0 0 1px colors.$new-blue-400,
+    0 1px 0 0 colors.$new-blue-400,
+    0 3px 0 0 colors.$new-blue-400;
+
+  color: colors.$light-100;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+
+  &:hover {
+    background: colors.$blue-700;
+  }
+}
+
+@mixin app-icon-size($size) {
+  display: flex;
+  width: $size;
+  height: $size;
+
+  ::ng-deep svg {
+    width: $size;
+    height: $size;
+  }
+}
+
+@mixin app-icon-fill($color) {
+  ::ng-deep svg.filled {
+    path {
+      fill: $color;
+    }
+  }
+}

@@ -1,0 +1,67 @@
+﻿Name,Loc key,Text,Type,Where?
+Learn Premium wall v1,"PREMIUM_PROMO.PREMIUM_WALL_TITLE_LEARN_EFFICIENTLY
+- PREMIUM_PROMO.UNLIMITED_VOCABULARY, PREMIUM_PROMO.SYNCED
+- PREMIUM_PROMO.ALL_MODES_UNLOCKED
+- PREMIUM_PROMO.PERSONALIZED_LEARNING_PLAN, PREMIUM_PROMO.WITH_SPACED_REPETITION
+- PREMIUM_PROMO.OFFLINE_MODE, PREMIUM_PROMO.LEARN_ANYWHERE
+- PREMIUM_PROMO.AD_FREE","Learn more efficiently with Premium
+  • Unlimited vocabulary (synced across devices)
+  • All practice modes unlocked
+  • Personalized learning plan (with spaced repetition)
+  • Offline mode (learn anywhere, anytime)
+  • 100% Ad-free",4. Wall,
+List soft banner,,"Go Premium to learn this list, unlock all content and features, and remove ads.",Other wording,
+Top banner - if list duplicated,,You’re using the free version. Go Premium to grow your vocabulary without limits.,Other wording,
+Learn Premium wall v2,"PREMIUM_PROMO.FREE_LIMIT_REACHED
+PREMIUM_PROMO.GO_PREMIUM_TO_BUILD_VOCABULARY
+- PREMIUM_PROMO.UNLIMITED_VOCABULARY
+PREMIUM_PROMO.SAVED_AND_SYNCED
+- PREMIUM_PROMO.CURATED_LISTS
+PREMIUM_PROMO.CURATED_LISTS_TOPICS
+- PREMIUM_PROMO.PERSONALIZED_LEARNING
+PREMIUM_PROMO.QUIZZES&FLASHCARDS
+- PREMIUM_PROMO.EXPANDED_DICTIONARY
+PREMIUM_PROMO.MORE_RESULTS_EXAMPLES
+- PREMIUM_PROMO.NO_ADS","Free limit reached
+Go Premium to build your vocabulary without limits
+• Unlimited vocabulary
+Saved and synced across all your devices
+• 1000+ curated lists
+Business, Daily Life, TOEFL, Slang, Idioms…
+• Personalized learning
+Quizzes & Flashcards tailored to you
+• Expanded dictionary
+More results and examples
+• No ads",4. Wall,
+Premium banner v3,"PREMIUM_PROMO.DISCOVER_PREMIUM_BUTTON
+PREMIUM_PROMO.ALL_ADVANTAGES_SHORT_V3","Discover Premium
+Get access to all lists. Save unlimited vocabulary. Learn without limits across devices. Remove ads.",3. Limit reached banner,Below 12 terms in shared list
+Premium banner v1 + Limit reached,"PREMIUM_PROMO.FREE_LIMIT_REACHED
+
+PREMIUM_PROMO.GO_PREMIUM_FOR_UNLIMITED_FAVORITES","Free limit reached
+Go Premium to save and learn unlimited vocabulary, on all devices, without ads.",3. Limit reached banner,"Favorites, History"
+,,"Next level learning
+Unlimited favorites synced across devices. Personalized learning program. Learn offline.",Other wording,
+Premium banner v2,"PREMIUM_PROMO.TRY_PREMIUM
+PREMIUM_PROMO.ALL_ADVANTAGES_SHORT_V2","Try Premium
+Unlimited vocabulary. Personalized quizzes & flashcards. Offline learning. No ads.",2. Banner,"Learn, Vocabulary"
+,,Save and view unlimited vocabulary with Premium,Other wording,
+,,Unlimited vocabulary. Personalized quizzes & flashcards. Available offline.,Other wording,
+,,Expand your list with AI,Other wording,
+,,"Supercharge your learning with Premium
+Personalized practice. All learning games and lists. Advanced statistics.",Other wording,
+,,"Discover Premium
+- Unlimited quizzes & flashcards
+- AI Voice Coach
+- Offline access & No ads",Other wording,
+Top banner - if 10-19 favorites visible,,Go Premium for unlimited usage and no ads.,Other wording,
+Premium toaster for nagging,"LIMITATIONS.FAVORITES_COUNTER
+PREMIUM_PROMO.UNLOCK_LEARNING_CONTENT","X/20 terms saved.
+Go Premium to learn without limits.",5. Nagging,Result page
+,,"Go Premium to unlock all lists, save unlimited vocabulary, practice with quizzes, flashcards and speaking drills.",Other wording,
+Top banner - if ≥40 favorites visible,,Showing 40 last favorites. Go Premium for unlimited usage and no ads.,Other wording,
+,,,Other wording,
+Premium banner v1,PREMIUM_PROMO.GO_PREMIUM_FOR_UNLIMITED_FAVORITES,"Go Premium to save and learn unlimited vocabulary, on all devices, without ads.",2. Banner,"Favorites, History"
+Register banner,"SIGNUP.SIGN_UP_TO_USE_VOCABULARY
+SIGNUP.ACCESS_ALL_FEATURES","Sign up for free
+Access more features. Learn your vocabulary on all devices.",,"Favorites, History, List, Result page"

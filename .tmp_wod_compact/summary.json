@@ -1,0 +1,52 @@
+{
+  "scope": "First 200 WOD emails (CSV order); activity detail for first 100 matched users",
+  "as_of": "2026-07-21",
+  "window": "last 30 days (STAT_DATE / LAST_SEEN_DATE >= 2026-06-21)",
+  "match": {
+    "emails_sampled": 200,
+    "matched_users": 199,
+    "match_rate": "99.5%"
+  },
+  "premium_among_matched_200": {
+    "premium": 54,
+    "rate": "27.1%",
+    "benchmark_active_users": "~4.5% (Dashboard 41 Q655)"
+  },
+  "activity_first_100_matched": {
+    "n": 100,
+    "premium_in_this_slice": 25,
+    "any_activity_30d": 77,
+    "searchers_30d": 77,
+    "favoriters_30d": 25,
+    "learners_30d": 11,
+    "strong_favoriters_ge10": 8,
+    "strong_learners_ge7": 4,
+    "searches_among_searchers": {
+      "mean": 121.1,
+      "median": 35,
+      "p90": 301,
+      "max": 2018
+    },
+    "favorites_among_favoriters": {
+      "mean": 59.9,
+      "median": 3,
+      "p90": 31,
+      "max": 1211
+    },
+    "learn_cards_among_learners": {
+      "mean": 40.0,
+      "median": 5,
+      "p90": 63,
+      "max": 284
+    },
+    "premium_rate_among_active": 29.9,
+    "premium_rate_among_learners": 63.6,
+    "premium_rate_among_favoriters": 40.0
+  },
+  "definitions": {
+    "premium": "PREMIUMSUBSCRIPTIONDATE > 2026-07-21",
+    "searches": "SUM(USER_DAILY_STATS.SEARCHES_DONE)",
+    "favorites": "SUM(USER_DAILY_STATS.FAVOURITES_CREATED) \u2014 manual saves",
+    "learn_cards": "COUNT LEARN_CARDS with LAST_SEEN_DATE in 30d AND TIMES_SEEN > 0"
+  }
+}

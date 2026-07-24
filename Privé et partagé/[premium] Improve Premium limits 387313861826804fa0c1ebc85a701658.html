@@ -1,0 +1,769 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>[premium] Improve Premium limits</title><meta name="data-notion-page-icon" content="/icons/hand_red.svg"/><link rel="icon" href="https://app.notion.com/icons/hand_red.svg"/><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+/* Override strong tags inside headings to maintain consistent weight */
+h1 strong,
+h2 strong,
+h3 strong {
+	font-weight: 600;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+/* For default-background callouts, render the border outline. */
+.callout.block-color-default_background {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+figure,
+aside,
+details {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	table.collection-content {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+	table.collection-content th,
+	table.collection-content td {
+		overflow-wrap: anywhere;
+	}
+
+	table.collection-content td > .user,
+	table.collection-content td > time {
+		white-space: pre-wrap;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content-wrapper {
+	overflow-x: auto;
+}
+
+@media only print {
+	.collection-content-wrapper {
+		overflow-x: visible;
+	}
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.collection-content td {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.column-list {
+	display: flex;
+	gap: 46px;
+}
+
+.column {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.column > *:first-child {
+	margin-top: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding-inline: 0.125rem;
+	padding-block: 0.375rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+table {
+	border-collapse: collapse;
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol.numbered-list.numbered-list-digits-2 {
+	padding-inline-start: 2em;
+}
+
+ol.numbered-list.numbered-list-digits-3plus {
+	padding-inline-start: 2.4em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+/*
+ * Render emoji icons using a ::before pseudo-element to keep the glyph
+ * out of the DOM textContent traversal. This avoids double-rendering icons
+ * in callouts and page titles.
+ * NOTE(slim/html-export-pseudo-icons): I can't tagref this because it will
+ * flag as a duplicate tag after codegen.
+ */
+.icon[data-emoji]::before {
+	content: attr(data-emoji);
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.callout img.notion-static-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.callout p {
+	margin: 0;
+}
+
+.callout h1,
+.callout h2,
+.callout h3 {
+	margin: 0 0 0.6rem;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	margin-right: 0.4em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+blockquote.quote-large {
+	font-size: 1.25em;
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.tab {
+	margin: 1.25em 0;
+	padding-inline: 1rem;
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.highlight-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.highlight-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.highlight-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.highlight-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.highlight-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.highlight-default_background {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray_background {
+	background: rgba(42, 28, 0, 0.07);
+}
+.highlight-brown_background {
+	background: rgba(139, 46, 0, 0.086);
+}
+.highlight-orange_background {
+	background: rgba(224, 101, 1, 0.129);
+}
+.highlight-yellow_background {
+	background: rgba(211, 168, 0, 0.137);
+}
+.highlight-teal_background {
+	background: rgba(0, 100, 45, 0.09);
+}
+.highlight-blue_background {
+	background: rgba(0, 124, 215, 0.094);
+}
+.highlight-purple_background {
+	background: rgba(102, 0, 178, 0.078);
+}
+.highlight-pink_background {
+	background: rgba(197, 0, 93, 0.086);
+}
+.highlight-red_background {
+	background: rgba(223, 22, 0, 0.094);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.block-color-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.block-color-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.block-color-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.block-color-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.block-color-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(240, 239, 237, 1);
+}
+.block-color-brown_background {
+	background: rgba(245, 237, 233, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 235, 222, 1);
+}
+.block-color-yellow_background {
+	background: rgba(249, 243, 220, 1);
+}
+.block-color-teal_background {
+	background: rgba(232, 241, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(229, 242, 252, 1);
+}
+.block-color-purple_background {
+	background: rgba(243, 235, 249, 1);
+}
+.block-color-pink_background {
+	background: rgba(250, 233, 241, 1);
+}
+.block-color-red_background {
+	background: rgba(252, 233, 231, 1);
+}
+.select-value-color-default { background-color: rgba(42, 28, 0, 0.07); }
+.select-value-color-gray { background-color: rgba(28, 19, 1, 0.11); }
+.select-value-color-brown { background-color: rgba(127, 51, 0, 0.156); }
+.select-value-color-orange { background-color: rgba(196, 88, 0, 0.203); }
+.select-value-color-yellow { background-color: rgba(209, 156, 0, 0.282); }
+.select-value-color-green { background-color: rgba(0, 96, 38, 0.156); }
+.select-value-color-blue { background-color: rgba(0, 118, 217, 0.203); }
+.select-value-color-purple { background-color: rgba(92, 0, 163, 0.141); }
+.select-value-color-pink { background-color: rgba(183, 0, 78, 0.152); }
+.select-value-color-red { background-color: rgba(206, 24, 0, 0.164); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style><style>@import url('https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex-swap.min.css')</style></head><body><article id="38731386-1826-804f-a0c1-ebc85a701658" class="page sans" data-notion-page-icon="/icons/hand_red.svg"><header><div class="page-header-icon undefined"><img class="icon notion-static-icon" src="https://app.notion.com/icons/hand_red.svg"/></div><h1 class="page-title" dir="auto">[premium] Improve Premium limits</h1><p class="page-description" dir="auto"></p><table class="properties"><tbody><tr class="property-row property-row-status"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/burst_gray.svg" style="width:14px;height:14px;display:block"/></span>Status iOS</th><td><span class="status-value select-value-color-yellow"><div class="status-dot status-dot-color-yellow"></div>Doing</span></td></tr><tr class="property-row property-row-status"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/burst_gray.svg" style="width:14px;height:14px;display:block"/></span>Status Web</th><td><span class="status-value select-value-color-purple"><div class="status-dot status-dot-color-purple"></div>Testing</span></td></tr><tr class="property-row property-row-status"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/burst_gray.svg" style="width:14px;height:14px;display:block"/></span>Status Android</th><td><span class="status-value select-value-color-red"><div class="status-dot status-dot-color-red"></div>Todo dev</span></td></tr><tr class="property-row property-row-status"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/burst_gray.svg" style="width:14px;height:14px;display:block"/></span>Status API</th><td><span class="status-value select-value-color-green"><div class="status-dot status-dot-color-green"></div>Done</span></td></tr><tr class="property-row property-row-multi_select"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/skip-forward_gray.svg" style="width:14px;height:14px;display:block"/></span>Flows</th><td></td></tr><tr class="property-row property-row-select"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/arrow-circle-down_gray.svg" style="width:14px;height:14px;display:block"/></span>Version</th><td><span class="selected-value select-value-color-blue">Sprint 1</span></td></tr><tr class="property-row property-row-text"><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>JIRA</th><td><a href="https://reverso-softissimo.atlassian.net/browse/LRN-198">LRN-198</a> <a href="https://reverso-softissimo.atlassian.net/browse/LRN-199">LRN-199</a> <a href="https://reverso-softissimo.atlassian.net/browse/LRN-200">LRN-200</a> <a href="https://reverso-softissimo.atlassian.net/browse/LRN-200">LRN-200</a> <a href="https://reverso-softissimo.atlassian.net/browse/LRN-201">LRN-201</a></td></tr></tbody></table></header><div class="page-body"><h2 id="38931386-1826-8027-8d3e-ee6986e724b3" class="" dir="auto"><a href="https://www.figma.com/design/kUCRvURa8Uzu414180SkDF/Reverso-EvREADay?node-id=17101-32608&amp;t=FrPeF0XyCtFlWaSs-1">🏞 Design In Figma</a></h2><div dir="auto"><div id="38731386-1826-8089-b2d4-f8358a656d41" class="collection-content" dir="ltr"><h4 class="collection-title">✋ Recap of all Premium limitations</h4><div class="collection-content-wrapper"><table class="collection-content"><colgroup><col style="width:11.192266803165728%"/><col style="width:20.138205299838564%"/><col style="width:32.63377564279246%"/><col style="width:36.03575225420325%"/></colgroup><thead><tr><th><span class="icon property-icon"><img src="https://app.notion.com/icons/font_gray.svg" style="width:14px;height:14px;display:block"/></span>Page</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>Limits</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>Banners</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>API (version in prod)</th></tr></thead><tbody><tr id="38731386-1826-80f8-b1a9-ef7468941496"><td class="cell-title"><a href="https://app.notion.com/p/Favorites-My-List-38731386182680f8b1a9ef7468941496?pvs=21" data-notion-page-id="38731386-1826-80f8-b1a9-ef7468941496" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Favorites / My List</a></td><td class="cell-PYnh">Display up to <code>40</code> terms, no matter the filter.</td><td class="cell-Az{g"><strong>👀 VIEWING IN FAVORITES / LIST PAGE<br/><br/></strong>Here, terms = <code>numFilteredResults </code>from the API <br/><br/>The API returns the following JSON :<br/>&quot;<code>freemiumLimit</code>&quot;:{<br/>&quot;<code>limitReached</code>&quot;:false,<br/>&quot;<code>storedFavsNo</code>&quot;:0,<br/>&quot;<code>numberOfFavsAllowed</code>&quot;:40<br/>}<br/>}<br/><br/>Considering these, the following specs apply<br/><br/>## CASE #1 : If <code>limitReached</code>= true<br/>Display <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium Banner</strong></mark> Limit reached<br/><br/>#### If <code>numFilteredResults &gt; numberOfFavsAllowed</code><br/>Add <code>numberOfFavsAllowed</code> in orange before the <code>numFilteredResults</code> total (ex. <mark class="highlight-orange" data-notion-highlight="orange"><strong>40</strong></mark>/67) <br/><br/>## CASE #2 : Else (=<code>limitReached</code>= false)<br/><br/>#### if <code>numFilteredResults &lt; 10</code><br/>For anonymous : Register banner<br/>For registered : nothing<br/><strong><br/></strong>#### if <code>numFilteredResults</code> &gt; 10 <br/><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium banner V1</strong></mark> on top and at the bottom<br/><br/><code>Premium not registered</code> → Register banner on top, no matter the number of terms.<br/><br/><br/><br/><br/>⭐️ <strong>SAVING EVENT<br/></strong>→ The numbers in red refer to the number of favorites with <code>originalListID=null</code><strong><br/></strong><code>3rd and 6th save</code> → Register popup for anonymous<br/><code>≥ 10 terms</code> → Premium nagging<br/><code>≥ 40 terms</code> → <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall</strong></mark> on every click on star but make the star yellow<br/><code>&gt; 200 terms</code> → <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall</strong></mark> on every click on star but <span style="border-bottom:0.05em solid">don’t</span> save (the star remains <span style="border-bottom:0.05em solid">empty</span>)<br/></td><td class="cell-ldBF"><strong>👀 VIEWING IN FAVORITES / LIST PAGE<br/></strong>API <code>GET /favourites</code> returns the first 40 elements of the stored 200 when free user.<br/><br/>Added object to the response in case the user is free:<br/><code>&quot;freemiumLimit&quot;: </code><code><strong>{<br/>  </strong></code><code>&quot;limitReached&quot;: </code><code><strong>true</strong></code><code>,<br/>  &quot;storedItems&quot;: </code><code><strong>67</strong></code><code>,<br/>  &quot;maxAllowed&quot;: </code><code><strong>40<br/></strong></code><code>}</code><br/><br/><code>limitReached</code> means that the free limit for items that can be displayed was reached.<br/><code>storedItems</code>is the current number of favorites in the DB for that user.<br/>And <code>maxAllowed</code> is the max number of favourites that can be displayed.<br/><br/><br/><br/>⭐️ <strong>SAVING EVENT<br/></strong>API <code>GET /favourites/hashes</code> or variant <code>GET /favourites/hashes-ids</code> request, that are usually requested once per page where we want to mark the current Favourites in the page, will contain a new object in the response:<strong><br/></strong><code>&quot;freemiumLimit&quot;: </code><code><strong>{<br/>  </strong></code><code>&quot;limitReached&quot;: </code><code><strong>true</strong></code><code>,<br/>  &quot;storedItems&quot;: 208,<br/>  &quot;maxAllowed&quot;: 200</code><code><strong><br/></strong></code><code>}<br/><br/>limitReached</code> means that the free limit for items that can be stored was reached.<br/><code>storedItems</code>is the current number of favorites in the DB for that user.<br/>And <code>maxAllowed</code> is the max number of favourites that can be stored.</td></tr><tr id="38731386-1826-80c8-89d4-f12187bc174d"><td class="cell-title"><a href="https://app.notion.com/p/History-38731386182680c889d4f12187bc174d?pvs=21" data-notion-page-id="38731386-1826-80c8-89d4-f12187bc174d" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">History</a></td><td class="cell-PYnh">Display up to <code>40</code> terms, no matter the filter.<br/><br/>Don’t store more than <code>70</code> terms → Hard limit.</td><td class="cell-Az{g"><strong>👀 VIEWING IN HISTORY PAGE</strong><br/><em>Same as favorites</em></td><td class="cell-ldBF"><strong>👀 VIEWING IN HISTORY PAGE<br/></strong>API <code>GET /history</code> returns the first 40 elements of the stored 70 when free user.<br/><br/>Added object to the response in case the user is free:<br/><code>&quot;freemiumLimit&quot;: </code><code><strong>{<br/>  </strong></code><code>&quot;limitReached&quot;: </code><code><strong>true</strong></code><code>,<br/>  &quot;storedItems&quot;: </code><code><strong>67</strong></code><code>,<br/>  &quot;maxAllowed&quot;: </code><code><strong>40<br/></strong></code><code>}</code><br/><code>limitReached</code> means that the free limit for items that can be displayed was reached.<br/><code>storedItems</code>is the current number of items in the DB for that user.<br/>And <code>maxAllowed</code> is the max number of items that can be displayed.</td></tr><tr id="38831386-1826-80a2-aefe-c9ef7a9fa4bc"><td class="cell-title"><a href="https://app.notion.com/p/Editorial-List-38831386182680a2aefec9ef7a9fa4bc?pvs=21" data-notion-page-id="38831386-1826-80a2-aefe-c9ef7a9fa4bc" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Editorial List</a></td><td class="cell-PYnh">Allow to duplicate <code>1</code> editorial list.<br/><br/>After duplicating <code>1</code> editorial list:<br/>  1. You can only see the first <code>12</code> terms of any other list.<br/>  2. You cannot duplicate anymore.<br/><br/>For users who already had more than <code>1</code> list before the update ⇒ rule of the latest 40 favorites applies (as in favorites). </td><td class="cell-Az{g"><strong>👀 VIEWING AN EDITORIAL LIST<br/></strong>IF you duplicated <code>0</code> list:<br/>- You can see all terms.<br/>- You can duplicate the list.<br/><br/>IF you duplicated <code>≥1</code> list:<br/>- You can only see 12 terms followed by banner.<br/>- If you click on “Learn this list” → <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall<br/><br/></strong></mark><mark class="highlight-default" data-notion-highlight="default">IF you browse mini cards, on the 13th card, open full screen</mark><mark class="highlight-yellow" data-notion-highlight="yellow"><strong> Premium wall popup.</strong></mark></td><td class="cell-ldBF">NO changes</td></tr><tr id="38831386-1826-80b7-b92b-c33ce92ad813"><td class="cell-title"><a href="https://app.notion.com/p/Creating-List-38831386182680b7b92bc33ce92ad813?pvs=21" data-notion-page-id="38831386-1826-80b7-b92b-c33ce92ad813" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Creating List</a></td><td class="cell-PYnh">Don’t allow to create any lists for free.</td><td class="cell-Az{g"><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall</strong></mark><mark class="highlight-yellow" data-notion-highlight="yellow"> </mark>on click on “New list”</td><td class="cell-ldBF">NO changes</td></tr><tr id="38a31386-1826-8064-9eb2-c527a54e6be3"><td class="cell-title"><a href="https://app.notion.com/p/Learn-page-mobile-app-only-38a31386182680649eb2c527a54e6be3?pvs=21" data-notion-page-id="38a31386-1826-8064-9eb2-c527a54e6be3" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Learn page (mobile app only)</a></td><td class="cell-PYnh"><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Permanent Premium banner</strong></mark> below the Today block. It appears after playing <code>3</code> games.<br/><br/>Clicking would open the Learn <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall</strong></mark>.</td><td class="cell-Az{g"></td><td class="cell-ldBF">NO changes</td></tr><tr id="38a31386-1826-8085-9bee-e07027d713c2"><td class="cell-title"><a href="https://app.notion.com/p/Vocabulary-page-mobile-app-only-38a31386182680859beee07027d713c2?pvs=21" data-notion-page-id="38a31386-1826-8085-9bee-e07027d713c2" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Vocabulary page (mobile app only)</a></td><td class="cell-PYnh"><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Permanent Premium banner</strong></mark> below Favorites list. It appears after having <code>20</code> history or <code>10</code> favorites.<br/><br/>Clicking would open the Learn <mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Premium wall</strong></mark>.</td><td class="cell-Az{g"></td><td class="cell-ldBF">NO changes</td></tr><tr id="38f31386-1826-801f-86b4-e0e0845c84f0"><td class="cell-title"><a href="https://app.notion.com/p/Flashcards-38f313861826801f86b4e0e0845c84f0?pvs=21" data-notion-page-id="38f31386-1826-801f-86b4-e0e0845c84f0" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Flashcards</a></td><td class="cell-PYnh">On launching Flashcards, no change.</td><td class="cell-Az{g"></td><td class="cell-ldBF">NO changes</td></tr></tbody></table></div><br/><br/></div><h2 id="38f31386-1826-8001-8fa5-ec6574b941ed" class="" dir="auto">💸 Premium wall discount logic</h2><p id="38f31386-1826-8041-8248-ea774e667a46" class="" dir="auto">When you open a Premium wall for Learning, in some cases, offer 50% flash offer.</p><ul id="38f31386-1826-807e-864a-e52ea5fef4e2" class="bulleted-list" dir="auto"><li style="list-style-type:disc">When seeing the wall for the first time.</li></ul><ul id="38f31386-1826-8096-bc44-dcd8e208ff99" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Reset every 30 days or 10 saved terms, with a minimum of 15 days between promos.</li></ul><ul id="38f31386-1826-803e-8ba4-e6567637dbfe" class="bulleted-list" dir="auto"><li style="list-style-type:disc">On mobile app: <ul id="39531386-1826-802b-9f93-d27ebb277b68" class="bulleted-list" dir="auto"><li style="list-style-type:circle">When a promo is applied, we should offer the Yearly at 50% without free trial. Use the arguments of Learn wall with design of Discount wall.</li></ul></li></ul><ul id="39531386-1826-8089-822d-d986269d25ab" class="bulleted-list" dir="auto"><li style="list-style-type:disc">On the website:<ul id="39531386-1826-8080-9168-fc25ee1e2692" class="bulleted-list" dir="auto"><li style="list-style-type:circle">When a promo is applied, we should have this link format (of course with the correct UI language parameter):<p id="39531386-1826-80dd-854d-e917fdca04d7" class="" dir="auto"><code>https://documents.reverso.net/Pricing.aspx?</code><mark class="highlight-orange" data-notion-highlight="orange"><code>promo=FLASH50</code></mark><code>&amp;origin=1</code></p></li></ul></li></ul><p id="38931386-1826-8053-8f28-c909b240f5a0" class="" dir="auto">
+</p><div id="38431386-1826-802c-8a4e-cb7d9b52549e" class="collection-content" dir="ltr"><h4 class="collection-title">💬 Register/Premium wording</h4><div class="collection-content-wrapper"><table class="collection-content"><colgroup><col style="width:17.994858611825194%"/><col style="width:14.845758354755784%"/><col style="width:30.912596401028274%"/><col style="width:36.246786632390744%"/></colgroup><thead><tr><th><span class="icon property-icon"><img src="https://app.notion.com/icons/font_gray.svg" style="width:14px;height:14px;display:block"/></span>Name</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/list_gray.svg" style="width:14px;height:14px;display:block"/></span>Where?</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>Text</th><th><span class="icon property-icon"><img src="https://app.notion.com/icons/description_gray.svg" style="width:14px;height:14px;display:block"/></span>Loc key</th></tr></thead><tbody><tr id="38f31386-1826-80a4-a4e5-c74d6115ca51"><td class="cell-title"><a href="https://app.notion.com/p/Premium-banner-v1-38f31386182680a4a4e5c74d6115ca51?pvs=21" data-notion-page-id="38f31386-1826-80a4-a4e5-c74d6115ca51" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Premium banner v1</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-yellow">Favorites</span><span class="selected-value select-value-color-brown">History</span></td><td class="cell-THWr">Go Premium to save and learn unlimited vocabulary, on all devices, without ads.</td><td class="cell-:[Sp">PREMIUM_PROMO.GO_PREMIUM_FOR_UNLIMITED_FAVORITES</td></tr><tr id="38431386-1826-8030-bf43-c8ed2a01176a"><td class="cell-title"><a href="https://app.notion.com/p/Premium-banner-v1-Limit-reached-3843138618268030bf43c8ed2a01176a?pvs=21" data-notion-page-id="38431386-1826-8030-bf43-c8ed2a01176a" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Premium banner v1 + Limit reached</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-yellow">Favorites</span><span class="selected-value select-value-color-brown">History</span></td><td class="cell-THWr"><mark class="highlight-orange" data-notion-highlight="orange"><strong>Free limit reached</strong></mark><mark class="highlight-orange" data-notion-highlight="orange"><br/></mark>Go Premium to save and learn unlimited vocabulary, on all devices, without ads.</td><td class="cell-:[Sp"><mark class="highlight-yellow" data-notion-highlight="yellow">PREMIUM_PROMO.FREE_LIMIT_REACHED</mark><br/><strong><br/></strong>PREMIUM_PROMO.GO_PREMIUM_FOR_UNLIMITED_FAVORITES</td></tr><tr id="38f31386-1826-8088-95f5-c045392ad161"><td class="cell-title"><a href="https://app.notion.com/p/Register-banner-38f313861826808895f5c045392ad161?pvs=21" data-notion-page-id="38f31386-1826-8088-95f5-c045392ad161" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Register banner</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-yellow">Favorites</span><span class="selected-value select-value-color-brown">History</span><span class="selected-value select-value-color-orange">List</span><span class="selected-value select-value-color-red">Result page</span></td><td class="cell-THWr"><strong>Sign up for free<br/></strong>Access more features. Learn your vocabulary on all devices.</td><td class="cell-:[Sp"><strong>SIGNUP.SIGN_UP_TO_USE_VOCABULARY</strong><br/>SIGNUP.ACCESS_ALL_FEATURES</td></tr><tr id="38431386-1826-80f3-9deb-f31130ad4a5b"><td class="cell-title"><a href="https://app.notion.com/p/Premium-banner-v2-38431386182680f39debf31130ad4a5b?pvs=21" data-notion-page-id="38431386-1826-80f3-9deb-f31130ad4a5b" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Premium banner v2</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-green">Learn</span><span class="selected-value select-value-color-blue">Vocabulary</span></td><td class="cell-THWr"><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Try Premium</strong></mark><mark class="highlight-yellow" data-notion-highlight="yellow"><br/></mark>Unlimited vocabulary. Personalized quizzes &amp; flashcards. Offline learning. No ads.</td><td class="cell-:[Sp"><mark class="highlight-yellow" data-notion-highlight="yellow">PREMIUM_PROMO.TRY_PREMIUM</mark><strong><br/></strong>PREMIUM_PROMO.ALL_ADVANTAGES_SHORT_V2</td></tr><tr id="38431386-1826-80b4-a074-d44e8e23a07c"><td class="cell-title"><a href="https://app.notion.com/p/Premium-banner-v3-38431386182680b4a074d44e8e23a07c?pvs=21" data-notion-page-id="38431386-1826-80b4-a074-d44e8e23a07c" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Premium banner v3</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-purple">Below 12 terms in shared list</span></td><td class="cell-THWr"><mark class="highlight-yellow" data-notion-highlight="yellow"><strong>Discover Premium</strong></mark><strong><br/></strong>Get access to all lists. Save unlimited vocabulary. Learn without limits across devices. Remove ads.</td><td class="cell-:[Sp"><mark class="highlight-yellow" data-notion-highlight="yellow">PREMIUM_PROMO.DISCOVER_PREMIUM_BUTTON<br/></mark>PREMIUM_PROMO.ALL_ADVANTAGES_SHORT_V3</td></tr><tr id="38731386-1826-8081-9f86-e1fd71aacbfd"><td class="cell-title"><a href="https://app.notion.com/p/Premium-toaster-for-nagging-38731386182680819f86e1fd71aacbfd?pvs=21" data-notion-page-id="38731386-1826-8081-9f86-e1fd71aacbfd" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Premium toaster for nagging</a></td><td class="cell-=Vu~"><span class="selected-value select-value-color-red">Result page</span></td><td class="cell-THWr"><mark class="highlight-orange" data-notion-highlight="orange">X</mark>/20 terms saved.<br/><mark class="highlight-gray" data-notion-highlight="gray">Go Premium to learn without limits.</mark></td><td class="cell-:[Sp">LIMITATIONS.FAVORITES_COUNTER<br/><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.UNLOCK_LEARNING_CONTENT</mark></td></tr><tr id="38431386-1826-80b8-b4ab-d5862355edca"><td class="cell-title"><a href="https://app.notion.com/p/Learn-Premium-wall-v1-38431386182680b8b4abd5862355edca?pvs=21" data-notion-page-id="38431386-1826-80b8-b4ab-d5862355edca" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Learn Premium wall v1</a></td><td class="cell-=Vu~"></td><td class="cell-THWr"><strong>Learn more efficiently with Premium<br/>  • </strong>Unlimited vocabulary <mark class="highlight-gray" data-notion-highlight="gray">(synced across devices)</mark><br/>  • All practice modes unlocked<br/>  • Personalized learning plan <mark class="highlight-gray" data-notion-highlight="gray">(with spaced repetition)</mark><br/>  • Offline mode <mark class="highlight-gray" data-notion-highlight="gray">(learn anywhere, anytime)</mark><br/>  • 100% Ad-free</td><td class="cell-:[Sp"><strong>PREMIUM_PROMO.PREMIUM_WALL_TITLE_LEARN_EFFICIENTLY</strong><br/>- PREMIUM_PROMO.UNLIMITED_VOCABULARY,<strong> </strong><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.SYNCED</mark><br/>- PREMIUM_PROMO.ALL_MODES_UNLOCKED<strong><br/></strong>- PREMIUM_PROMO.PERSONALIZED_LEARNING_PLAN, <mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.WITH_SPACED_REPETITION</mark><br/>- PREMIUM_PROMO.OFFLINE_MODE, <mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.LEARN_ANYWHERE</mark><br/>- PREMIUM_PROMO.AD_FREE</td></tr><tr id="38431386-1826-8086-a499-faae7671fffb"><td class="cell-title"><a href="https://app.notion.com/p/Learn-Premium-wall-v2-3843138618268086a499faae7671fffb?pvs=21" data-notion-page-id="38431386-1826-8086-a499-faae7671fffb" data-notion-space-id="57129c55-ea46-42fc-9e9c-1156c6ac00ab">Learn Premium wall v2</a></td><td class="cell-=Vu~"></td><td class="cell-THWr"><mark class="highlight-orange" data-notion-highlight="orange"><strong>Free limit reached</strong></mark><mark class="highlight-orange" data-notion-highlight="orange"><br/></mark><strong>Go Premium to build your vocabulary without limits<br/></strong>• Unlimited vocabulary<br/><mark class="highlight-gray" data-notion-highlight="gray">Saved and synced across all your devices<br/></mark>• 1000+ curated lists<br/><mark class="highlight-gray" data-notion-highlight="gray">Business, Daily Life, TOEFL, Slang, Idioms…<br/></mark>• Personalized learning<br/><mark class="highlight-gray" data-notion-highlight="gray">Quizzes &amp; Flashcards tailored to you<br/></mark>• Expanded dictionary<br/><mark class="highlight-gray" data-notion-highlight="gray">More results and examples<br/></mark>• No ads</td><td class="cell-:[Sp"><mark class="highlight-yellow" data-notion-highlight="yellow">PREMIUM_PROMO.FREE_LIMIT_REACHED</mark><br/><strong>PREMIUM_PROMO.GO_PREMIUM_TO_BUILD_VOCABULARY</strong><br/>- PREMIUM_PROMO.UNLIMITED_VOCABULARY<br/><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.SAVED_AND_SYNCED</mark><br/>- PREMIUM_PROMO.CURATED_LISTS<br/><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.CURATED_LISTS_TOPICS</mark><br/>- PREMIUM_PROMO.PERSONALIZED_LEARNING<br/><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.QUIZZES&amp;FLASHCARDS</mark><br/>- PREMIUM_PROMO.EXPANDED_DICTIONARY<br/><mark class="highlight-gray" data-notion-highlight="gray">PREMIUM_PROMO.MORE_RESULTS_EXAMPLES</mark><br/>- PREMIUM_PROMO.NO_ADS</td></tr></tbody></table></div><br/><br/></div></div><p id="39031386-1826-80fc-b2c3-eef0ef9fbd97" class="" dir="auto">
+</p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>

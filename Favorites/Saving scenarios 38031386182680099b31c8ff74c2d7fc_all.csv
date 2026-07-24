@@ -1,0 +1,49 @@
+﻿Name,Notes,Order,Placements,Type,What to save to Favorites DB,What to save to HistoryDB
+Reading / Wathing,,5,Quick search  (https://app.notion.com/p/Quick-search-380313861826808582a4cc8b14094d3e?pvs=21),"Favorites, History","SOURCE_SEGMENT (https://app.notion.com/p/SOURCE_SEGMENT-694d02d8b1bf402192e7910902f4cb28?pvs=21), DOCUMENT_TITLE (https://app.notion.com/p/DOCUMENT_TITLE-02cc70ee955f4f0ca31add40e6c7b663?pvs=21), DOCUMENT (https://app.notion.com/p/DOCUMENT-4205e009e5f947109d0eb4ab52142441?pvs=21)","SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-b137a962966748c9ae3ff45be0c0bd7a?pvs=21), DOCUMENT_TITLE (https://app.notion.com/p/DOCUMENT_TITLE-8a67fd8ce46c4da79744dd2e485749c5?pvs=21), DOCUMENT (https://app.notion.com/p/DOCUMENT-defac7e1cfc9417485ad72fc10832112?pvs=21), SOURCE_SENTENCE (https://app.notion.com/p/SOURCE_SENTENCE-416b51317ae649658285ca77ea1d766a?pvs=21), SOURCE_SENTENCE_TRANSLATION1 (https://app.notion.com/p/SOURCE_SENTENCE_TRANSLATION1-21584f05716242e6aaab5691b8eb5ca0?pvs=21), SOURCE_SENTENCE_TRANSLATION2 (https://app.notion.com/p/SOURCE_SENTENCE_TRANSLATION2-c3eee312a0a14f76999b9b23bf23ac15?pvs=21), SOURCE_SENTENCE_TRANSLATION3 (https://app.notion.com/p/SOURCE_SENTENCE_TRANSLATION3-3c1d14294c9f4433a2eb9737a90ca6ca?pvs=21)"
+From Define result page,FAVTYPE = def,2,,"Favorites, History","FAVTYPE (https://app.notion.com/p/FAVTYPE-8c61352af41a49968637e4a0a264c7fa?pvs=21), SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-022b1bed3c3043d585c6d923e5f05ff5?pvs=21), SOURCE_POS (https://app.notion.com/p/SOURCE_POS-c1401b0b2a4f410b8c750509aa7eb94c?pvs=21), LANGUAGE_LEVEL (https://app.notion.com/p/LANGUAGE_LEVEL-32c31386182680629e9dc6184e3f1614?pvs=21), REGISTER (https://app.notion.com/p/REGISTER-32c31386182680e4b218d844f43262b3?pvs=21), IMAGE (https://app.notion.com/p/IMAGE-383313861826808aac59f613d7310aa8?pvs=21), TARGET_TRANSLIT (https://app.notion.com/p/TARGET_TRANSLIT-383313861826809b856df5fdb9b553cb?pvs=21)","HISTTYPE (https://app.notion.com/p/HISTTYPE-7571fcab115f44d2b2591a943ddb846f?pvs=21), TRANSLATION1 (https://app.notion.com/p/TRANSLATION1-3a9afce34eb94742ba6c4038b0a1cf63?pvs=21)"
+From a list,REVERSO_LIST = List ID,7,List page (https://app.notion.com/p/List-page-381313861826806f860edd9eaa5ec5ae?pvs=21),Favorites,ORIGINAL_LIST_ID (https://app.notion.com/p/ORIGINAL_LIST_ID-383313861826804eadfcd11b362d44ca?pvs=21),
+All scenarios,"These are the fields we should always save, no matter where a favorite is saved from.
+About fields:
+  • ID is only filled on API side (auto generated on DB side)
+  • NUSER_ID is internal to API and DB. User is identified by the GAS accessToken that should be attached to the client’s request.
+  • CREATION_DATE and LAST_EDIT are filled on API side. ONLY mobile apps when syncing should include the dates.",0,,"Favorites, History","SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-6bb365d9a6ab4855b3bc0ba0cf90c218?pvs=21), TARGET_LANG (https://app.notion.com/p/TARGET_LANG-87528e6e692947d686d9f2b9c81fbb59?pvs=21), SOURCE_TEXT (https://app.notion.com/p/SOURCE_TEXT-d2e5153780cc4d67bd417b0c90784bec?pvs=21), TARGET_TEXT (https://app.notion.com/p/TARGET_TEXT-1044b75c8e854e318b0cb56f6cd94b45?pvs=21), CREATION_DATE (https://app.notion.com/p/CREATION_DATE-61be111b80cc483aaaeaa1cd193f69f8?pvs=21), SOURCE (https://app.notion.com/p/SOURCE-534810546e6948f6afa278538fedcb28?pvs=21), NUSER_ID (https://app.notion.com/p/NUSER_ID-e51607f6b6044be3bd5a644540e3a45a?pvs=21), ID (https://app.notion.com/p/ID-ff1475e566e642ef88ed8bc3fc868ee8?pvs=21), LAST_EDIT (https://app.notion.com/p/LAST_EDIT-ace85e82f89d49aa9eaa9d8d66a6b7bb?pvs=21)","CREATION_DATE (https://app.notion.com/p/CREATION_DATE-21ab4060ac3f4502ac6962033385b1b5?pvs=21), SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-b35fb8300a3841049097ebaf2ebbbdf9?pvs=21), TARGET_LANG (https://app.notion.com/p/TARGET_LANG-ababee0a78864e0cb1570ac10ad32d01?pvs=21), SOURCE_TEXT (https://app.notion.com/p/SOURCE_TEXT-843ba20d821d493895326bd0f6b892f7?pvs=21)"
+From History,"How do we identify a History with a Favorite? Via Hash or HistoryID? 
+What about on mobile?
+Whey did we create the HistoryID field?
+
+BD :
+I understand that the history_id can tell you that a specific favorite comes from a specific history element.
+The hash is used in reverse, to check on a given history page, if there is a favorite element with the same properties.
+However currently there is one bug :
+  • If you add a word from context to the favorites, the history_id is not saved. Which is not normal because the history element already exists.
+",6,,Favorites,HISTORY_ID (https://app.notion.com/p/HISTORY_ID-5071f37fff294093a10c81cccc00d157?pvs=21),
+From Context result page,"These fields are saved anytime we click on the star on Context result page.
+
+We don’t need to send FAVTYPE since empty value is for Context.
+
+Question: why do we have “empty” and “null” values? Why not only “empty” or only “null”
+
+BD :
+  • Empty is new. There was almost no empty before Jan2026 and a lot created since. TO CHECK
+
+JF: EMPTY is coming from bilingual vocab lists generated by Oliver. Not a problem as is equivalent to NULL for Context.
+For monolingual English lists, the favType is correctly set to “def” by Olivier.",1,,"Favorites, History","SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-022b1bed3c3043d585c6d923e5f05ff5?pvs=21), TARGET_CONTEXT (https://app.notion.com/p/TARGET_CONTEXT-3bb3d304fcb848cfb55c4bf6f70b9928?pvs=21), SOURCE_POS (https://app.notion.com/p/SOURCE_POS-c1401b0b2a4f410b8c750509aa7eb94c?pvs=21), TARGET_POS (https://app.notion.com/p/TARGET_POS-1c69d6508c594731aed95d6d385e0928?pvs=21), REGISTER (https://app.notion.com/p/REGISTER-32c31386182680e4b218d844f43262b3?pvs=21), IMAGE (https://app.notion.com/p/IMAGE-383313861826808aac59f613d7310aa8?pvs=21), SOURCE_TRANSLIT (https://app.notion.com/p/SOURCE_TRANSLIT-383313861826809ba060fee55de66b84?pvs=21), TARGET_TRANSLIT (https://app.notion.com/p/TARGET_TRANSLIT-383313861826809b856df5fdb9b553cb?pvs=21)","HISTTYPE (https://app.notion.com/p/HISTTYPE-7571fcab115f44d2b2591a943ddb846f?pvs=21), TRANSLATION1 (https://app.notion.com/p/TRANSLATION1-3a9afce34eb94742ba6c4038b0a1cf63?pvs=21), TRANSLATION2 (https://app.notion.com/p/TRANSLATION2-b3316176fcd142389e256ed48e476bde?pvs=21), TRANSLATION3 (https://app.notion.com/p/TRANSLATION3-1d459bcbce634ea793635f4ece36ce3e?pvs=21)"
+From BilingualCombined result page,,3,,"Favorites, History","FAVTYPE (https://app.notion.com/p/FAVTYPE-8c61352af41a49968637e4a0a264c7fa?pvs=21), SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-022b1bed3c3043d585c6d923e5f05ff5?pvs=21), TARGET_CONTEXT (https://app.notion.com/p/TARGET_CONTEXT-3bb3d304fcb848cfb55c4bf6f70b9928?pvs=21), SOURCE_POS (https://app.notion.com/p/SOURCE_POS-c1401b0b2a4f410b8c750509aa7eb94c?pvs=21), LANGUAGE_LEVEL (https://app.notion.com/p/LANGUAGE_LEVEL-32c31386182680629e9dc6184e3f1614?pvs=21), REGISTER (https://app.notion.com/p/REGISTER-32c31386182680e4b218d844f43262b3?pvs=21), IMAGE (https://app.notion.com/p/IMAGE-383313861826808aac59f613d7310aa8?pvs=21), TARGET_TRANSLIT (https://app.notion.com/p/TARGET_TRANSLIT-383313861826809b856df5fdb9b553cb?pvs=21), COMMENT (https://app.notion.com/p/COMMENT-051bd52e483c4438a5a2fd5be3328b71?pvs=21)",HISTTYPE (https://app.notion.com/p/HISTTYPE-7571fcab115f44d2b2591a943ddb846f?pvs=21)
+Creating editorial list,,8,,Favorites,"SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-022b1bed3c3043d585c6d923e5f05ff5?pvs=21), TARGET_CONTEXT (https://app.notion.com/p/TARGET_CONTEXT-3bb3d304fcb848cfb55c4bf6f70b9928?pvs=21), SOURCE_POS (https://app.notion.com/p/SOURCE_POS-c1401b0b2a4f410b8c750509aa7eb94c?pvs=21), TARGET_POS (https://app.notion.com/p/TARGET_POS-1c69d6508c594731aed95d6d385e0928?pvs=21), REGISTER (https://app.notion.com/p/REGISTER-32c31386182680e4b218d844f43262b3?pvs=21), LANGUAGE_LEVEL (https://app.notion.com/p/LANGUAGE_LEVEL-32c31386182680629e9dc6184e3f1614?pvs=21), SOURCE_TRANSLIT (https://app.notion.com/p/SOURCE_TRANSLIT-383313861826809ba060fee55de66b84?pvs=21), TARGET_TRANSLIT (https://app.notion.com/p/TARGET_TRANSLIT-383313861826809b856df5fdb9b553cb?pvs=21), IMAGE (https://app.notion.com/p/IMAGE-383313861826808aac59f613d7310aa8?pvs=21)",
+From MT result page,"FAVTYPE = mt
+
+Question: are all Clients limiting the max text to be saved to 128 characters? If not, we should do so.
+
+Question: we noticed many entries in the DB that are >100 characters and have FAVTYPE empty. This means that probably one of the clients is not saving the FAVTYPE as mt. @Baptiste Derongs let’s check if we have a particular SOURCE for these entries.
+
+Also, in the stats, we see that most mt entries are very short, and we almost have 0 very long. How is this possible to have such a quick drop between both.
+
+A few stats on this : 
+  • On the last month, 33k mt favorites. 32k have source 1. 1k has source 0.
+  • All the >100 characters MT entries have source=1
+  • Among the >100 characters, with FAVTYPE empty, all are from source 0. I can’t really find in the data any insights from where this could come from.
+  • If I go to https://www.reverso.net/text-translation and type a sentence and save it as favorite, it is not marked as mt, favtype is empty. Isn’t it the issue?
+",4,,Favorites,FAVTYPE (https://app.notion.com/p/FAVTYPE-8c61352af41a49968637e4a0a264c7fa?pvs=21),
+From Synonyms result page,FAVTYPE = syn,4,,Favorites,FAVTYPE (https://app.notion.com/p/FAVTYPE-8c61352af41a49968637e4a0a264c7fa?pvs=21),
+Saving offline,,,,History,isPerformedOffline (https://app.notion.com/p/isPerformedOffline-38331386182680ac9938f995fcf4e0a2?pvs=21),isPerformedOffline (https://app.notion.com/p/isPerformedOffline-38331386182680ac9938f995fcf4e0a2?pvs=21)
+From History with SS,,"6,1",,Favorites,,

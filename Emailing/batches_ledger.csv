@@ -1,0 +1,2 @@
+BATCH_ID,BATCH_DATE,LABEL,COHORT,SIZE,FILE,EMAILS_FILE,STATUS,NOTES
+c1b_en_2026-07-21_batch1,2026-07-21,Week of 2026-07-21 — C1b EN strong favoriters batch 1 (500),C1b_strong_favoriters_EN,500,Emailing/batches/c1b_en_2026-07-21_batch1.csv,Emailing/batches/c1b_en_2026-07-21_batch1_emails_only.csv,queued,First 500 by 30d manual saves desc; excl. campaign 4977

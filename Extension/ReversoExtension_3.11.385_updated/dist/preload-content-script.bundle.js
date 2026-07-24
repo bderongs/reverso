@@ -1,0 +1,1 @@
+(async()=>{const t=chrome.runtime.getURL("dist/content-script.bundle.js");await import(t)})();

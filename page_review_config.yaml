@@ -1,0 +1,80 @@
+defaults:
+  start_url: https://www.reverso.net/
+  user_data_dir: .browser-profile/reverso
+  max_steps: 30
+  headless: false
+  viewport:
+    width: 1280
+    height: 900
+  locale: en
+  allowed_domains:
+    - "*.reverso.net"
+    - "reverso.net"
+
+# Each scenario describes what you want to achieve — the agent finds the right page itself.
+scenarios:
+  - id: home
+    goal: >
+      Arrive on the main Reverso landing page and assess whether it's obvious how to
+      translate a word or start learning English vocabulary.
+
+  - id: context_lookup
+    goal: >
+      Look up the English word "hello" and reach a Context page with example sentences
+      in real usage. Assess whether the examples help you learn and remember the word.
+
+  - id: text_translation
+    goal: >
+      Translate a short English phrase (e.g. "How are you?") using Reverso's text
+      translation. Assess clarity of the result and whether it feels useful for learning.
+
+  - id: conjugator
+    goal: >
+      Find the verb conjugator and look up the English verb "go". Assess whether the
+      conjugation table is easy to read and helpful for a learner.
+
+  - id: spell_checker
+    goal: >
+      Find the English spell checker / grammar tool and check a short sentence with a
+      deliberate mistake. Assess how obvious the tool is to find and use.
+
+  - id: vocabulary
+    max_steps: 40
+    goal: >
+      Find the Vocabulary section, open a list that looks useful for learning English,
+      and see what's inside. Assess whether it would help you as a French speaker.
+
+  - id: context_to_editorial_list
+    max_steps: 40
+    start_url: https://context.reverso.net/translation/english-french/sparrow
+    goal: >
+      From the Context page for "sparrow", find and open the related vocabulary list
+      (e.g. Animals chip or "Discover and learn terms" section). On the list page,
+      inspect the header, "Learn this list" button, flashcard carousel, and at least
+      one term card (star, speaker, dictionary icons). Note which actions work without
+      login and which trigger a sign-up wall.
+
+  - id: context_save_word
+    max_steps: 35
+    start_url: https://context.reverso.net/translation/english-french/hello
+    goal: >
+      On the Context result page for "hello", use "Add to list" and any save/star
+      controls on examples if visible. Describe what happens when logged out (modal,
+      copy, alternatives). Note whether vocabulary list chips appear for this word.
+
+  - id: vocabulary_index_browse
+    max_steps: 35
+    start_url: https://context.reverso.net/vocabulary
+    goal: >
+      On the Vocabulary index, try language/mode filters (French, Translations EN→FR,
+      Immersion). Open a "By Level" list (e.g. Basic A1/A2). Assess clarity of
+      Get started, Reading List, and how editorial lists are organized.
+
+  - id: favorites_hub
+    max_steps: 40
+    start_url: https://context.reverso.net/vocabulary/favorites
+    goal: >
+      Open the Favorites vocabulary hub. If logged in, explore saved terms, Start
+      Practice, and Learning strategy. If not logged in, document the gate and whether
+      Start Practice / Learning strategy are visible but blocked. Compare with editorial
+      list "Learn this list" flow if possible.

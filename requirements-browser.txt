@@ -1,0 +1,10 @@
+# LLM-driven page review (page_review.py)
+# Requires Python 3.11+
+#
+# One-time setup:
+#   python3.12 -m pip install -r requirements-browser.txt
+#   python3.12 -m playwright install chromium
+
+browser-use>=0.9.0
+playwright>=1.49.0
+pyyaml>=6.0

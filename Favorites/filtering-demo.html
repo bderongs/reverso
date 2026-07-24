@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filtering demo — Favourites</title>
+  <style>
+    :root {
+      --ink: #1c1c1e;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --surface: #fff;
+      --bg: #e8eaef;
+      --blue: #1a73e8;
+      --blue-soft: #e8f1fc;
+      --blue-chip: #dbeafe;
+      --green: #16a34a;
+      --anno: #7c3aed;
+      --anno-bg: #f3e8ff;
+      --err: #b42318;
+      --err-bg: #fef3f2;
+      --ok: #0f7b4a;
+      --ok-bg: #e6f6ee;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --config-bg: #eef2ff;
+      --config-border: #c7d2fe;
+      --config-head: #3730a3;
+      --demo-bg: #f8fafc;
+      --demo-border: #cbd5e1;
+      --demo-head: #0f172a;
+      --tech-bg: #f5f3ff;
+      --tech-border: #ddd6fe;
+      --tech-head: #5b21b6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #111827;
+      color: #fff;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .topbar h1 { font-size: 1rem; font-weight: 650; }
+    .topbar p { font-size: 0.8rem; opacity: 0.8; }
+    .topbar a {
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.75rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* ── Page zones ── */
+    .zone {
+      border-radius: 16px;
+      border: 1px solid transparent;
+      padding: 1.15rem 1.25rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .zone-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.45rem 0.85rem;
+      margin-bottom: 0.15rem;
+    }
+    .zone-head .zone-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 800;
+    }
+    .zone-head .zone-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .zone-config {
+      background: var(--config-bg);
+      border-color: var(--config-border);
+      box-shadow: 0 1px 0 rgba(55, 48, 163, 0.06);
+    }
+    .zone-config .zone-label { color: var(--config-head); }
+    .zone-demo {
+      background: var(--demo-bg);
+      border-color: var(--demo-border);
+      padding: 1.5rem 1.5rem 1.75rem;
+      gap: 1.25rem;
+    }
+    .zone-demo .zone-label { color: var(--demo-head); }
+    .zone-tech {
+      background: var(--tech-bg);
+      border-color: var(--tech-border);
+      padding: 1.35rem 1.35rem 1.5rem;
+      gap: 1.15rem;
+    }
+    .zone-tech .zone-label { color: var(--tech-head); }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+    }
+    .panel h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+
+    details.auth-panel {
+      padding: 0;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--config-border);
+    }
+    details.auth-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      padding: 0.75rem 1rem;
+      user-select: none;
+    }
+    details.auth-panel > summary::-webkit-details-marker { display: none; }
+    details.auth-panel > summary .sum-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--config-head);
+      font-weight: 700;
+    }
+    details.auth-panel > summary .sum-chev {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+    details.auth-panel[open] > summary .sum-chev { transform: rotate(180deg); }
+    details.auth-panel .auth-body {
+      padding: 0 1rem 0.9rem;
+      border-top: 1px solid var(--config-border);
+      padding-top: 0.85rem;
+    }
+
+    .config-options {
+      background: var(--surface);
+      border: 1px solid var(--config-border);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+    }
+    .config-options h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--config-head);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+    .config-options .toggle-row {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    .persona-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1rem;
+      align-items: flex-end;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--config-border);
+    }
+    .persona-row .field { flex: 1 1 220px; }
+    .persona-row select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      font: inherit;
+      font-size: 0.82rem;
+      background: #fff;
+    }
+    .persona-blurb {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      line-height: 1.35;
+    }
+    .persona-blurb code {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: #eef2ff;
+      padding: 0.05rem 0.3rem;
+      border-radius: 4px;
+    }
+    .persona-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+    }
+    .persona-tag {
+      font-size: 0.68rem;
+      font-weight: 650;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .persona-tag.warn { background: #fef3c7; color: #92400e; }
+    .persona-tag.ok { background: var(--ok-bg); color: var(--ok); }
+    .persona-tag.muted { background: #f3f4f6; color: #4b5563; }
+    #auth-panel.persona-mode summary .sum-title::after {
+      content: " (skipped — using predefined user)";
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .demo-stage {
+      display: block;
+      padding: 0.25rem 0 0;
+    }
+    .demo-stage .phone {
+      width: 100%;
+      max-width: none;
+    }
+
+    .jwt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.74rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: #eef2f7;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .jwt-badge.ok { background: var(--ok-bg); color: var(--ok); }
+    .jwt-badge.warn { background: #fff7ed; color: #c2410c; }
+    .jwt-badge.err { background: var(--err-bg); color: var(--err); }
+    .jwt-warn-inline {
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+      display: none;
+    }
+    .jwt-warn-inline.show { display: block; }
+    .jwt-warn-inline.err {
+      background: var(--err-bg);
+      color: var(--err);
+      border-color: #fecaca;
+    }
+    .mode-badge {
+      display: none;
+      font-size: 0.72rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 700;
+    }
+    .mode-badge.show { display: inline-flex; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 140px; min-width: 0; }
+    .field.full { flex: 1 1 100%; }
+    label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      font: inherit;
+    }
+    textarea.auth { min-height: 2.6rem; font-family: var(--mono); font-size: 0.72rem; }
+    .btn {
+      appearance: none; border: none; border-radius: 8px;
+      padding: 0.5rem 0.85rem; font: inherit; font-weight: 650;
+      cursor: pointer; background: var(--blue); color: #fff;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.74rem; padding: 0.18rem 0.55rem; border-radius: 999px;
+      background: #eef2f7; color: var(--muted);
+    }
+    .pill.ok { background: var(--ok-bg); color: var(--ok); }
+    .pill.err { background: var(--err-bg); color: var(--err); }
+    .note { font-size: 0.78rem; color: var(--muted); }
+    .anno {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--anno);
+      background: var(--anno-bg);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      display: inline-block;
+      word-break: break-all;
+    }
+
+    /* ── Phone mock ── */
+    .phone {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+    .phone-hero {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .phone-hero h2 {
+      font-size: 1.15rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      text-transform: none;
+      color: var(--ink);
+      margin: 0;
+    }
+    .phone-hero .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .terms-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem 0.25rem;
+      font-size: 0.9rem;
+    }
+    .terms-row strong { font-weight: 700; }
+    .terms-row .limit-cap {
+      color: #ea580c;
+      font-weight: 800;
+    }
+
+    .premium-slot {
+      margin: 0.55rem 1rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px dashed #f59e0b;
+      background: #fffbeb;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #92400e;
+      display: none;
+    }
+    .premium-slot.show { display: block; }
+    .premium-slot .anno {
+      display: block;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: center;
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line);
+    }
+    .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .toggle-row input { width: auto; accent-color: var(--blue); }
+    .toggle-row .sub { font-weight: 500; color: var(--muted); font-size: 0.74rem; }
+
+    .chip-bar {
+      display: flex;
+      gap: 0.45rem;
+      padding: 0.55rem 1rem 0.75rem;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+    .chip {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 0.4rem 0.7rem;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .chip svg { width: 14px; height: 14px; flex: 0 0 auto; }
+    .chip .chev { opacity: 0.55; font-size: 0.7rem; }
+    .chip.active {
+      background: var(--blue-chip);
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .chip .clear {
+      margin-left: 0.1rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .chip .clear:hover { background: rgba(29, 78, 216, 0.12); }
+
+    .fav-list { padding: 0 0 0.5rem; max-height: 520px; overflow: auto; }
+    .fav {
+      display: grid;
+      gap: 0.15rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .fav .term { font-weight: 700; font-size: 0.95rem; }
+    .fav .trans { color: var(--muted); font-size: 0.84rem; }
+    .fav .meta {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--anno);
+      margin-top: 0.2rem;
+    }
+    .empty {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .opt .path {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--anno);
+      margin-top: 0.2rem;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .opt .path .req { color: #5b21b6; font-weight: 650; }
+    .chip[title], .opt[title] { cursor: help; }
+
+    /* Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      display: none;
+      z-index: 5;
+    }
+    .sheet-backdrop.open { display: block; }
+    .sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-radius: 16px 16px 0 0;
+      max-height: 72%;
+      display: none;
+      flex-direction: column;
+      z-index: 6;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.12);
+    }
+    .sheet.open { display: flex; }
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .sheet-head strong { font-size: 1rem; }
+    .sheet-head .reset {
+      background: none; border: none; color: var(--blue);
+      font-weight: 650; cursor: pointer; font: inherit;
+    }
+    .sheet-body { overflow: auto; padding: 0.5rem 0 0.25rem; flex: 1; }
+    .sheet-foot {
+      padding: 0.75rem 1rem 1rem;
+      border-top: 1px solid var(--line);
+    }
+    .sheet-foot .apply {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.8rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .sheet-src {
+      padding: 0 1rem 0.55rem;
+      font-size: 0.72rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .sheet-src .req-line {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .sheet-src .req-line strong {
+      color: var(--anno);
+      font-weight: 700;
+    }
+    .sheet-src .req-params {
+      margin-top: 0.25rem;
+      color: var(--muted);
+    }
+    .opt {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+    }
+    .opt:hover { background: #f8fafc; }
+    .opt.selected {
+      background: var(--blue-soft);
+    }
+    .opt .left { min-width: 0; }
+    .opt .name { font-weight: 650; font-size: 0.9rem; }
+    .opt .count {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+    .opt.selected .count { color: var(--blue); }
+    .opt .pill-choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.82rem;
+      font-weight: 650;
+    }
+    .opt.selected .pill-choice {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .stats-bar {
+      display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.75rem;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.4rem 0.55rem;
+      min-width: 7rem;
+      background: #fafafa;
+    }
+    .stat .k {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--muted); font-weight: 700;
+    }
+    .stat .v { font-family: var(--mono); font-weight: 700; margin-top: 0.1rem; }
+    .stat .a { font-family: var(--mono); font-size: 0.62rem; color: var(--anno); margin-top: 0.1rem; }
+    pre.raw {
+      background: #0f1724; color: #d7e0ef; border-radius: 8px;
+      padding: 0.75rem; font-family: var(--mono); font-size: 0.7rem;
+      overflow: auto; max-height: 220px; white-space: pre-wrap; word-break: break-word;
+    }
+    .formula { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Filtering demo — Favourites</h1>
+      <p>Dev view: which JSON field feeds each filter count. Hover chips/options for the full path.</p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="/">API tester</a>
+      <a href="/filtering-demo.html">Filtering demo</a>
+    </div>
+  </div>
+
+  <main>
+    <section class="zone zone-config" aria-labelledby="zone-config-label">
+      <div class="zone-head">
+        <span class="zone-label" id="zone-config-label">Configuration</span>
+        <span class="zone-desc">Auth, load settings, and what the demo should simulate</span>
+        <span id="mode-badge" class="mode-badge">Premium banners on</span>
+      </div>
+
+      <details class="panel auth-panel" id="auth-panel" open>
+        <summary>
+          <span class="sum-title">Auth &amp; load</span>
+          <span id="jwt-badge" class="jwt-badge">No token</span>
+          <span id="status-pill" class="pill">Idle</span>
+          <span id="status-meta" class="note"></span>
+          <span class="sum-chev">▾</span>
+        </summary>
+        <div class="auth-body">
+          <div class="row">
+            <div class="field full">
+              <label for="auth-token">Authorization</label>
+              <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Bearer … or raw JWT"></textarea>
+            </div>
+          </div>
+          <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
+          <div class="row" style="margin-top:0.55rem;">
+            <div class="field">
+              <label for="origin-header">X-Reverso-Origin</label>
+              <input id="origin-header" type="text" value="mainweb">
+            </div>
+            <div class="field">
+              <label for="page-length">length</label>
+              <input id="page-length" type="number" value="40" min="1" max="100">
+            </div>
+            <button type="button" class="btn" id="btn-load">Load</button>
+            <button type="button" class="btn ghost" id="btn-clear-filters">Clear filters</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="config-options">
+        <h2>Demo options</h2>
+        <div class="persona-row">
+          <div class="field">
+            <label for="data-source">Data source</label>
+            <select id="data-source">
+              <option value="live">Live API (JWT → preprod DB)</option>
+              <optgroup label="Predefined users">
+                <!-- filled by JS -->
+              </optgroup>
+            </select>
+            <p class="persona-blurb" id="persona-blurb">Load a real account with Auth &amp; load, or pick a predefined user (no token needed).</p>
+            <div class="persona-tags" id="persona-tags"></div>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <label title="Favorites / My List viewing rules from [premium] Improve Premium limits">
+            <input type="checkbox" id="premium-mode">
+            Premium banner mode
+          </label>
+          <label id="user-kind-wrap" class="hidden">
+            <span class="sub">Simulate:</span>
+            <select id="user-kind" style="font:inherit; font-size:0.8rem; border:1px solid var(--line); border-radius:6px; padding:0.2rem 0.4rem;">
+              <option value="registered">Registered (free)</option>
+              <option value="anonymous">Anonymous</option>
+            </select>
+          </label>
+        </div>
+        <p class="note" id="premium-mode-hint" style="margin-top:0.55rem;">Off by default. When on, placeholders follow <code>freemiumLimit</code> (limit banner, top/bottom banners, orange <code>maxAllowed/numFilteredResults</code>). Predefined free/anon users turn this on automatically.</p>
+      </div>
+    </section>
+
+    <section class="zone zone-demo" aria-labelledby="zone-demo-label">
+      <div class="zone-head">
+        <span class="zone-label" id="zone-demo-label">Demo</span>
+        <span class="zone-desc">Phone mock — walk filters and (optionally) premium banner placement</span>
+      </div>
+
+      <div class="demo-stage">
+        <section class="phone" id="phone">
+          <div class="phone-hero">
+            <h2>Favorites filters</h2>
+            <p class="hint">Tap a chip → pick a value. Source of each count is under the label (hover for full path).</p>
+          </div>
+
+          <div class="terms-row">
+            <strong id="terms-count">Terms (—)</strong>
+            <span class="anno" id="terms-anno" title="GET /user/favourites → numFilteredResults">numFilteredResults</span>
+          </div>
+
+          <div class="premium-slot" id="banner-top" aria-live="polite"></div>
+
+          <div class="chip-bar" id="chip-bar">
+            <button type="button" class="chip" id="chip-lang" data-sheet="lang">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>
+              <span class="chip-label">Language</span>
+              <span class="chev">▾</span>
+            </button>
+            <button type="button" class="chip" id="chip-list" data-sheet="list">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+              <span class="chip-label">List</span>
+              <span class="chev">▾</span>
+            </button>
+            <button type="button" class="chip" id="chip-status" data-sheet="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              <span class="chip-label">Status</span>
+              <span class="chev">▾</span>
+            </button>
+          </div>
+
+          <div class="fav-list" id="fav-list">
+            <div class="empty">Load from API to see terms.</div>
+          </div>
+
+          <div class="premium-slot" id="banner-bottom" aria-live="polite"></div>
+
+          <div class="sheet-backdrop" id="sheet-backdrop"></div>
+          <div class="sheet" id="sheet">
+            <div class="sheet-head">
+              <strong id="sheet-title">Filter</strong>
+              <button type="button" class="reset" id="sheet-reset">Reset</button>
+            </div>
+            <div class="sheet-src">
+              <span class="anno" id="sheet-anno">—</span>
+              <div class="req-line" id="sheet-request">—</div>
+            </div>
+            <div class="sheet-body" id="sheet-body"></div>
+            <div class="sheet-foot">
+              <button type="button" class="apply" id="sheet-apply">Apply</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="zone zone-tech" aria-labelledby="zone-tech-label">
+      <div class="zone-head">
+        <span class="zone-label" id="zone-tech-label">Technical data</span>
+        <span class="zone-desc">Response counters and raw payloads for the current filters</span>
+      </div>
+
+      <section class="panel">
+        <h2>Response counters</h2>
+        <div class="stats-bar" id="stats-bar"></div>
+        <p class="note">Chip labels stay filled when a filter is active — even if that option disappears from the sheet under other filters.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Raw payloads</h2>
+        <details>
+          <summary class="note" style="cursor:pointer; font-weight:600;">GET /user/favourites</summary>
+          <pre class="raw" id="raw-favs">—</pre>
+        </details>
+        <details style="margin-top:0.5rem;">
+          <summary class="note" style="cursor:pointer; font-weight:600;">GET /user/favouritesLists</summary>
+          <pre class="raw" id="raw-lists">—</pre>
+        </details>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "fav-api-tester.v1";
+
+    const LEARNING_UI = [
+      {
+        id: "IN_PROGRESS",
+        label: "Learning",
+        path: "learningStatus.inProgressCardsFiltered",
+        get: (fav) => Number(fav?.learningStatus?.inProgressCardsFiltered ?? 0),
+      },
+      {
+        id: "MEMORIZED",
+        label: "Mastered",
+        path: "learningStatus.memorizedOnceCardsFiltered",
+        get: (fav) => Number(fav?.learningStatus?.memorizedOnceCardsFiltered ?? 0),
+      },
+      {
+        id: "IGNORED",
+        label: "Ignored",
+        path: "learningStatus.ignoredCardsFiltered",
+        get: (fav) => Number(fav?.learningStatus?.ignoredCardsFiltered ?? 0),
+      },
+      {
+        id: "NOT_STARTED",
+        label: "Not Started",
+        path: "numFilteredLearningResults − (Learning + Mastered + Ignored)",
+        get: (fav) => {
+          const denom = Number(fav?.numFilteredLearningResults ?? fav?.learningStatus?.totalCardsFiltered ?? 0);
+          const learning = Number(fav?.learningStatus?.inProgressCardsFiltered ?? 0);
+          const mastered = Number(fav?.learningStatus?.memorizedOnceCardsFiltered ?? 0);
+          const ignored = Number(fav?.learningStatus?.ignoredCardsFiltered ?? 0);
+          return Math.max(0, denom - learning - mastered - ignored);
+        },
+        formula: (fav) => {
+          const denom = Number(fav?.numFilteredLearningResults ?? fav?.learningStatus?.totalCardsFiltered ?? 0);
+          const learning = Number(fav?.learningStatus?.inProgressCardsFiltered ?? 0);
+          const mastered = Number(fav?.learningStatus?.memorizedOnceCardsFiltered ?? 0);
+          const ignored = Number(fav?.learningStatus?.ignoredCardsFiltered ?? 0);
+          return `${denom} − (${learning} + ${mastered} + ${ignored})`;
+        },
+      },
+    ];
+
+    /**
+     * Predefined demo users — client-side fixtures that still go through the same
+     * refresh / filter / banner path as Live API. Filters recompute counts locally.
+     */
+    const SAMPLE_TERMS = [
+      ["hello", "bonjour"], ["world", "monde"], ["resilience", "résilience"],
+      ["sparrow", "moineau"], ["journey", "voyage"], ["ephemeral", "éphémère"],
+      ["serendipity", "heureux hasard"], ["threshold", "seuil"], ["whisper", "chuchoter"],
+      ["harbor", "port"], ["dawn", "aube"], ["curious", "curieux"],
+      ["grateful", "reconnaissant"], ["breeze", "brise"], ["anchor", "ancre"],
+      ["pattern", "motif"], ["insight", "aperçu"], ["balance", "équilibre"],
+      ["courage", "courage"], ["mirror", "miroir"],
+    ];
+
+    const LIST_DEFS = {
+      travel: { id: 91001, listName: "Filter Demo — Travel" },
+      daily: { id: 91002, listName: "Filter Demo — Daily" },
+      work: { id: 91003, listName: "Filter Demo — Work" },
+      slang: { id: 91004, listName: "Filter Demo — Slang" },
+      emptyish: { id: 91005, listName: "Filter Demo — Almost empty" },
+    };
+
+    const PERSONAS = [
+      {
+        id: "premium-heavy",
+        label: "Premium · 240 favs, 5 lists",
+        blurb: "Power user over the free store wall (>200). No <code>freemiumLimit</code> — banners stay off even with premium mode on.",
+        tags: ["premium", "240 favs", "5 lists", "5 pairs"],
+        tagKinds: ["ok", "muted", "muted", "muted"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 240,
+          pairs: [
+            ["en-fr", 90], ["en-nl", 50], ["en-es", 40], ["en-de", 35], ["fr-en", 25],
+          ],
+          lists: [
+            ["travel", 80], ["daily", 60], ["work", 50], ["slang", 30], ["emptyish", 3],
+          ],
+          statusMix: [0.35, 0.25, 0.1, 0.3],
+          freemium: null,
+        }),
+      },
+      {
+        id: "free-35",
+        label: "Free registered · 35 favs",
+        blurb: "Under the 40 display cap, above 10 → premium V1 top+bottom banners. Good default for mid-funnel review.",
+        tags: ["free", "35 favs", "limitReached false", ">10 banners"],
+        tagKinds: ["warn", "muted", "warn", "warn"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 35,
+          pairs: [["en-fr", 18], ["en-nl", 10], ["en-es", 7]],
+          lists: [["travel", 14], ["daily", 12]],
+          statusMix: [0.4, 0.2, 0.1, 0.3],
+          freemium: { limitReached: false, storedItems: 35, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "free-capped",
+        label: "Free · limit reached (67 stored)",
+        blurb: "Display cap hit: <code>limitReached</code> + orange <code>40/N</code> terms label. API returns only <code>maxAllowed</code> rows.",
+        tags: ["free", "67 stored", "limitReached", "40/N"],
+        tagKinds: ["warn", "muted", "warn", "warn"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 67,
+          pairs: [["en-fr", 30], ["en-nl", 15], ["en-es", 12], ["en-de", 10]],
+          lists: [["travel", 25], ["daily", 20], ["work", 15]],
+          statusMix: [0.3, 0.25, 0.15, 0.3],
+          freemium: { limitReached: true, storedItems: 67, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "free-store-wall",
+        label: "Free · near store wall (208)",
+        blurb: "Past the free store hard limit (~200). Same viewing cap as free-capped, but <code>storedItems</code> reflects the wall case.",
+        tags: ["free", "208 stored", "store wall", "limitReached"],
+        tagKinds: ["warn", "muted", "warn", "warn"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 208,
+          pairs: [
+            ["en-fr", 80], ["en-nl", 45], ["en-es", 35], ["en-de", 28], ["fr-en", 20],
+          ],
+          lists: [
+            ["travel", 70], ["daily", 55], ["work", 40], ["slang", 25], ["emptyish", 2],
+          ],
+          statusMix: [0.35, 0.2, 0.1, 0.35],
+          freemium: { limitReached: true, storedItems: 208, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "anon-fresh",
+        label: "Anonymous · 4 favs",
+        blurb: "Fresh anon under 10 → register banner only (no premium V1).",
+        tags: ["anonymous", "4 favs", "<10", "register"],
+        tagKinds: ["warn", "muted", "warn", "warn"],
+        premiumMode: true,
+        userKind: "anonymous",
+        build: () => buildPool({
+          total: 4,
+          pairs: [["en-fr", 3], ["en-nl", 1]],
+          lists: [["travel", 2]],
+          statusMix: [0.25, 0, 0, 0.75],
+          freemium: { limitReached: false, storedItems: 4, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "anon-active",
+        label: "Anonymous · 22 favs",
+        blurb: "Anon above 10 → register on top stacked with premium V1 top+bottom.",
+        tags: ["anonymous", "22 favs", ">10", "register+premium"],
+        tagKinds: ["warn", "muted", "warn", "warn"],
+        premiumMode: true,
+        userKind: "anonymous",
+        build: () => buildPool({
+          total: 22,
+          pairs: [["en-fr", 12], ["en-es", 6], ["en-nl", 4]],
+          lists: [["travel", 8], ["daily", 7]],
+          statusMix: [0.3, 0.15, 0.1, 0.45],
+          freemium: { limitReached: false, storedItems: 22, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "exact-10",
+        label: "Free registered · exactly 10",
+        blurb: "Spec gap: rules use &lt;10 / &gt;10. At exactly 10, registered free shows no banner.",
+        tags: ["free", "exact 10", "spec gap"],
+        tagKinds: ["warn", "warn", "muted"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 10,
+          pairs: [["en-fr", 6], ["en-nl", 4]],
+          lists: [["daily", 5]],
+          statusMix: [0.4, 0.2, 0.1, 0.3],
+          freemium: { limitReached: false, storedItems: 10, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "learning-spread",
+        label: "Learning statuses · 36 favs",
+        blurb: "Clear Learning / Mastered / Ignored / Not Started spread across pairs — walk the Status chip.",
+        tags: ["36 favs", "status mix", "3 lists"],
+        tagKinds: ["muted", "ok", "muted"],
+        premiumMode: false,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 36,
+          pairs: [["en-fr", 14], ["en-nl", 12], ["fr-en", 10]],
+          lists: [["travel", 12], ["daily", 12], ["work", 10]],
+          statusMix: [0.3, 0.25, 0.2, 0.25],
+          freemium: { limitReached: false, storedItems: 36, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "list-skew",
+        label: "List skew · uneven lists",
+        blurb: "One huge list, one tiny — plus language×list combine. Pick Language then open List to see counts shrink.",
+        tags: ["60 favs", "skewed lists", "combine filters"],
+        tagKinds: ["muted", "ok", "ok"],
+        premiumMode: false,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 60,
+          pairs: [["en-fr", 35], ["en-de", 15], ["en-es", 10]],
+          lists: [["travel", 40], ["daily", 12], ["work", 6], ["emptyish", 1]],
+          statusMix: [0.35, 0.2, 0.1, 0.35],
+          freemium: { limitReached: true, storedItems: 60, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "single-pair",
+        label: "Single pair · all en-fr",
+        blurb: "Everything in one language pair — Language chip has one option; lists/status still useful.",
+        tags: ["40 favs", "en-fr only"],
+        tagKinds: ["muted", "muted"],
+        premiumMode: false,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 40,
+          pairs: [["en-fr", 40]],
+          lists: [["travel", 20], ["daily", 15]],
+          statusMix: [0.4, 0.2, 0.1, 0.3],
+          freemium: { limitReached: false, storedItems: 40, maxAllowed: 40 },
+        }),
+      },
+      {
+        id: "empty",
+        label: "Empty account · 0 favs",
+        blurb: "Brand-new user — empty list, empty chips, freemium still present for free registered.",
+        tags: ["0 favs", "empty state"],
+        tagKinds: ["muted", "muted"],
+        premiumMode: true,
+        userKind: "registered",
+        build: () => buildPool({
+          total: 0,
+          pairs: [],
+          lists: [],
+          statusMix: [0, 0, 0, 1],
+          freemium: { limitReached: false, storedItems: 0, maxAllowed: 40 },
+        }),
+      },
+    ];
+
+    const STATUS_IDS = ["IN_PROGRESS", "MEMORIZED", "IGNORED", "NOT_STARTED"];
+
+    /** Build a deterministic pool of favourites + list membership for a persona. */
+    function buildPool({ total, pairs, lists, statusMix, freemium }) {
+      const items = [];
+      const pairQueue = [];
+      for (const [pair, n] of pairs) {
+        for (let i = 0; i < n; i++) pairQueue.push(pair);
+      }
+      while (pairQueue.length < total) pairQueue.push(pairs[0]?.[0] || "en-fr");
+      pairQueue.length = total;
+
+      const listAssign = new Map(); // favIndex → listId[]
+      let cursor = 0;
+      for (const [key, n] of lists) {
+        const list = LIST_DEFS[key];
+        if (!list) continue;
+        for (let i = 0; i < n && cursor + i < total; i++) {
+          const idx = (cursor + i) % Math.max(total, 1);
+          if (!listAssign.has(idx)) listAssign.set(idx, []);
+          listAssign.get(idx).push(list.id);
+        }
+        cursor += n;
+      }
+
+      for (let i = 0; i < total; i++) {
+        const pair = pairQueue[i];
+        const [srcLang, trgLang] = pair.split("-");
+        const [src, trg] = SAMPLE_TERMS[i % SAMPLE_TERMS.length];
+        const status = pickStatus(i, statusMix);
+        items.push({
+          id: 900000 + i,
+          srcText: `${src}`,
+          trgText: `${trg}`,
+          srcLang,
+          trgLang,
+          comment: `persona-demo-${i}`,
+          _pair: pair,
+          _status: status,
+          _lists: listAssign.get(i) || [],
+        });
+      }
+
+      return {
+        items,
+        listCatalog: lists.map(([key]) => LIST_DEFS[key]).filter(Boolean),
+        freemium,
+        total,
+      };
+    }
+
+    function pickStatus(i, mix) {
+      const r = (i * 0.6180339887) % 1;
+      let acc = 0;
+      for (let s = 0; s < STATUS_IDS.length; s++) {
+        acc += mix[s] || 0;
+        if (r < acc) return STATUS_IDS[s];
+      }
+      return "NOT_STARTED";
+    }
+
+    /** Apply current chips to a persona pool → fake favourites + lists API payloads. */
+    function personaPayloads(pool, filters, pageLength) {
+      const { languagePair, listId, learningStatus } = filters;
+      const all = pool.items;
+
+      // Count map: other filters except language (matches Live API behaviour)
+      const forCounts = all.filter((f) => {
+        if (listId && !f._lists.some((id) => String(id) === String(listId))) return false;
+        if (learningStatus && f._status !== learningStatus) return false;
+        return true;
+      });
+      const count = {};
+      for (const f of forCounts) {
+        count[f._pair] = (count[f._pair] || 0) + 1;
+      }
+
+      const filtered = all.filter((f) => {
+        if (languagePair && f._pair !== languagePair) return false;
+        if (listId && !f._lists.some((id) => String(id) === String(listId))) return false;
+        if (learningStatus && f._status !== learningStatus) return false;
+        return true;
+      });
+
+      const inProgress = filtered.filter((f) => f._status === "IN_PROGRESS").length;
+      const memorized = filtered.filter((f) => f._status === "MEMORIZED").length;
+      const ignored = filtered.filter((f) => f._status === "IGNORED").length;
+      const numFiltered = filtered.length;
+
+      const maxAllowed = pool.freemium?.maxAllowed ?? pageLength;
+      const returnCap = pool.freemium?.limitReached
+        ? Math.min(pageLength, maxAllowed)
+        : pageLength;
+      const page = filtered.slice(0, returnCap).map(({ _pair, _status, _lists, ...pub }) => pub);
+
+      const favs = {
+        numTotalResults: pool.total,
+        numFilteredResults: numFiltered,
+        numFilteredLearningResults: numFiltered,
+        results: page,
+        count,
+        learningStatus: {
+          inProgressCardsFiltered: inProgress,
+          memorizedOnceCardsFiltered: memorized,
+          ignoredCardsFiltered: ignored,
+          totalCardsFiltered: numFiltered,
+        },
+      };
+      if (pool.freemium) favs.freemiumLimit = { ...pool.freemium };
+
+      // Lists: honour languagePairs + favouriteLearningStatus (not listId)
+      const listFiltered = all.filter((f) => {
+        if (languagePair && f._pair !== languagePair) return false;
+        if (learningStatus && f._status !== learningStatus) return false;
+        return true;
+      });
+      const listCounts = new Map();
+      for (const list of pool.listCatalog) listCounts.set(list.id, 0);
+      for (const f of listFiltered) {
+        for (const lid of f._lists) {
+          listCounts.set(lid, (listCounts.get(lid) || 0) + 1);
+        }
+      }
+      const lists = {
+        results: pool.listCatalog.map((list) => ({
+          id: list.id,
+          listName: list.listName,
+          numFavourites: listCounts.get(list.id) || 0,
+        })),
+      };
+
+      return { favs, lists };
+    }
+
+    const state = {
+      languagePair: "",
+      listId: "",
+      learningStatus: "",
+      draft: { languagePair: "", listId: "", learningStatus: "" },
+      openSheet: null,
+      favs: null,
+      lists: null,
+      listMeta: {},
+      countMap: {},
+      lastFavsUrl: "",
+      lastListsUrl: "",
+      premiumMode: false,
+      userKind: "registered", // registered | anonymous — only used when premiumMode
+      dataSource: "live", // live | persona id
+      personaPool: null, // cached pool for active persona
+    };
+
+    function loadAuth() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+      catch { return {}; }
+    }
+    function saveAuth() {
+      const prev = loadAuth();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...prev,
+        authToken: document.getElementById("auth-token").value.trim(),
+        origin: document.getElementById("origin-header").value.trim(),
+      }));
+    }
+
+    function decodeJwtPayload(token) {
+      const raw = String(token || "").replace(/^Bearer\s+/i, "").trim();
+      const parts = raw.split(".");
+      if (parts.length < 2) return null;
+      try {
+        const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const json = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+        return JSON.parse(json);
+      } catch {
+        return null;
+      }
+    }
+
+    function formatDuration(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      if (m < 60) return r ? `${m}m ${r}s` : `${m}m`;
+      const h = Math.floor(m / 60);
+      return `${h}h ${m % 60}m`;
+    }
+
+    /** @returns {{ level: 'empty'|'invalid'|'ok'|'warn'|'err', badge: string, detail: string }} */
+    function jwtValidity(token) {
+      const raw = String(token || "").trim();
+      if (!raw) {
+        return { level: "empty", badge: "No token", detail: "" };
+      }
+      const payload = decodeJwtPayload(raw);
+      if (!payload) {
+        return {
+          level: "invalid",
+          badge: "Not a JWT",
+          detail: "Couldn’t decode token. Paste a Bearer JWT (header.payload.signature).",
+        };
+      }
+      if (!payload.exp) {
+        return {
+          level: "warn",
+          badge: "No exp claim",
+          detail: "Token has no exp — can’t tell if it’s still valid.",
+        };
+      }
+      const now = Date.now() / 1000;
+      const remaining = payload.exp - now;
+      const when = new Date(payload.exp * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      if (remaining <= 0) {
+        return {
+          level: "err",
+          badge: `Expired ${formatDuration(-remaining)} ago`,
+          detail: `JWT exp was ${when}. GAS tokens last ~15 min — paste a fresh Authorization value.`,
+        };
+      }
+      if (remaining <= 120) {
+        return {
+          level: "warn",
+          badge: `Expires in ${formatDuration(remaining)}`,
+          detail: `JWT exp at ${when}. Refresh soon to avoid 401s.`,
+        };
+      }
+      return {
+        level: "ok",
+        badge: `Valid · ${formatDuration(remaining)} left`,
+        detail: `JWT exp at ${when}.`,
+      };
+    }
+
+    function updateJwtUi() {
+      const token = document.getElementById("auth-token").value;
+      const info = jwtValidity(token);
+      const badge = document.getElementById("jwt-badge");
+      const inline = document.getElementById("jwt-warn-inline");
+      badge.textContent = info.badge;
+      badge.className = "jwt-badge" + (
+        info.level === "ok" ? " ok"
+          : info.level === "warn" || info.level === "invalid" ? " warn"
+            : info.level === "err" ? " err"
+              : ""
+      );
+      const showWarn = info.level === "err" || info.level === "warn" || info.level === "invalid";
+      inline.classList.toggle("show", showWarn);
+      inline.classList.toggle("err", info.level === "err");
+      inline.textContent = showWarn ? info.detail : "";
+      return info;
+    }
+
+    function collapseAuthPanel() {
+      document.getElementById("auth-panel").open = false;
+    }
+
+    function expandAuthPanel() {
+      document.getElementById("auth-panel").open = true;
+    }
+
+    function authHeaders() {
+      let token = document.getElementById("auth-token").value.trim();
+      const origin = document.getElementById("origin-header").value.trim();
+      const headers = { Accept: "application/json" };
+      if (token) {
+        headers.Authorization = /^Bearer\s+/i.test(token) || token.split(".").length !== 3
+          ? token
+          : "Bearer " + token;
+      }
+      if (origin) headers["X-Reverso-Origin"] = origin;
+      return headers;
+    }
+
+    function setStatus(ok, text, meta) {
+      const pill = document.getElementById("status-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      document.getElementById("status-meta").textContent = meta || "";
+    }
+
+    function qs(params) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v === undefined || v === null || v === "") continue;
+        sp.set(k, String(v));
+      }
+      return sp.toString();
+    }
+
+    async function apiGet(path, params) {
+      const url = "/proxy" + path + "?" + qs(params);
+      const res = await fetch(url, { headers: authHeaders() });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = text; }
+      if (!res.ok) {
+        const msg = typeof data === "object" ? JSON.stringify(data) : String(data);
+        throw new Error(`${res.status} ${path}: ${msg.slice(0, 240)}`);
+      }
+      return { url, data };
+    }
+
+    function pairLabel(code) {
+      const [a, b] = String(code).split("-");
+      if (!a || !b) return code;
+      return `${a.toUpperCase()} → ${b.toUpperCase()}`;
+    }
+    function pairChipLabel(code) {
+      const [a, b] = String(code).split("-");
+      if (!a || !b) return code;
+      return `${a.toUpperCase()} ↔ ${b.toUpperCase()}`;
+    }
+    function listTitle(id) {
+      return state.listMeta[String(id)]?.title || `List ${id}`;
+    }
+    function statusLabel(id) {
+      return LEARNING_UI.find((r) => r.id === id)?.label || id;
+    }
+
+    function rememberLists(results) {
+      for (const list of results || []) {
+        const id = list.id ?? list.listId;
+        if (id == null) continue;
+        state.listMeta[String(id)] = {
+          id,
+          title: list.listName || list.name || list.title || `List ${id}`,
+          numFavourites: Number(list.numFavourites ?? 0),
+        };
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function updateChips() {
+      const langSrc = state.languagePair
+        ? `GET /user/favourites → count["${state.languagePair}"]\n(filter param: languagePairs=${state.languagePair})`
+        : "Opens language options from GET /user/favourites → count";
+      const listSrc = state.listId
+        ? `GET /user/favouritesLists → results[id=${state.listId}].numFavourites\n(favourites listId=${state.listId}` +
+          (state.languagePair ? `; favouritesLists also sent languagePairs=${state.languagePair}` : "") + ")"
+        : "Opens list options from GET /user/favouritesLists" +
+          (state.languagePair ? ` (with languagePairs=${state.languagePair})` : "") +
+          " → results[].numFavourites";
+      const statusSrc = state.learningStatus
+        ? `GET /user/favourites → ${LEARNING_UI.find((r) => r.id === state.learningStatus)?.path || state.learningStatus}\n(filter param: learningStatus=${state.learningStatus})`
+        : "Opens status options from GET /user/favourites → learningStatus";
+
+      setChip("chip-lang", !!state.languagePair, state.languagePair ? pairChipLabel(state.languagePair) : "Language", langSrc);
+      setChip("chip-list", !!state.listId, state.listId ? listTitle(state.listId) : "List", listSrc);
+      setChip("chip-status", !!state.learningStatus, state.learningStatus ? statusLabel(state.learningStatus) : "Status", statusSrc);
+    }
+
+    function setChip(id, active, label, tooltip) {
+      const chip = document.getElementById(id);
+      chip.classList.toggle("active", active);
+      chip.title = tooltip || "";
+      const labelEl = chip.querySelector(".chip-label");
+      labelEl.textContent = label;
+      let clear = chip.querySelector(".clear");
+      const chev = chip.querySelector(".chev");
+      if (active) {
+        if (chev) chev.classList.add("hidden");
+        if (!clear) {
+          clear = document.createElement("span");
+          clear.className = "clear";
+          clear.textContent = "×";
+          clear.setAttribute("role", "button");
+          clear.onclick = (e) => {
+            e.stopPropagation();
+            if (id === "chip-lang") state.languagePair = "";
+            if (id === "chip-list") state.listId = "";
+            if (id === "chip-status") state.learningStatus = "";
+            refresh();
+          };
+          chip.append(clear);
+        }
+      } else {
+        if (chev) chev.classList.remove("hidden");
+        if (clear) clear.remove();
+      }
+    }
+
+    function openSheet(kind) {
+      state.openSheet = kind;
+      state.draft = {
+        languagePair: state.languagePair,
+        listId: state.listId,
+        learningStatus: state.learningStatus,
+      };
+      document.getElementById("sheet-backdrop").classList.add("open");
+      document.getElementById("sheet").classList.add("open");
+      renderSheet();
+    }
+
+    function closeSheet() {
+      state.openSheet = null;
+      document.getElementById("sheet-backdrop").classList.remove("open");
+      document.getElementById("sheet").classList.remove("open");
+    }
+
+    function formatRequestLine(methodPath, params) {
+      const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "");
+      const query = entries.map(([k, v]) => `${k}=${v}`).join("&");
+      const applied = entries
+        .filter(([k]) => !["length", "start", "learningInfo"].includes(k))
+        .map(([k, v]) => `${k}=${v}`);
+      return {
+        full: query ? `${methodPath}?${query}` : methodPath,
+        highlight: applied.length
+          ? `Active filters on this call: ${applied.join(", ")}`
+          : "No language / list / status filters on this call",
+      };
+    }
+
+    function renderSheet() {
+      const kind = state.openSheet;
+      const title = { lang: "Filter by Language", list: "Filter by List", status: "Filter by Status" }[kind];
+      const anno = {
+        lang: "Values from GET /user/favourites → count",
+        list: "Values from GET /user/favouritesLists → results[].numFavourites",
+        status: "Values from GET /user/favourites → learningStatus / numFilteredLearningResults",
+      }[kind];
+      document.getElementById("sheet-title").textContent = title;
+      document.getElementById("sheet-anno").textContent = anno;
+
+      // List sheet is fed by favouritesLists — which should include languagePairs / favouriteLearningStatus
+      const reqInfo = kind === "list"
+        ? formatRequestLine("GET /user/favouritesLists", listParams())
+        : formatRequestLine("GET /user/favourites", favParams());
+      document.getElementById("sheet-request").innerHTML =
+        `<strong>${escapeHtml(reqInfo.full)}</strong>` +
+        `<div class="req-params">${escapeHtml(reqInfo.highlight)}</div>`;
+
+      const body = document.getElementById("sheet-body");
+      body.innerHTML = "";
+
+      if (kind === "lang") {
+        body.append(sheetOpt({
+          selected: !state.draft.languagePair,
+          label: "All languages",
+          request: "—",
+          jsonPath: "no languagePairs query param",
+          count: null,
+          onClick: () => { state.draft.languagePair = ""; renderSheet(); },
+        }));
+        const entries = Object.entries(state.countMap || {})
+          .map(([k, v]) => [k, Number(v) || 0])
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+        if (state.draft.languagePair && !entries.some(([k]) => k === state.draft.languagePair)) {
+          entries.unshift([state.draft.languagePair, 0]);
+        }
+        for (const [code, n] of entries) {
+          body.append(sheetOpt({
+            selected: state.draft.languagePair === code,
+            label: pairLabel(code),
+            request: "GET /user/favourites",
+            jsonPath: `count["${code}"]`,
+            count: n,
+            pill: true,
+            onClick: () => { state.draft.languagePair = code; renderSheet(); },
+          }));
+        }
+      }
+
+      if (kind === "list") {
+        const results = Array.isArray(state.lists?.results) ? [...state.lists.results] : [];
+        rememberLists(results);
+        if (state.draft.listId && !results.some((l) => String(l.id ?? l.listId) === String(state.draft.listId))) {
+          results.unshift({
+            id: state.draft.listId,
+            listName: listTitle(state.draft.listId),
+            numFavourites: 0,
+            _missing: true,
+          });
+        }
+        body.append(sheetOpt({
+          selected: !state.draft.listId,
+          label: "All lists",
+          request: "—",
+          jsonPath: "no listId query param",
+          count: null,
+          onClick: () => { state.draft.listId = ""; renderSheet(); },
+        }));
+        if (!results.length) {
+          const extra = state.languagePair ? ` (languagePairs=${state.languagePair} was sent)` : "";
+          body.innerHTML += `<div class="empty">No lists in response for current filters${extra}.</div>`;
+        }
+        for (const list of results) {
+          const id = list.id ?? list.listId;
+          const idxHint = list._missing
+            ? `listId=${id} still applied; omitted from results under other filters`
+            : `results[?(@.id==${id})].numFavourites`;
+          body.append(sheetOpt({
+            selected: String(state.draft.listId) === String(id),
+            label: (list.listName || list.name || list.title || `List ${id}`) + (list._missing ? " (selected)" : ""),
+            request: "GET /user/favouritesLists",
+            jsonPath: idxHint,
+            count: Number(list.numFavourites ?? 0),
+            onClick: () => { state.draft.listId = String(id); renderSheet(); },
+          }));
+        }
+      }
+
+      if (kind === "status") {
+        body.append(sheetOpt({
+          selected: !state.draft.learningStatus,
+          label: "All statuses",
+          request: "—",
+          jsonPath: "no learningStatus query param",
+          count: null,
+          onClick: () => { state.draft.learningStatus = ""; renderSheet(); },
+        }));
+        for (const row of LEARNING_UI) {
+          const n = state.favs ? row.get(state.favs) : null;
+          const jsonPath = row.id === "NOT_STARTED"
+            ? "numFilteredLearningResults − (inProgressCardsFiltered + memorizedOnceCardsFiltered + ignoredCardsFiltered)"
+            : row.path;
+          const el = sheetOpt({
+            selected: state.draft.learningStatus === row.id,
+            label: row.label,
+            request: "GET /user/favourites",
+            jsonPath,
+            count: n,
+            onClick: () => { state.draft.learningStatus = row.id; renderSheet(); },
+          });
+          if (row.formula && state.favs) {
+            const f = document.createElement("div");
+            f.className = "formula";
+            f.textContent = "computed: " + row.formula(state.favs);
+            el.querySelector(".left").append(f);
+          }
+          body.append(el);
+        }
+      }
+    }
+
+    function sheetOpt({ selected, label, request, jsonPath, count, onClick, pill }) {
+      const tip = `${request}\n→ ${jsonPath}`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "opt" + (selected ? " selected" : "");
+      btn.title = tip;
+      btn.onclick = onClick;
+      const left = document.createElement("div");
+      left.className = "left";
+      if (pill) {
+        const p = document.createElement("div");
+        p.className = "pill-choice";
+        p.textContent = count == null ? label : `${label} (${count})`;
+        left.append(p);
+      } else {
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = label;
+        left.append(name);
+      }
+      const pathEl = document.createElement("div");
+      pathEl.className = "path";
+      pathEl.innerHTML = `<span class="req">${escapeHtml(request)}</span> → ${escapeHtml(jsonPath)}`;
+      left.append(pathEl);
+      btn.append(left);
+      if (!pill && count != null) {
+        const c = document.createElement("div");
+        c.className = "count";
+        c.textContent = String(count);
+        c.title = tip;
+        btn.append(c);
+      }
+      return btn;
+    }
+
+    function renderStats(fav) {
+      const bar = document.getElementById("stats-bar");
+      if (!fav) { bar.innerHTML = ""; return; }
+      const items = [
+        { k: "Total", v: fav.numTotalResults, path: "numTotalResults" },
+        { k: "Filtered", v: fav.numFilteredResults, path: "numFilteredResults" },
+        { k: "Returned", v: Array.isArray(fav.results) ? fav.results.length : 0, path: "results.length" },
+        { k: "Learn denom", v: fav.numFilteredLearningResults, path: "numFilteredLearningResults" },
+      ];
+      if (state.premiumMode) {
+        const fl = fav.freemiumLimit;
+        items.push(
+          { k: "limitReached", v: fl ? String(fl.limitReached) : "∅ (no freemiumLimit)", path: "freemiumLimit.limitReached" },
+          { k: "storedItems", v: fl?.storedItems ?? fl?.storedFavsNo ?? "∅", path: "freemiumLimit.storedItems" },
+          { k: "maxAllowed", v: fl?.maxAllowed ?? fl?.numberOfFavsAllowed ?? "∅", path: "freemiumLimit.maxAllowed" },
+        );
+      }
+      bar.innerHTML = items.map((it) =>
+        `<div class="stat"><div class="k">${it.k}</div><div class="v">${it.v ?? "∅"}</div><div class="a">${it.path}</div></div>`
+      ).join("");
+    }
+
+    /** Resolve freemiumLimit with both prod and older field names. */
+    function freemiumLimit(fav) {
+      const fl = fav?.freemiumLimit;
+      if (!fl || typeof fl !== "object") return null;
+      return {
+        limitReached: !!fl.limitReached,
+        storedItems: Number(fl.storedItems ?? fl.storedFavsNo ?? 0),
+        maxAllowed: Number(fl.maxAllowed ?? fl.numberOfFavsAllowed ?? 40),
+      };
+    }
+
+    function setBannerSlot(el, text, anno) {
+      if (!text) {
+        el.classList.remove("show");
+        el.innerHTML = "";
+        return;
+      }
+      el.classList.add("show");
+      el.innerHTML = `${escapeHtml(text)}<span class="anno">${escapeHtml(anno)}</span>`;
+    }
+
+    /**
+     * Favorites / My List viewing rules (premium limits doc).
+     * Placeholders only — no real banner UI.
+     */
+    function renderPremiumBanners(fav) {
+      const top = document.getElementById("banner-top");
+      const bottom = document.getElementById("banner-bottom");
+      if (!state.premiumMode || !fav) {
+        setBannerSlot(top, "", "");
+        setBannerSlot(bottom, "", "");
+        return;
+      }
+
+      const fl = freemiumLimit(fav);
+      const n = Number(fav.numFilteredResults ?? 0);
+      const anonymous = state.userKind === "anonymous";
+
+      // Premium users: no freemiumLimit object → nothing
+      if (!fl) {
+        setBannerSlot(top, "", "");
+        setBannerSlot(bottom, "", "");
+        return;
+      }
+
+      let topText = "";
+      let topAnno = "";
+      let bottomText = "";
+      let bottomAnno = "";
+
+      if (fl.limitReached) {
+        // CASE #1
+        topText = "premium banner (limit reached)";
+        topAnno = `freemiumLimit.limitReached === true`;
+      } else if (anonymous) {
+        // Register on top no matter the number; also covers < 10 anonymous case
+        topText = "register banner";
+        topAnno = anonymous && n < 10
+          ? `anonymous + numFilteredResults (${n}) < 10`
+          : `anonymous → register banner on top (any count)`;
+        if (n > 10) {
+          bottomText = "premium banner";
+          bottomAnno = `limitReached === false + numFilteredResults (${n}) > 10 → also bottom`;
+          // Spec: premium V1 on top and bottom when > 10; anonymous still gets register on top
+          topText = "register banner + premium banner";
+          topAnno = `anonymous (register on top) + numFilteredResults (${n}) > 10 (premium V1 top+bottom)`;
+        }
+      } else {
+        // Registered, limitReached false
+        if (n < 10) {
+          // nothing
+        } else if (n > 10) {
+          topText = "premium banner";
+          topAnno = `limitReached === false + numFilteredResults (${n}) > 10 → premium V1 top`;
+          bottomText = "premium banner";
+          bottomAnno = `same → premium V1 bottom`;
+        }
+        // n === 10: gap in spec (< 10 / > 10) → nothing
+      }
+
+      setBannerSlot(top, topText, topAnno);
+      setBannerSlot(bottom, bottomText, bottomAnno);
+    }
+
+    function renderTermsCount(fav) {
+      const el = document.getElementById("terms-count");
+      const anno = document.getElementById("terms-anno");
+      const n = fav?.numFilteredResults ?? fav?.results?.length;
+
+      if (n == null) {
+        el.textContent = "Terms (—)";
+        anno.title = "GET /user/favourites → numFilteredResults";
+        anno.textContent = "numFilteredResults";
+        return;
+      }
+
+      const fl = state.premiumMode ? freemiumLimit(fav) : null;
+      const showCap =
+        fl &&
+        fl.limitReached &&
+        Number(n) > fl.maxAllowed;
+
+      if (showCap) {
+        // e.g. Terms (40/67) with 40 in orange
+        el.innerHTML = `Terms (<span class="limit-cap">${fl.maxAllowed}</span>/${n})`;
+        anno.title =
+          "limitReached + numFilteredResults > maxAllowed → show maxAllowed (orange) / numFilteredResults";
+        anno.textContent = `maxAllowed / numFilteredResults`;
+      } else {
+        el.textContent = `Terms (${n})`;
+        anno.title = "GET /user/favourites → numFilteredResults";
+        anno.textContent = "numFilteredResults";
+      }
+    }
+
+    function renderFavs(fav) {
+      const box = document.getElementById("fav-list");
+      renderTermsCount(fav);
+      renderPremiumBanners(fav);
+
+      const results = Array.isArray(fav?.results) ? fav.results : [];
+      if (!results.length) {
+        box.innerHTML = `<div class="empty">No favourites for the current filters.</div>`;
+        return;
+      }
+      box.innerHTML = "";
+      for (const f of results) {
+        const el = document.createElement("div");
+        el.className = "fav";
+        el.title = `GET /user/favourites → results[] (id=${f.id ?? "?"})`;
+        el.innerHTML = `
+          <div class="term">${escapeHtml(f.srcText || "")}</div>
+          <div class="trans">${escapeHtml(f.trgText || "")}</div>
+          <div class="meta">${escapeHtml((f.srcLang || "") + "-" + (f.trgLang || ""))} · id=${f.id ?? "?"}</div>`;
+        box.append(el);
+      }
+    }
+
+    function favParams() {
+      const length = document.getElementById("page-length").value || "40";
+      return {
+        length,
+        start: 0,
+        learningInfo: true,
+        ...(state.languagePair ? { languagePairs: state.languagePair } : {}),
+        ...(state.listId ? { listId: state.listId } : {}),
+        ...(state.learningStatus ? { learningStatus: state.learningStatus } : {}),
+      };
+    }
+
+    function listParams() {
+      return {
+        length: "50",
+        start: 0,
+        learningInfo: true,
+        ...(state.languagePair ? { languagePairs: state.languagePair } : {}),
+        ...(state.learningStatus ? { favouriteLearningStatus: state.learningStatus } : {}),
+      };
+    }
+
+    async function refresh() {
+      updateChips();
+      const btn = document.getElementById("btn-load");
+      btn.disabled = true;
+
+      if (state.dataSource !== "live") {
+        setStatus(null, "Loading persona…", "");
+        try {
+          applyPersonaData();
+          setStatus(true, "OK", `persona:${state.dataSource}`);
+          collapseAuthPanel();
+        } catch (err) {
+          setStatus(false, "Error", "");
+          document.getElementById("fav-list").innerHTML =
+            `<div class="empty">${escapeHtml(err.message)}</div>`;
+        } finally {
+          btn.disabled = false;
+        }
+        return;
+      }
+
+      const jwt = updateJwtUi();
+      if (!document.getElementById("auth-token").value.trim()) {
+        setStatus(false, "Missing auth", "Paste a token first — or pick a predefined user.");
+        expandAuthPanel();
+        btn.disabled = false;
+        return;
+      }
+      if (jwt.level === "err") {
+        setStatus(false, "Token expired", jwt.detail);
+        expandAuthPanel();
+        btn.disabled = false;
+        return;
+      }
+      saveAuth();
+      setStatus(null, "Loading…", "");
+
+      try {
+        const [favsRes, listsRes] = await Promise.all([
+          apiGet("/user/favourites", favParams()),
+          apiGet("/user/favouritesLists", listParams()),
+        ]);
+        state.favs = favsRes.data;
+        state.lists = listsRes.data;
+        state.countMap = state.favs.count || state.favs.countByPair || {};
+        rememberLists(state.lists?.results || []);
+
+        updateChips();
+        renderStats(state.favs);
+        renderFavs(state.favs);
+        if (state.openSheet) renderSheet();
+
+        document.getElementById("raw-favs").textContent = JSON.stringify(state.favs, null, 2);
+        document.getElementById("raw-lists").textContent = JSON.stringify(state.lists, null, 2);
+        setStatus(true, "OK", `${favsRes.url.replace("/proxy", "")}`);
+        collapseAuthPanel();
+      } catch (err) {
+        setStatus(false, "Error", "");
+        document.getElementById("fav-list").innerHTML =
+          `<div class="empty">${escapeHtml(err.message)}</div>`;
+        expandAuthPanel();
+      } finally {
+        btn.disabled = false;
+        updateJwtUi();
+      }
+    }
+
+    function applyPersonaData() {
+      const persona = PERSONAS.find((p) => p.id === state.dataSource);
+      if (!persona) throw new Error(`Unknown persona: ${state.dataSource}`);
+      if (!state.personaPool) state.personaPool = persona.build();
+      const pageLength = Number(document.getElementById("page-length").value || 40);
+      const { favs, lists } = personaPayloads(
+        state.personaPool,
+        {
+          languagePair: state.languagePair,
+          listId: state.listId,
+          learningStatus: state.learningStatus,
+        },
+        pageLength,
+      );
+      state.favs = favs;
+      state.lists = lists;
+      state.countMap = favs.count || {};
+      rememberLists(lists.results || []);
+      updateChips();
+      renderStats(favs);
+      renderFavs(favs);
+      if (state.openSheet) renderSheet();
+      document.getElementById("raw-favs").textContent = JSON.stringify(favs, null, 2);
+      document.getElementById("raw-lists").textContent = JSON.stringify(lists, null, 2);
+    }
+
+    function syncDataSourceUi() {
+      const sel = document.getElementById("data-source");
+      state.dataSource = sel.value || "live";
+      const authPanel = document.getElementById("auth-panel");
+      const blurb = document.getElementById("persona-blurb");
+      const tags = document.getElementById("persona-tags");
+      const isLive = state.dataSource === "live";
+
+      authPanel.classList.toggle("persona-mode", !isLive);
+
+      if (isLive) {
+        state.personaPool = null;
+        blurb.innerHTML = "Load a real account with Auth &amp; load, or pick a predefined user (no token needed).";
+        tags.innerHTML = "";
+        return;
+      }
+
+      const persona = PERSONAS.find((p) => p.id === state.dataSource);
+      if (!persona) return;
+      blurb.innerHTML = persona.blurb;
+      tags.innerHTML = persona.tags.map((t, i) => {
+        const kind = persona.tagKinds?.[i] || "muted";
+        return `<span class="persona-tag ${kind}">${escapeHtml(t)}</span>`;
+      }).join("");
+
+      // Apply persona defaults for premium simulation
+      if (persona.premiumMode != null) {
+        document.getElementById("premium-mode").checked = !!persona.premiumMode;
+      }
+      if (persona.userKind) {
+        document.getElementById("user-kind").value = persona.userKind;
+      }
+      state.personaPool = persona.build();
+      syncPremiumModeUi();
+    }
+
+    function populatePersonaSelect() {
+      const sel = document.getElementById("data-source");
+      const group = sel.querySelector("optgroup");
+      group.innerHTML = "";
+      for (const p of PERSONAS) {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.label;
+        group.append(opt);
+      }
+    }
+
+    function syncPremiumModeUi() {
+      state.premiumMode = document.getElementById("premium-mode").checked;
+      state.userKind = document.getElementById("user-kind").value;
+      document.getElementById("user-kind-wrap").classList.toggle("hidden", !state.premiumMode);
+      document.getElementById("mode-badge").classList.toggle("show", state.premiumMode);
+      document.getElementById("mode-badge").textContent = state.premiumMode
+        ? (state.userKind === "anonymous" ? "Premium banners · anonymous" : "Premium banners on")
+        : "Premium banners on";
+      if (state.favs) {
+        renderStats(state.favs);
+        renderTermsCount(state.favs);
+        renderPremiumBanners(state.favs);
+      } else {
+        renderPremiumBanners(null);
+      }
+    }
+
+    function init() {
+      const saved = loadAuth();
+      if (saved.authToken) document.getElementById("auth-token").value = saved.authToken;
+      if (saved.origin) document.getElementById("origin-header").value = saved.origin;
+
+      populatePersonaSelect();
+
+      const tokenInput = document.getElementById("auth-token");
+      tokenInput.addEventListener("input", updateJwtUi);
+      tokenInput.addEventListener("change", updateJwtUi);
+
+      document.getElementById("btn-load").onclick = refresh;
+      document.getElementById("btn-clear-filters").onclick = () => {
+        state.languagePair = "";
+        state.listId = "";
+        state.learningStatus = "";
+        closeSheet();
+        refresh();
+      };
+      document.getElementById("premium-mode").onchange = syncPremiumModeUi;
+      document.getElementById("user-kind").onchange = syncPremiumModeUi;
+      document.getElementById("data-source").onchange = () => {
+        syncDataSourceUi();
+        // Reset filters when switching persona so counts match the blurb
+        state.languagePair = "";
+        state.listId = "";
+        state.learningStatus = "";
+        closeSheet();
+        refresh();
+      };
+
+      document.querySelectorAll(".chip[data-sheet]").forEach((chip) => {
+        chip.addEventListener("click", () => openSheet(chip.dataset.sheet));
+      });
+      document.getElementById("sheet-backdrop").onclick = closeSheet;
+      document.getElementById("sheet-reset").onclick = () => {
+        if (state.openSheet === "lang") state.draft.languagePair = "";
+        if (state.openSheet === "list") state.draft.listId = "";
+        if (state.openSheet === "status") state.draft.learningStatus = "";
+        renderSheet();
+      };
+      document.getElementById("sheet-apply").onclick = () => {
+        state.languagePair = state.draft.languagePair;
+        state.listId = state.draft.listId;
+        state.learningStatus = state.draft.learningStatus;
+        closeSheet();
+        refresh();
+      };
+
+      updateChips();
+      syncDataSourceUi();
+      syncPremiumModeUi();
+      const jwt = updateJwtUi();
+      // Keep auth open if missing/expired so the warning is visible (live mode only)
+      if (state.dataSource === "live" && (jwt.level === "err" || jwt.level === "empty" || jwt.level === "invalid")) {
+        expandAuthPanel();
+      }
+      setInterval(updateJwtUi, 15000);
+      if (state.dataSource === "live" && saved.authToken && jwt.level !== "err") refresh();
+    }
+
+    init();
+  </script>
+</body>
+</html>

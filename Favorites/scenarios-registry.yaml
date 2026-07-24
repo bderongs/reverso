@@ -1,0 +1,129 @@
+# Reverso — favourite save scenarios (source of truth)
+# Scope: FAVOURITES rows only (user saves / stars a term).
+# Platform goes in SOURCE, not in scenario id.
+# Status: active | draft | internal
+
+version: 1
+
+scenarios:
+  # ── Context ─────────────────────────────────────────────────────────
+  - id: ctx.result.search-bar
+    status: active
+    name: Context search bar star
+    favtype: null
+    allowed_source: [0, 1]
+
+  - id: ctx.result.translation-star
+    status: active
+    name: Context filtered translation star
+    favtype: null
+    allowed_source: [0, 1]
+
+  - id: ctx.result.example-star
+    status: active
+    name: Context example row star
+    favtype: null
+    allowed_source: [0, 1]
+    fields:
+      required: [srcText, trgText, srcLang, trgLang, srcContext, trgContext]
+
+  - id: ctx.result.genai
+    status: active
+    name: Context GenAI example star
+    favtype: ctx-genai
+    allowed_source: [0, 1]
+    notes: Same field contract as context (see favtype details.md)
+
+  - id: ctx.bilingual-combined
+    status: active
+    name: BilingualCombined result star
+    favtype: null
+    allowed_source: [0, 1]
+
+  - id: ctx.history.promote
+    status: active
+    name: Promote history entry to favourite
+    favtype: inherit
+    allowed_source: [0, 1]
+    fields:
+      required: [historyId]
+
+  - id: ctx.history.promote-ss
+    status: draft
+    name: Promote history Smart Suggestion to favourite
+    favtype: inherit
+    allowed_source: [2, 3]
+
+  # ── Machine translation ─────────────────────────────────────────────
+  - id: mt.context-box
+    status: active
+    name: MT box on Context results
+    favtype: mt
+    allowed_source: [0, 1]
+    constraints:
+      srcText: { maxLength: 128 }
+
+  - id: mt.text-translation
+    status: active
+    name: Text translation page
+    favtype: mt
+    allowed_source: [0, 1, 4]
+    constraints:
+      srcText: { maxLength: 128 }
+
+  # ── Define ──────────────────────────────────────────────────────────
+  - id: def.result
+    status: active
+    name: Define result star
+    favtype: [def, aidef]
+    allowed_source: [0, 1]
+    fields:
+      required: [srcText, trgText, srcLang, trgLang, favType]
+    constraints:
+      srcLang: { mustEqual: trgLang }
+      trgContext: { mustBeEmpty: true }
+      trgText: { disallowNull: true }
+
+  # ── Synonyms ────────────────────────────────────────────────────────
+  - id: syn.result
+    status: active
+    name: Synonyms result star
+    favtype: syn
+    allowed_source: [0, 1]
+    fields:
+      required: [srcText, trgText, srcLang, trgLang]
+    constraints:
+      srcLang: { mustEqual: trgLang }
+
+  # ── Reader & extensions ─────────────────────────────────────────────
+  - id: reader.quick-search
+    status: active
+    name: Quick search while reading/watching
+    favtype: null
+    allowed_source: [2]
+
+  - id: ext.chrome.quick-search
+    status: draft
+    name: Chrome extension favourite save
+    favtype: null
+    allowed_source: [3]
+
+  # ── Lists ───────────────────────────────────────────────────────────
+  - id: list.editorial-import
+    status: active
+    name: Save term from Reverso editorial list
+    favtype: null
+    allowed_source: [0, 1]
+    fields:
+      required: [originalListId]
+
+  - id: list.editorial-create
+    status: internal
+    name: Internal editorial list batch create
+    favtype: null
+
+  # ── Meta ────────────────────────────────────────────────────────────
+  - id: legacy.unknown
+    status: internal
+    name: Pre-migration favourite rows
+    notes: Backfill only; not sent by clients

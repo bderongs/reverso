@@ -1,0 +1,100 @@
+﻿{
+  "manifest_version": 3,
+  "default_locale": "en",
+  "name": "__MSG_appTitle__",
+  "short_name": "Reverso Context",
+  "description": "__MSG_appDesc__",
+  "version": "3.6.298",
+  "author": "Softissimo Inc.",
+  "homepage_url": "https://context.reverso.net/",
+  "options_page": "dist/index.html?navigateTo=options",
+  "icons": {
+    "16": "dist/assets/images/reverso-logo16x16.png",
+    "32": "dist/assets/images/reverso-logo32x32.png",
+    "48": "dist/assets/images/reverso-logo48x48.png",
+    "65": "dist/assets/images/reverso-logo.png",
+    "128": "dist/assets/images/reverso-logo.png"
+  },
+  "action": {
+    "default_title": "Reverso Context",
+    "default_popup": "dist/index.html"
+  },
+  "background": {
+    "service_worker": "dist/worker.bundle.js",
+    "type": "module"
+  }
+  ,
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "ftp://*/*",
+        "file://*/*"
+      ],
+      "js": [
+        "dist/preload-content-script.bundle.js",
+        "dist/subtitle-sentence-translate.js"
+      ],
+      "css": [
+        "dist/content-script.bundle.css"
+      ],
+      "all_frames": false,
+      "run_at": "document_end",
+      "match_about_blank": true
+    }
+    
+  ],
+  "incognito": "split",
+  "content_security_policy": {
+    "extension_page":"script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; object-src 'self'",
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'",
+    "worker-src": "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'"
+  },
+  "file_browser_handlers": [ {
+    "default_title": "Open with PDF Viewer",
+    "file_filters": [ "filesystem:*.pdf" ],
+    "id": "open-as-pdf"
+  } ],
+  "permissions": [
+    "tabs",
+    "contextMenus",
+    "background",
+    "notifications",
+    "cookies",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*/*",
+    "https://cps.reverso.net/"
+  ],
+  "web_accessible_resources": [{
+    "resources":[ 
+     "reverso-pop-up/*",
+     "dist/assets*/*",
+     "dist/extension-promo/*",
+     "dist/index.html",
+     "content/web/viewer.html",
+     "dist/page-bar.html",
+     "dist/contentStyles.css",
+     "dist/content-script.bundle.js",
+     "dist/preload-content-script.bundle.js",
+     "dist/subtitle-sentence-translate.js"
+    ],
+     "matches": [ 
+     "*://*/*",   
+     "http://*/*",
+     "https://*/*",
+     "ftp://*/*",
+     "file://*/*",
+     "chrome-extension://*/*"]
+   }, {
+    "resources": ["dist/content-script.bundle.js"],
+    "matches": ["*://*/*", "<all_urls>"]
+   }],
+   "key":
+"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhakIKB30Ppx8tdoDAhCCL5mr6G9/Waw2wAXQo6oZCz0vQ/b3sPmxA8uLYgF5rGvlbDcWhfPgNxw3OQ8KBqO0YsJU05pLPhdFmO+V1KA6a34Cy6Ge/Xx93SgsTpZDPApI3SlQYokhIR3TPgy74HJHtyfdUVB2YJmX6n1fWCImMV16OxHaTdbfo1aAIgX/XTyiaIEqL717pwyJeEQxC5lD+XEYOenbMbII2XSzFn2bq8ih7BF/RpE28lXBysipY13OlX+87IvoEVCRCtqYbHVla8nBBcMCPmAEcx1FnueQGw3d0RdFUQfbMhScsDEY3NbfBAPaTjtnp5/9hxD6L3WfKQIDAQAB"
+}
+
+
+

@@ -1,0 +1,57 @@
+﻿Order,Item,Type,Specs,Description,Example values
+1.0,ID,Integer,,ID of the favourite,1423442342
+1.1,CREATION_DATE,Date,,When the favourite was added,2017-04-12 15:05:13
+1.1,NUSER_ID,Integer,,User ID of the owner,58275634
+2.1,SOURCE_LANG,String,Max 10 chars,Source language of the favourite,en
+2.2,TARGET_LANG,String,Max 10 chars,Target language of the favourite,es
+2.3,SOURCE_TEXT,String,Max 2000 chars,Source text of the favourite. Original search,show
+2.4,TARGET_TEXT,String,Max 2000 chars,"Translation added as favourite. In Context, from filtered translation or the first highlight in the target context",espectáculo
+2.5,FAVTYPE,String,Max 10 chars,"Origin of the favourite:
+-blank-: Context
+syn: Synonyms
+mt: Machine translation
+ctx-genai: term generated with AI
+def, def-genai: term containing a defintion, possibly ai generated 
+
+see inside the page itself for much more info.",-
+2.6,SOURCE,Integer,,"Device where the favourite was marked:
+0: Context web
+1: Mobile app
+2: Reader extension
+3: Chrome extension
+4: Desktop app",0
+3.1,SOURCE_CONTEXT,String,Max 2000 chars,Context source example where SOURCE_TEXT is found,The <em>show</em> must go on.
+3.2,TARGET_CONTEXT,String,Max 2000 chars,Context target example that should be translation of SOURCE_CONTEXT.,El <em>espectáculo</em> debe continuar.
+4.1,SOURCE_POS,String,Max 30 chars,"POS for source term
+see more below in the https://app.notion.com/p/DOC-Saving-Favorites-History-DBQuestions-db21075253fb4e13a0031dcd55169737?pvs=21 section.","adj, nm, nfpl, v"
+4.2,TARGET_POS,String,Max 30 chars,"POS for source term
+see more below in the https://app.notion.com/p/DOC-Saving-Favorites-History-DBQuestions-db21075253fb4e13a0031dcd55169737?pvs=21 section.","adj, nm, nfpl, v"
+4.3,REGISTER,String,,Used to show informal terms in editorial vocabulary lists (maybe we’ll add more register to display to the users),Informal
+4.4,LANGUAGE_LEVEL,String,,Used to store the CERF level of a word (only for monolingual fav for now and for vocabulary lists),A1/A2/B1/B2/C1/C2/Rare
+4.5,COMMENT,String,Max 2000 chars,"User’s comment about the entry. 
+
+Also used for storing the 2nd and 3rd translation of the search when marked as Favourite from History.","mostrar, enseñar"
+5.1,SOURCE_SEGMENT,String,Max 2000 chars,Mainly used by extension. Sentence that contains the SOURCE_TEXT.,"For a bit of gentle debunking, consider: The self-charging electric bike: fact or fiction?"
+5.2,DOCUMENT_TITLE,String,Max 200 chars,Mainly used by extension. Title of the document where the favourite was marked.,"Away  S1:E3  Half the Sky
+
+theguardian.com"
+5.3,DOCUMENT,String,Max 2000 chars,Mainly used by extension. URL where the favourite was marked,"https://www.netflix.com/watch/80243605
+
+https://www.theguardian.com/us-news/2023/aug/01/donald-trump-charged-2020-election"
+,ORIGINAL_LIST_ID,Integer,,List ID of the editorial Reverso list the term was saved from,
+,IMAGE,String,,,
+,TARGET_TRANSLIT,String,,,
+,SOURCE_TRANSLIT,String,,,
+,WORDCOUNT,Integer,,"Number of words of the SOURCE_TEXT
+
+Question: who is using this field?",1
+,LAST_EDIT,Date,,Automatic value. Last time the favourite was edited.,2017-04-12 15:05:13
+,HISTORY_ID,Integer,,"ID of the entry in History table if the favourite was marked from History
+
+Question: who is using this field?",2158245
+,DOMAIN,String,Max 200 chars,"Linguistic domain. 
+
+Currently not used. There was a task started for this in the past",business
+,TARGET_TEXT_EDITED,String,Max 2000 chars,,espectáculo → show
+,REMOVED,Boolean,,If the favorite was removed or not.,False
+,HASH,String,Max 200 chars,Internal value to identify the favourite on interface (to be removed in the future),b15747bcc7621cc80ed12329a5d8fd90

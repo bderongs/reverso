@@ -1,0 +1,107 @@
+﻿Page,API (version in prod),Banners,Limits
+History,"👀 VIEWING IN HISTORY PAGE
+API GET /history returns the first 40 elements of the stored 70 when free user.
+
+Added object to the response in case the user is free:
+""freemiumLimit"": {
+  ""limitReached"": true,
+  ""storedItems"": 67,
+  ""maxAllowed"": 40
+}
+limitReached means that the free limit for items that can be displayed was reached.
+storedItemsis the current number of items in the DB for that user.
+And maxAllowed is the max number of items that can be displayed.","👀 VIEWING IN HISTORY PAGE
+Same as favorites","Display up to 40 terms, no matter the filter.
+
+Don’t store more than 70 terms → Hard limit."
+Favorites / My List,"👀 VIEWING IN FAVORITES / LIST PAGE
+API GET /favourites returns the first 40 elements of the stored 200 when free user.
+
+Added object to the response in case the user is free:
+""freemiumLimit"": {
+  ""limitReached"": true,
+  ""storedItems"": 67,
+  ""maxAllowed"": 40
+}
+
+limitReached means that the free limit for items that can be displayed was reached.
+storedItemsis the current number of favorites in the DB for that user.
+And maxAllowed is the max number of favourites that can be displayed.
+
+
+
+⭐️ SAVING EVENT
+API GET /favourites/hashes or variant GET /favourites/hashes-ids request, that are usually requested once per page where we want to mark the current Favourites in the page, will contain a new object in the response:
+""freemiumLimit"": {
+  ""limitReached"": true,
+  ""storedItems"": 208,
+  ""maxAllowed"": 200
+}
+
+limitReached means that the free limit for items that can be stored was reached.
+storedItemsis the current number of favorites in the DB for that user.
+And maxAllowed is the max number of favourites that can be stored.","👀 VIEWING IN FAVORITES / LIST PAGE
+
+Here, terms = numFilteredResults from the API 
+
+The API returns the following JSON :
+""freemiumLimit"":{
+""limitReached"":false,
+""storedFavsNo"":0,
+""numberOfFavsAllowed"":40
+}
+}
+
+Considering these, the following specs apply
+
+## CASE #1 : If limitReached= true
+Display Premium Banner Limit reached
+
+#### If numFilteredResults > numberOfFavsAllowed
+Add numberOfFavsAllowed in orange before the numFilteredResults total (ex. 40/67) 
+
+## CASE #2 : Else (=limitReached= false)
+
+#### if numFilteredResults < 10
+For anonymous : Register banner
+For registered : nothing
+
+#### if numFilteredResults > 10 
+Premium banner V1 on top and at the bottom
+
+Premium not registered → Register banner on top, no matter the number of terms.
+
+
+
+
+⭐️ SAVING EVENT
+→ The numbers in red refer to the number of favorites with originalListID=null
+3rd and 6th save → Register popup for anonymous
+≥ 10 terms → Premium nagging
+≥ 40 terms → Premium wall on every click on star but make the star yellow
+> 200 terms → Premium wall on every click on star but don’t save (the star remains empty)
+","Display up to 40 terms, no matter the filter."
+Editorial List,NO changes,"👀 VIEWING AN EDITORIAL LIST
+IF you duplicated 0 list:
+- You can see all terms.
+- You can duplicate the list.
+
+IF you duplicated ≥1 list:
+- You can only see 12 terms followed by banner.
+- If you click on “Learn this list” → Premium wall
+
+IF you browse mini cards, on the 13th card, open full screen Premium wall popup.","Allow to duplicate 1 editorial list.
+
+After duplicating 1 editorial list:
+  1. You can only see the first 12 terms of any other list.
+  2. You cannot duplicate anymore.
+
+For users who already had more than 1 list before the update ⇒ rule of the latest 40 favorites applies (as in favorites). "
+Creating List,NO changes,Premium wall on click on “New list”,Don’t allow to create any lists for free.
+Learn page (mobile app only),NO changes,,"Permanent Premium banner below the Today block. It appears after playing 3 games.
+
+Clicking would open the Learn Premium wall."
+Vocabulary page (mobile app only),NO changes,,"Permanent Premium banner below Favorites list. It appears after having 20 history or 10 favorites.
+
+Clicking would open the Learn Premium wall."
+Flashcards,NO changes,,"On launching Flashcards, no change."

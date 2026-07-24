@@ -1,0 +1,215 @@
+/* Quick translation bar injected into the toolbar popup.
+   Self-contained styles, namespaced under #rev-qtb to avoid clashing
+   with the Angular app's compiled styles. */
+
+#rev-qtb {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e3e6ec;
+  color: #1a1a2e;
+  position: relative;
+  z-index: 2147483000;
+}
+
+#rev-qtb *,
+#rev-qtb *::before,
+#rev-qtb *::after {
+  box-sizing: border-box;
+}
+
+#rev-qtb .rev-qtb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #0b3d91;
+  background: linear-gradient(90deg, #0b3d91 0%, #1160c4 100%);
+  color: #fff;
+}
+
+#rev-qtb .rev-qtb-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  flex: 1;
+  white-space: nowrap;
+}
+
+#rev-qtb .rev-qtb-toggle {
+  cursor: pointer;
+  border: none;
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#rev-qtb .rev-qtb-toggle:hover {
+  background: rgba(255, 255, 255, .32);
+}
+
+#rev-qtb .rev-qtb-body {
+  padding: 10px;
+}
+
+#rev-qtb.rev-qtb-collapsed .rev-qtb-body {
+  display: none;
+}
+
+#rev-qtb .rev-qtb-langs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#rev-qtb select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #cfd6e4;
+  border-radius: 6px;
+  background: #f7f9fc;
+  font-size: 12px;
+  color: #1a1a2e;
+  cursor: pointer;
+}
+
+#rev-qtb .rev-qtb-swap {
+  border: 1px solid #cfd6e4;
+  background: #f7f9fc;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 14px;
+  color: #0b3d91;
+}
+
+#rev-qtb .rev-qtb-swap:hover {
+  background: #eef2f9;
+}
+
+#rev-qtb .rev-qtb-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+#rev-qtb .rev-qtb-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #cfd6e4;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a1a2e;
+}
+
+#rev-qtb .rev-qtb-input:focus {
+  outline: none;
+  border-color: #1160c4;
+  box-shadow: 0 0 0 2px rgba(17, 96, 196, .15);
+}
+
+#rev-qtb .rev-qtb-go {
+  flex: 0 0 auto;
+  border: none;
+  background: #1160c4;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#rev-qtb .rev-qtb-go:hover {
+  background: #0d4fa5;
+}
+
+#rev-qtb .rev-qtb-go:disabled {
+  background: #9db8dd;
+  cursor: default;
+}
+
+#rev-qtb .rev-qtb-results {
+  margin-top: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+#rev-qtb .rev-qtb-status {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 4px 2px;
+}
+
+#rev-qtb .rev-qtb-status.rev-qtb-error {
+  color: #c0392b;
+}
+
+#rev-qtb .rev-qtb-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+#rev-qtb .rev-qtb-term {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: #eef4ff;
+  border: 1px solid #d5e2fb;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #0b3d91;
+}
+
+#rev-qtb .rev-qtb-term .rev-qtb-pos {
+  font-size: 10px;
+  color: #7a8aa8;
+  font-style: italic;
+}
+
+#rev-qtb .rev-qtb-examples {
+  border-top: 1px solid #eef0f4;
+  padding-top: 8px;
+}
+
+#rev-qtb .rev-qtb-example {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 5px 0;
+  border-bottom: 1px solid #f2f4f8;
+}
+
+#rev-qtb .rev-qtb-example:last-child {
+  border-bottom: none;
+}
+
+#rev-qtb .rev-qtb-example .rev-qtb-src {
+  color: #1a1a2e;
+}
+
+#rev-qtb .rev-qtb-example .rev-qtb-tgt {
+  color: #4b5563;
+  display: block;
+  margin-top: 2px;
+}
+
+#rev-qtb .rev-qtb-example em {
+  font-style: normal;
+  font-weight: 600;
+  color: #1160c4;
+}

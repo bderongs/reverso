@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="345" height="52" viewBox="0 0 345 52">
+    <g fill="none" fill-rule="evenodd">
+        <circle cx="26" cy="26" r="26" stroke="#0970AC" stroke-width="2"/>
+        <path fill="#0970AC" d="M29.057 16.234c2.423.874 4.646 2.398 6.337 4.592 2.6 3.39 4.053 9.597-.433 15.174 8.182-6.985 6.482-15.306 2.66-20.28a13.855 13.855 0 0 0-8.357-5.17c.319-1.336.778-2.566 1.205-4.15C21.753 9.537 19.2 13.154 19.2 13.154s4.6 5.228 11.19 9.39c-.715-2.616-1.128-4.642-1.333-6.31"/>
+        <path fill="#EC2024" d="M22.944 35.765c-2.425-.876-4.648-2.396-6.332-4.594-2.603-3.389-4.054-9.598.424-15.171-8.178 6.981-6.479 15.303-2.658 20.278a13.864 13.864 0 0 0 8.355 5.172c-.31 1.334-.774 2.566-1.196 4.15 8.708-3.138 11.263-6.757 11.263-6.757s-4.604-5.226-11.189-9.39c.715 2.615 1.128 4.642 1.333 6.312"/>
+        <text fill="#0970AC" font-family="Lato-BoldItalic, Lato" font-size="38" font-style="italic" font-weight="bold" letter-spacing="-.626">
+            <tspan x="62" y="40">Reverso</tspan>
+        </text>
+        <text fill="#EC2024" font-family="Lato-Italic, Lato" font-size="38" font-style="italic" letter-spacing="-1.086">
+            <tspan x="186" y="40">Context</tspan>
+        </text>
+    </g>
+</svg>

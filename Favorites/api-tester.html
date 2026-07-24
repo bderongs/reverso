@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Favourites API Tester</title>
+  <style>
+    :root {
+      --ink: #1a1f2e;
+      --muted: #5c6578;
+      --line: #d8dde8;
+      --surface: #ffffff;
+      --bg: #eef1f6;
+      --accent: #0b6bcb;
+      --accent-hover: #0958a8;
+      --ok: #0f7b4a;
+      --ok-bg: #e6f6ee;
+      --err: #b42318;
+      --err-bg: #fef3f2;
+      --warn-bg: #fff8e8;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f2744 0%, #1a3a5c 55%, #0b6bcb 140%);
+      color: #fff;
+      padding: 1.25rem 1.5rem 1.4rem;
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin-top: 0.3rem;
+      opacity: 0.85;
+      font-size: 0.9rem;
+      max-width: 52rem;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.25rem 1.25rem 3rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    section.panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 1rem 1.15rem 1.15rem;
+    }
+
+    section.panel h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+      font-weight: 650;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+
+    .field.full { flex: 1 1 100%; }
+    .field.narrow { flex: 0 1 140px; }
+    .field.mid { flex: 1 1 220px; }
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    label .hint {
+      font-weight: 400;
+      color: #8a93a5;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0.5rem 0.65rem;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid rgba(11, 107, 203, 0.25);
+      border-color: var(--accent);
+    }
+
+    textarea {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      resize: vertical;
+      min-height: 4.5rem;
+    }
+
+    textarea.auth {
+      min-height: 3.2rem;
+      font-size: 0.78rem;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 7px;
+      padding: 0.55rem 1rem;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .btn.ghost:hover { background: #f4f6fa; }
+
+    .btn.danger {
+      background: var(--err);
+    }
+
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.65rem;
+    }
+
+    .api-card {
+      border: 1.5px solid var(--line);
+      border-radius: 9px;
+      padding: 0.8rem 0.9rem;
+      cursor: pointer;
+      background: #fff;
+      text-align: left;
+      transition: border-color 0.12s, box-shadow 0.12s;
+    }
+
+    .api-card:hover { border-color: #9db8d9; }
+    .api-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(11, 107, 203, 0.12);
+    }
+
+    .api-card .method {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .api-card .method.post { color: #0f7b4a; }
+    .api-card .method.get { color: var(--accent); }
+
+    .api-card .path {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      margin-top: 0.15rem;
+    }
+
+    .api-card .desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: #eef2f7;
+      color: var(--muted);
+    }
+
+    .status-pill.ok { background: var(--ok-bg); color: var(--ok); }
+    .status-pill.err { background: var(--err-bg); color: var(--err); }
+    .status-pill.warn { background: var(--warn-bg); color: #8a5a00; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .toolbar .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: #f7f9fc;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 550;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: #9db8d9; }
+    .chip.active {
+      background: #e8f1fb;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .grid-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 720px) {
+      .grid-fields { grid-template-columns: 1fr; }
+    }
+
+    .advanced summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 0.85rem 0 0.55rem;
+      user-select: none;
+    }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .kv {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+      background: #fafbfd;
+      min-height: 3.4rem;
+    }
+
+    .kv .k {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .kv .v {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      margin-top: 0.2rem;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .kv.empty .v { color: #a0a8b8; font-style: italic; }
+
+    pre.result {
+      background: #0f1724;
+      color: #d7e0ef;
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      overflow: auto;
+      max-height: 420px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.55rem;
+    }
+
+    .hidden { display: none !important; }
+
+    .auth-saved {
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--ok);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Favourites API Tester</h1>
+    <p>
+      Same requests as Swagger, for inspecting favourite field values. Auth is saved in your browser.
+    </p>
+    <p style="margin-top:0.65rem;">
+      <a href="/filtering-demo.html" style="color:#fff;font-weight:600;">Open filtering demo →</a>
+    </p>
+  </header>
+
+  <main>
+    <section class="panel" id="cors-note">
+      <h2>Why a local relay?</h2>
+      <p class="note" style="margin:0">
+        Swagger works because it is hosted on <code>context.preprod.reverso.net</code> — same origin as the API,
+        so the browser allows the call. This page is on <code>localhost</code>, so a direct browser call is blocked by CORS.
+        The relay only forwards the exact same request; it does not change the payload.
+        Open this UI via <code>http://localhost:3847/</code> (not as a file).
+      </p>
+    </section>
+
+    <!-- 1. Auth -->
+    <section class="panel" id="auth-panel">
+      <h2>1 · Authorization</h2>
+      <div class="row">
+        <div class="field full">
+          <label for="auth-token">
+            Authorization header
+            <span class="hint">— copy from Swagger “Authorize” or from the Network tab request header (exact value)</span>
+          </label>
+          <textarea id="auth-token" class="auth" placeholder="Paste the Authorization header value used by Swagger…" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 0.75rem;">
+        <div class="field mid">
+          <label for="origin-header">X-Reverso-Origin</label>
+          <input id="origin-header" type="text" value="mainweb" list="origin-options">
+          <datalist id="origin-options">
+            <option value="mainweb"></option>
+            <option value="contextweb"></option>
+            <option value="mobileweb"></option>
+            <option value="extension"></option>
+          </datalist>
+        </div>
+        <div class="field mid">
+          <label for="api-base">API base URL</label>
+          <input id="api-base" type="text" value="https://context.preprod.reverso.net:8443/bst-web-user-0.0.0-SNAPSHOT-WEB-2892">
+        </div>
+        <div class="actions" style="display:flex; gap:0.5rem; align-items:center;">
+          <label style="display:flex; gap:0.4rem; align-items:center; font-size:0.85rem; color:var(--muted);">
+            <input type="checkbox" id="use-relay" checked>
+            Use local relay
+          </label>
+          <button type="button" class="btn" id="btn-save-auth">Save</button>
+          <button type="button" class="btn ghost" id="btn-clear-auth">Clear</button>
+        </div>
+      </div>
+      <div id="auth-status" class="auth-saved hidden">Saved in localStorage.</div>
+    </section>
+
+    <!-- 2. API select -->
+    <section class="panel">
+      <h2>2 · Select API</h2>
+      <div class="api-grid" id="api-grid"></div>
+    </section>
+
+    <!-- 3. Run -->
+    <section class="panel" id="run-panel">
+      <h2>3 · Run request</h2>
+
+      <!-- POST create -->
+      <div id="view-post">
+        <div class="toolbar">
+          <div>
+            <strong>POST</strong> <code>/user/favourites</code>
+            <span class="note" style="margin:0 0 0 0.4rem;">Scenario presets fill typical fields from favType rules.</span>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn ghost" id="btn-reset-post">Reset fields</button>
+            <button type="button" class="btn" id="btn-run-post">Create favourite</button>
+          </div>
+        </div>
+
+        <div class="presets" id="presets"></div>
+
+        <div class="grid-fields" id="post-core-fields"></div>
+
+        <details class="advanced" id="advanced-fields">
+          <summary>Advanced / optional fields</summary>
+          <div class="grid-fields" id="post-advanced-fields" style="margin-top: 0.55rem;"></div>
+        </details>
+      </div>
+
+      <!-- GET list (basic for now) -->
+      <div id="view-get" class="hidden">
+        <div class="toolbar">
+          <div>
+            <strong>GET</strong> <code>/user/favourites</code>
+            <span class="note" style="margin:0 0 0 0.4rem;">List favourites — UX polish later; basic filters available.</span>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" id="btn-run-get">List favourites</button>
+          </div>
+        </div>
+        <div class="grid-fields" id="get-fields"></div>
+      </div>
+    </section>
+
+    <!-- Result -->
+    <section class="panel" id="result-panel">
+      <h2>Result</h2>
+      <div class="meta-line">
+        <span id="result-status" class="status-pill">Idle</span>
+        <span id="result-meta"></span>
+      </div>
+      <div id="filter-fields" class="kv-grid hidden"></div>
+      <pre class="result" id="result-body">Run a request to see the response.</pre>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "fav-api-tester.v1";
+
+    const APIS = [
+      {
+        id: "post",
+        method: "POST",
+        path: "/user/favourites",
+        title: "Create favourite",
+        desc: "Add a new favourite and inspect returned fields.",
+      },
+      {
+        id: "get",
+        method: "GET",
+        path: "/user/favourites",
+        title: "List favourites",
+        desc: "Fetch favourites with filters (basic for now).",
+      },
+    ];
+
+    const LANGS = ["en", "fr", "es", "de", "it", "pt", "ru", "ar", "he", "nl", "pl", "ro", "tr", "uk", "zh", "ja", "ko"];
+
+    const PRESETS = [
+      {
+        id: "ctx",
+        label: "Context term",
+        favType: "",
+        values: {
+          srcText: "sparrow",
+          trgText: "moineau",
+          srcLang: "en",
+          trgLang: "fr",
+          srcContext: "A sparrow landed on the windowsill.",
+          trgContext: "Un moineau s'est posé sur le rebord de la fenêtre.",
+          srcPos: "n.",
+          trgPos: "n.m.",
+          source: "0",
+        },
+      },
+      {
+        id: "ctx-genai",
+        label: "GenAI (ctx-genai)",
+        favType: "ctx-genai",
+        values: {
+          srcText: "resilience",
+          trgText: "résilience",
+          srcLang: "en",
+          trgLang: "fr",
+          srcContext: "She showed remarkable resilience under pressure.",
+          trgContext: "Elle a fait preuve d'une remarquable résilience sous pression.",
+          source: "0",
+        },
+      },
+      {
+        id: "mt",
+        label: "MT (mt)",
+        favType: "mt",
+        values: {
+          srcText: "How are you?",
+          trgText: "Comment allez-vous ?",
+          srcLang: "en",
+          trgLang: "fr",
+          srcContext: "",
+          trgContext: "",
+          source: "0",
+        },
+      },
+      {
+        id: "syn",
+        label: "Synonym (syn)",
+        favType: "syn",
+        values: {
+          srcText: "happy",
+          trgText: "joyful",
+          srcLang: "en",
+          trgLang: "en",
+          srcContext: "",
+          trgContext: "",
+          source: "0",
+        },
+      },
+      {
+        id: "def",
+        label: "Definition (def)",
+        favType: "def",
+        values: {
+          srcText: "ephemeral",
+          trgText: "lasting for a very short time",
+          srcLang: "en",
+          trgLang: "en",
+          srcContext: "Fame can be ephemeral.",
+          trgContext: "",
+          source: "0",
+        },
+      },
+      {
+        id: "aidef",
+        label: "AI definition (aidef)",
+        favType: "aidef",
+        values: {
+          srcText: "serendipity",
+          trgText: "the occurrence of happy or beneficial events by chance",
+          srcLang: "en",
+          trgLang: "en",
+          srcContext: "",
+          trgContext: "",
+          source: "0",
+        },
+      },
+    ];
+
+    const CORE_FIELDS = [
+      { name: "srcText", label: "srcText", type: "text", required: true },
+      { name: "trgText", label: "trgText", type: "text", required: true },
+      { name: "srcLang", label: "srcLang", type: "lang", required: true },
+      { name: "trgLang", label: "trgLang", type: "lang", required: true },
+      { name: "favType", label: "favType", type: "text", hint: "empty = context term" },
+      { name: "source", label: "source", type: "number", hint: "0 web, 1 app, 2 reader, 3 ext…" },
+      { name: "srcContext", label: "srcContext", type: "textarea" },
+      { name: "trgContext", label: "trgContext", type: "textarea" },
+      { name: "srcPos", label: "srcPos", type: "text" },
+      { name: "trgPos", label: "trgPos", type: "text" },
+    ];
+
+    const ADVANCED_FIELDS = [
+      { name: "comment", label: "comment", type: "text" },
+      { name: "domain", label: "domain", type: "text" },
+      { name: "document", label: "document", type: "text" },
+      { name: "documentTitle", label: "documentTitle", type: "text" },
+      { name: "image", label: "image", type: "text" },
+      { name: "srcTranslit", label: "srcTranslit", type: "text" },
+      { name: "trgTranslit", label: "trgTranslit", type: "text" },
+      { name: "trgTextEdited", label: "trgTextEdited", type: "text" },
+      { name: "srcSegment", label: "srcSegment", type: "text" },
+      { name: "historyID", label: "historyID", type: "number" },
+      { name: "register", label: "register", type: "text" },
+      {
+        name: "languageLevel",
+        label: "languageLevel",
+        type: "select",
+        options: ["", "A1", "A2", "B1", "B2", "C1", "C2", "Rare"],
+      },
+      { name: "readerPageUUID", label: "readerPageUUID", type: "text" },
+      { name: "position", label: "position", type: "text" },
+      { name: "hash", label: "hash", type: "text" },
+      { name: "id", label: "id", type: "number" },
+    ];
+
+    const GET_FIELDS = [
+      { name: "length", label: "length", type: "number", value: "20" },
+      { name: "start", label: "start", type: "number", value: "0" },
+      { name: "filterText", label: "filterText", type: "text" },
+      { name: "sourceLang", label: "sourceLang", type: "text", hint: "e.g. en" },
+      { name: "targetLang", label: "targetLang", type: "text", hint: "e.g. fr" },
+      {
+        name: "includeDef",
+        label: "includeDef",
+        type: "select",
+        options: ["", "YES", "NO", "ONLY"],
+      },
+      {
+        name: "includeSyn",
+        label: "includeSyn",
+        type: "select",
+        options: ["", "YES", "NO", "ONLY"],
+      },
+      {
+        name: "includeRemoved",
+        label: "includeRemoved",
+        type: "select",
+        options: ["", "true", "false"],
+      },
+      { name: "order", label: "order", type: "number", hint: "10 = date desc" },
+      { name: "learningInfo", label: "learningInfo", type: "select", options: ["", "true", "false"] },
+      { name: "readerInfo", label: "readerInfo", type: "select", options: ["", "true", "false"] },
+    ];
+
+    /** Fields useful when checking filter / display behaviour */
+    const FILTER_DISPLAY_KEYS = [
+      "id", "hash", "favType", "srcText", "trgText", "srcLang", "trgLang",
+      "srcContext", "trgContext", "srcPos", "trgPos", "source", "removed",
+      "creationDate", "lastEdit", "domain", "document", "documentTitle",
+      "comment", "languageLevel", "register", "image",
+    ];
+
+    let activeApi = "post";
+    let activePreset = "ctx";
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState(patch) {
+      const next = { ...loadState(), ...patch };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    }
+
+    function el(tag, attrs = {}, children = []) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === "className") node.className = v;
+        else if (k === "text") node.textContent = v;
+        else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2).toLowerCase(), v);
+        else if (v !== undefined && v !== null) node.setAttribute(k, v);
+      }
+      for (const child of [].concat(children)) {
+        if (child == null) continue;
+        node.append(typeof child === "string" ? document.createTextNode(child) : child);
+      }
+      return node;
+    }
+
+    function fieldControl(spec) {
+      const wrap = el("div", { className: "field" + (spec.type === "textarea" ? " full" : "") });
+      const label = el("label", { for: `f-${spec.name}` });
+      label.append(spec.label);
+      if (spec.hint) {
+        label.append(" ");
+        label.append(el("span", { className: "hint", text: `— ${spec.hint}` }));
+      }
+      if (spec.required) label.append(el("span", { className: "hint", text: " *" }));
+      wrap.append(label);
+
+      let control;
+      if (spec.type === "textarea") {
+        control = el("textarea", { id: `f-${spec.name}`, "data-name": spec.name });
+      } else if (spec.type === "lang") {
+        control = el("input", {
+          id: `f-${spec.name}`,
+          type: "text",
+          list: "lang-list",
+          "data-name": spec.name,
+          value: spec.value || "",
+        });
+      } else if (spec.type === "select") {
+        control = el("select", { id: `f-${spec.name}`, "data-name": spec.name });
+        for (const opt of spec.options) {
+          control.append(el("option", { value: opt, text: opt === "" ? "—" : opt }));
+        }
+      } else {
+        control = el("input", {
+          id: `f-${spec.name}`,
+          type: spec.type === "number" ? "number" : "text",
+          "data-name": spec.name,
+          value: spec.value || "",
+        });
+      }
+      wrap.append(control);
+      return wrap;
+    }
+
+    function renderApiCards() {
+      const grid = document.getElementById("api-grid");
+      grid.innerHTML = "";
+      for (const api of APIS) {
+        const card = el("button", {
+          type: "button",
+          className: "api-card" + (activeApi === api.id ? " active" : ""),
+          onclick: () => selectApi(api.id),
+        }, [
+          el("div", { className: "method " + api.method.toLowerCase(), text: api.method }),
+          el("div", { className: "path", text: api.path }),
+          el("div", { className: "desc", text: api.desc }),
+        ]);
+        grid.append(card);
+      }
+    }
+
+    function selectApi(id) {
+      activeApi = id;
+      document.getElementById("view-post").classList.toggle("hidden", id !== "post");
+      document.getElementById("view-get").classList.toggle("hidden", id !== "get");
+      renderApiCards();
+      saveState({ activeApi: id });
+    }
+
+    function renderPresets() {
+      const box = document.getElementById("presets");
+      box.innerHTML = "";
+      for (const p of PRESETS) {
+        box.append(
+          el("button", {
+            type: "button",
+            className: "chip" + (activePreset === p.id ? " active" : ""),
+            onclick: () => applyPreset(p.id),
+            text: p.label,
+          })
+        );
+      }
+    }
+
+    function applyPreset(id) {
+      const preset = PRESETS.find((p) => p.id === id);
+      if (!preset) return;
+      activePreset = id;
+      renderPresets();
+      setFieldValues({ ...preset.values, favType: preset.favType });
+      saveState({ activePreset: id });
+    }
+
+    function setFieldValues(values) {
+      for (const [name, value] of Object.entries(values)) {
+        const node = document.querySelector(`[data-name="${name}"]`);
+        if (node) node.value = value == null ? "" : String(value);
+      }
+    }
+
+    function collectFields(containerId) {
+      const params = {};
+      document.querySelectorAll(`#${containerId} [data-name]`).forEach((node) => {
+        const name = node.getAttribute("data-name");
+        const val = (node.value || "").trim();
+        if (val !== "") params[name] = val;
+      });
+      return params;
+    }
+
+    function collectPostBody() {
+      const raw = {
+        ...collectFields("post-core-fields"),
+        ...collectFields("post-advanced-fields"),
+      };
+      const body = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (["source", "historyID", "id", "userID"].includes(k)) {
+          const n = Number(v);
+          if (!Number.isNaN(n)) body[k] = n;
+        } else if (k === "removed") {
+          body[k] = v === "true";
+        } else {
+          body[k] = v;
+        }
+      }
+      return body;
+    }
+
+    function apiBase() {
+      return document.getElementById("api-base").value.trim().replace(/\/$/, "");
+    }
+
+    function useRelay() {
+      return document.getElementById("use-relay").checked;
+    }
+
+    /** Build the real API URL, and the fetch URL (relay or direct). */
+    function resolveUrl(pathWithQuery) {
+      const real = apiBase() + pathWithQuery;
+      if (!useRelay()) return { fetchUrl: real, realUrl: real, via: "direct" };
+      // Relay keeps the same path after /proxy
+      const path = pathWithQuery.startsWith("/") ? pathWithQuery : "/" + pathWithQuery;
+      return { fetchUrl: "/proxy" + path, realUrl: real, via: "relay" };
+    }
+
+    function authHeaders({ json = false } = {}) {
+      let token = document.getElementById("auth-token").value.trim();
+      const origin = document.getElementById("origin-header").value.trim();
+      const headers = { Accept: "application/json" };
+      if (json) headers["Content-Type"] = "application/json;charset=UTF-8";
+      // Accept raw JWT or full "Bearer …" — normalize to Bearer for GAS JWTs.
+      if (token) {
+        if (/^Bearer\s+/i.test(token)) {
+          headers.Authorization = token;
+        } else if (token.split(".").length === 3) {
+          headers.Authorization = "Bearer " + token;
+        } else {
+          headers.Authorization = token;
+        }
+      }
+      if (origin) headers["X-Reverso-Origin"] = origin;
+      return headers;
+    }
+
+    function decodeJwtPayload(token) {
+      const raw = token.replace(/^Bearer\s+/i, "").trim();
+      const parts = raw.split(".");
+      if (parts.length < 2) return null;
+      try {
+        const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const json = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+        return JSON.parse(json);
+      } catch {
+        return null;
+      }
+    }
+
+    function authProblem() {
+      const token = document.getElementById("auth-token").value.trim();
+      if (!token) return "Set Authorization first.";
+      const payload = decodeJwtPayload(token);
+      if (!payload) return null;
+      if (payload.exp && Date.now() / 1000 > payload.exp) {
+        const ago = Math.round(Date.now() / 1000 - payload.exp);
+        return (
+          `Token expired ${ago}s ago (JWT exp).\n` +
+          `GAS access tokens are short-lived (~15 min).\n` +
+          `Get a fresh Authorization value from Swagger → Authorize, or from the Network tab on a successful call, then paste it here.`
+        );
+      }
+      return null;
+    }
+
+    function networkHelp(err) {
+      const msg = String(err && err.message ? err.message : err);
+      const corsLike = /Failed to fetch|NetworkError|CORS|Load failed/i.test(msg);
+      if (corsLike && !useRelay()) {
+        return (
+          msg +
+          "\n\nThis is CORS: the browser blocked a cross-origin response.\n" +
+          "Swagger avoids this because it runs on the API host.\n\n" +
+          "Fix: keep “Use local relay” checked, run:\n" +
+          "  node Favorites/proxy-server.js\n" +
+          "and open http://localhost:3847/ (not the HTML file)."
+        );
+      }
+      if (corsLike || useRelay()) {
+        return (
+          msg +
+          "\n\nIs the relay running?\n  node Favorites/proxy-server.js\nThen open http://localhost:3847/"
+        );
+      }
+      return msg;
+    }
+
+    function setResult({ status, ok, meta, body, favourite }) {
+      const pill = document.getElementById("result-status");
+      pill.textContent = status;
+      pill.className = "status-pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      document.getElementById("result-meta").textContent = meta || "";
+      document.getElementById("result-body").textContent =
+        typeof body === "string" ? body : JSON.stringify(body, null, 2);
+
+      const grid = document.getElementById("filter-fields");
+      if (favourite && typeof favourite === "object") {
+        grid.classList.remove("hidden");
+        grid.innerHTML = "";
+        for (const key of FILTER_DISPLAY_KEYS) {
+          const raw = favourite[key];
+          const empty = raw === undefined || raw === null || raw === "";
+          const kv = el("div", { className: "kv" + (empty ? " empty" : "") }, [
+            el("div", { className: "k", text: key }),
+            el("div", { className: "v", text: empty ? "∅ empty / null" : String(raw) }),
+          ]);
+          grid.append(kv);
+        }
+      } else {
+        grid.classList.add("hidden");
+        grid.innerHTML = "";
+      }
+    }
+
+    async function runPost() {
+      const body = collectPostBody();
+      const authIssue = authProblem();
+      if (authIssue) {
+        setResult({ status: "Auth", ok: false, meta: "", body: authIssue });
+        return;
+      }
+      if (!body.srcText || !body.trgText || !body.srcLang || !body.trgLang) {
+        setResult({
+          status: "Validation",
+          ok: false,
+          meta: "",
+          body: "srcText, trgText, srcLang and trgLang are required for most favourites.",
+        });
+        return;
+      }
+
+      const { fetchUrl, realUrl, via } = resolveUrl("/user/favourites");
+      const btn = document.getElementById("btn-run-post");
+      btn.disabled = true;
+      setResult({
+        status: "Running…",
+        ok: null,
+        meta: `POST ${realUrl} (${via})`,
+        body: JSON.stringify(body, null, 2),
+      });
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch(fetchUrl, {
+          method: "POST",
+          headers: authHeaders({ json: true }),
+          body: JSON.stringify(body),
+        });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = text; }
+        const ms = Math.round(performance.now() - t0);
+        setResult({
+          status: `${res.status} ${res.statusText || ""}`.trim(),
+          ok: res.ok,
+          meta: `${ms} ms · POST ${realUrl}`,
+          body: data,
+          favourite: res.ok && data && typeof data === "object" ? data : null,
+        });
+      } catch (err) {
+        setResult({
+          status: "Network / CORS error",
+          ok: false,
+          meta: realUrl,
+          body: networkHelp(err),
+        });
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function runGet() {
+      const authIssue = authProblem();
+      if (authIssue) {
+        setResult({ status: "Auth", ok: false, meta: "", body: authIssue });
+        return;
+      }
+      const params = collectFields("get-fields");
+      if (!params.length) params.length = "20";
+      const qs = new URLSearchParams(params);
+      const { fetchUrl, realUrl, via } = resolveUrl("/user/favourites?" + qs.toString());
+      const btn = document.getElementById("btn-run-get");
+      btn.disabled = true;
+      setResult({ status: "Running…", ok: null, meta: `GET ${realUrl} (${via})`, body: "…" });
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch(fetchUrl, { method: "GET", headers: authHeaders() });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = text; }
+        const ms = Math.round(performance.now() - t0);
+        const first = data && Array.isArray(data.results) && data.results[0] ? data.results[0] : null;
+        setResult({
+          status: `${res.status} ${res.statusText || ""}`.trim(),
+          ok: res.ok,
+          meta: `${ms} ms · ${data?.numFilteredResults ?? "?"} filtered · ${data?.results?.length ?? 0} returned`,
+          body: data,
+          favourite: first,
+        });
+      } catch (err) {
+        setResult({
+          status: "Network / CORS error",
+          ok: false,
+          meta: realUrl,
+          body: networkHelp(err),
+        });
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function initAuth() {
+      const state = loadState();
+      if (state.authToken) document.getElementById("auth-token").value = state.authToken;
+      if (state.origin) document.getElementById("origin-header").value = state.origin;
+      if (state.apiBase) document.getElementById("api-base").value = state.apiBase;
+      if (typeof state.useRelay === "boolean") document.getElementById("use-relay").checked = state.useRelay;
+      if (state.authToken) {
+        const s = document.getElementById("auth-status");
+        s.classList.remove("hidden");
+        s.textContent = "Loaded from localStorage.";
+      }
+
+      if (location.protocol === "file:") {
+        setResult({
+          status: "Open via localhost",
+          ok: false,
+          meta: "",
+          body:
+            "You opened the HTML as a file. Run:\n  node Favorites/proxy-server.js\nand open http://localhost:3847/",
+        });
+      }
+
+      document.getElementById("btn-save-auth").onclick = () => {
+        saveState({
+          authToken: document.getElementById("auth-token").value.trim(),
+          origin: document.getElementById("origin-header").value.trim(),
+          apiBase: document.getElementById("api-base").value.trim(),
+          useRelay: document.getElementById("use-relay").checked,
+        });
+        const s = document.getElementById("auth-status");
+        s.classList.remove("hidden");
+        s.textContent = "Saved in localStorage.";
+      };
+
+      document.getElementById("btn-clear-auth").onclick = () => {
+        document.getElementById("auth-token").value = "";
+        saveState({ authToken: "" });
+        const s = document.getElementById("auth-status");
+        s.classList.remove("hidden");
+        s.textContent = "Cleared.";
+      };
+
+      document.getElementById("auth-token").addEventListener("change", () => {
+        saveState({
+          authToken: document.getElementById("auth-token").value.trim(),
+          origin: document.getElementById("origin-header").value.trim(),
+          apiBase: document.getElementById("api-base").value.trim(),
+          useRelay: document.getElementById("use-relay").checked,
+        });
+      });
+    }
+
+    function init() {
+      document.body.append(
+        el("datalist", { id: "lang-list" }, LANGS.map((l) => el("option", { value: l })))
+      );
+
+      const core = document.getElementById("post-core-fields");
+      CORE_FIELDS.forEach((f) => core.append(fieldControl(f)));
+      const adv = document.getElementById("post-advanced-fields");
+      ADVANCED_FIELDS.forEach((f) => adv.append(fieldControl(f)));
+      const getBox = document.getElementById("get-fields");
+      GET_FIELDS.forEach((f) => getBox.append(fieldControl(f)));
+
+      initAuth();
+
+      const state = loadState();
+      activeApi = state.activeApi === "get" ? "get" : "post";
+      activePreset = state.activePreset || "ctx";
+      renderApiCards();
+      selectApi(activeApi);
+      renderPresets();
+      applyPreset(activePreset);
+
+      document.getElementById("btn-run-post").onclick = runPost;
+      document.getElementById("btn-run-get").onclick = runGet;
+      document.getElementById("btn-reset-post").onclick = () => applyPreset(activePreset);
+    }
+
+    init();
+  </script>
+</body>
+</html>

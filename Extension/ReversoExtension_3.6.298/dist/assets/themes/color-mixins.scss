@@ -1,0 +1,16 @@
+@import "colors";
+
+@each $name, $color in $colors {
+  .color-text--#{"" + $name} {
+    color: #{$color} !important;
+  }
+  .color-fill--#{"" + $name} {
+    fill: #{$color} !important;
+  }
+  .color-stroke--#{"" + $name} {
+    stroke: #{$color} !important;
+  }
+  .background-color--#{"" + $name} {
+    background-color: #{$color} !important;
+  }
+}

@@ -1,0 +1,228 @@
+﻿Item,Database,Description,Example values,History scenarios,Mobile equivalent,Order,Saving scenarios,Specs,Status,Tag,Type,Web equivalent
+countNumberOfTimes,Learn - Mobile,number of times a flashcard was seen,countNumberOfTimes = 7,,SRS_COUNTER (https://app.notion.com/p/SRS_COUNTER-17b3138618268008a503f278fdbe80d4?pvs=21),2.3,,,NA,,Integer,TIMES_SEEN (https://app.notion.com/p/TIMES_SEEN-17b31386182680b5b2e7da505eb88922?pvs=21)
+cardPriority,Learn - Mobile,"this is not used yet, devs added it to support creating games based on user’s selected flashcards",cardPriority = 0,,,3.5,,,NA,,Integer,CLASSIFICATION (https://app.notion.com/p/CLASSIFICATION-17b313861826800190cecacf5c455f1d?pvs=21)
+firstSeenDate,Learn - Mobile,Date a flashcard was first seen,"firstSeenDate = ""2025-11-11 12:49:45 +0000"";",,FIRST_SEEN_DATE (https://app.notion.com/p/FIRST_SEEN_DATE-17b3138618268023a86ffc2206e4d2dd?pvs=21),2.1,,,NA,,Date,FIRST_SEEN_DATE (https://app.notion.com/p/FIRST_SEEN_DATE-17b3138618268023a86ffc2206e4d2dd?pvs=21)
+isIgnored,Learn - Mobile,,True / False,,,3.4,,,NA,,Boolean,CLASSIFICATION (https://app.notion.com/p/CLASSIFICATION-17b313861826800190cecacf5c455f1d?pvs=21)
+isReadyToMemorize,Learn - Mobile,"keep track of cards marked as Memorized. But it’s not a boolean now, it’s a number!","0, 1, 2, 3, 4",,,3.1,,,NA,,Boolean,SRS_COUNTER (https://app.notion.com/p/SRS_COUNTER-17b3138618268008a503f278fdbe80d4?pvs=21)
+lastSeenDate,Learn - Mobile,Date a flashcard was last seen,"lastSeenDate = ""2025-12-09 11:29:35 +0000"";",,LAST_SEEN_DATE (https://app.notion.com/p/LAST_SEEN_DATE-17b313861826802f9f4fe310a2fbdaff?pvs=21),2.2,,,NA,,Date,LAST_SEEN_DATE (https://app.notion.com/p/LAST_SEEN_DATE-17b313861826802f9f4fe310a2fbdaff?pvs=21)
+translationsList,Learn - Mobile,the Context Translation Result response from bst-query-service,"clandestin, subreptice, furtif",,TARGET_LIST (https://app.notion.com/p/TARGET_LIST-17b31386182680f4ac2afb75dffaa414?pvs=21),1.2,,,NA,,Transformable,"TARGET_LIST (https://app.notion.com/p/TARGET_LIST-17b31386182680f4ac2afb75dffaa414?pvs=21), TARGET_TEXT (https://app.notion.com/p/TARGET_TEXT-2114e592e5fb4d93bd67bc672bd8f4bb?pvs=21)"
+lastStatus,Learn - Mobile,Last status of a Flashcard,"Yes, No or Partially (integer!). “Partially” = “in progress”",,LAST_STATUS (https://app.notion.com/p/LAST_STATUS-17b31386182680219ff1eeeb4db97808?pvs=21),3.2,,,NA,,Integer,LAST_STATUS (https://app.notion.com/p/LAST_STATUS-17b31386182680219ff1eeeb4db97808?pvs=21)
+wasMemorized,Learn - Mobile,Boolean to display the card in Memorized section even if it is reused,True / False,,MEMORIZED (https://app.notion.com/p/MEMORIZED-17b31386182680de96d9d2905957c775?pvs=21),3.3,,,NA,,Boolean,MEMORIZED (https://app.notion.com/p/MEMORIZED-17b31386182680de96d9d2905957c775?pvs=21)
+sourceLanguage,Learn - Mobile,source language for the text,En,,SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-17b31386182680d481abd351c7a84c2c?pvs=21),1.4,,,NA,,String,SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-17b31386182680d481abd351c7a84c2c?pvs=21)
+targetLanguage,Learn - Mobile,target language for the text,Fr,,TARGET_LANG (https://app.notion.com/p/TARGET_LANG-17b31386182680d4b6a7c5602bc25da0?pvs=21),1.5,,,NA,,String,TARGET_LANG (https://app.notion.com/p/TARGET_LANG-17b31386182680d4b6a7c5602bc25da0?pvs=21)
+examplesList,Learn - Mobile,"for every card generated from reverse or suggestion, we save the examples *the values are from bst-query-service json under “list” key","examplesList = ""(\n    \""<ReversoContext.CDTranslation: 0x600001ee68a0> (entity: CDTranslation; id: 0x6000029bebc0 x-coredata:///CDTranslation/tC6BF0475-41A3-4B2C-99B6-2ABCA99D1A66141; data: {\\n    card = nil;\\n    comment = \\\""et non \\\\\\\""issue\\\\\\\""\\\"";\\n    createdAt = \\\""2025-05-26 12:44:30 +0000\\\"";\\n    deletedAt = nil;\\n    editedSource = nil;\\n    editedTranslation = nil;\\n    favType = 0;\\n    isExpanded = 0;\\n    isRemoved = 0;\\n    modifiedAt = \\\""2025-05-26 12:44:30 +0000\\\"";\\n    multilists =     (\\n    );\\n    reference = nil;\\n    searchText = issue;\\n    serverID = 0;\\n    serverTargetText = \\\""probl\\\\U00e8me\\\"";\\n    sourceLanguage = en;\\n    sourcePos = \\\""n.\\\"";\\n    sourceText = \\\""The main <em>issue</em> discussed at the meeting was the budget.\\\"";\\n    targetLanguage = fr;\\n    targetPos = \\\""nm.\\\"";\\n    targetText = \\\""Le principal <em>probl\\\\U00e8me</em> discut\\\\U00e9 lors de la r\\\\U00e9union \\\\U00e9tait le budget.\\\"";\\n})\""\n)"";",,EXAMPLES_LIST (https://app.notion.com/p/EXAMPLES_LIST-17b31386182680999949e68f9a44487d?pvs=21),1.3,,,NA,,Transformable,EXAMPLES_LIST (https://app.notion.com/p/EXAMPLES_LIST-17b31386182680999949e68f9a44487d?pvs=21)
+searchText,Learn - Mobile,source text,surreptitious,,,1.1,,,NA,,String,SOURCE_TEXT (https://app.notion.com/p/SOURCE_TEXT-17b31386182680359f6ef2e52c34db81?pvs=21)
+source,Learn - Mobile,"here we save if an item is added from history or favorites (or none of it). It’s taken into account when, for example, user changes the strategy and wants to play favorites only. Among all “in progress” cards, only “source: favorites” will appear in the game",source = 1;,,SOURCE (https://app.notion.com/p/SOURCE-17b313861826809bae9bcd035ee93eeb?pvs=21),4.1,,"enum Source : Int {
+    case reversoSuggestions = 0
+    case phrasebook
+    case history
+    case words
+ 
+    var sourceName: String {
+        switch self {
+        case .reversoSuggestions:
+            ""Reverso Suggestions""
+        case .phrasebook:
+            ""Favorites""
+        case .history:
+            ""History""
+        case .words:
+            ""Words""",NA,,Integer,SOURCE (https://app.notion.com/p/SOURCE-17b313861826809bae9bcd035ee93eeb?pvs=21)
+ID,History - web,ID of the history entry,1423442342,,serverID (https://app.notion.com/p/serverID-38331386182680ca88e6dbe1e2732fef?pvs=21),9.2,,,On prod,,Integer,
+ID,Favourites - Web,ID of the favourite,1423442342,,,1.0,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),,On prod,ID,Integer,
+NUSER_ID,Favourites - Web,User ID of the owner,58275634,,,1.1,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),,On prod,ID,Integer,
+HASH,Favourites - Web,Internal value to identify the favourite on interface (to be removed in the future),b15747bcc7621cc80ed12329a5d8fd90,,,,,Max 200 chars,On prod,Other,String,
+SOURCE_TEXT,Favourites - Web,Source text of the favourite. Original search,show,,searchText (https://app.notion.com/p/searchText-381313861826800caa47f87fa0b30aa1?pvs=21),2.3,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),Max 2000 chars,On prod,Always,String,
+SOURCE_CONTEXT,Favourites - Web,Context source example where SOURCE_TEXT is found,The <em>show</em> must go on.,,sourceText (https://app.notion.com/p/sourceText-3813138618268017adefe074f6873f2d?pvs=21),3.1,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",Max 2000 chars,On prod,Example,String,
+NUSER_ID,History - web,User ID of the owner,58275634,,,9.1,,,On prod,,Integer,
+HASH,History - web,Internal value to identify the history entry on interface (to be removed in the future),b15747bcc7621cc80ed12329a5d8fd90,,,,,Max 2000 chars,On prod,,String,
+SOURCE_LANG,Lists,Source language of the favourite,en,,,,,2 chars,NA,,String,
+SHARING,Lists,Status of the list: hidden by the owner OR shared by the owner OR composed and approved by us,,,,,,"‘private’, ‘public’ or ‘indexed’",NA,,Variable,
+LIST_NAME,Lists,"Name of the list - automatically set by us or by the creator ","EN Favorites ",,,,,"min 3, max 50 chars",NA,,String,
+TARGET_CONTEXT,Favourites - Web,Context target example that should be translation of SOURCE_CONTEXT.,El <em>espectáculo</em> debe continuar.,,targetText (https://app.notion.com/p/targetText-38131386182680b9a097f8374f54922c?pvs=21),3.2,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",Max 2000 chars,On prod,Example,String,
+SOURCE_LANG,Favourites - Web,Source language of the favourite,en,,sourceLanguage (https://app.notion.com/p/sourceLanguage-38131386182680c58644c0915d35c930?pvs=21),2.1,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),Max 10 chars,On prod,Always,String,
+TARGET_LANG,Favourites - Web,Target language of the favourite,es,,targetLanguage (https://app.notion.com/p/targetLanguage-38131386182680c9ad25f8a2b2bbd35d?pvs=21),2.2,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),Max 10 chars,On prod,Always,String,
+CREATION_DATE,Favourites - Web,When the favourite was added,2017-04-12 15:05:13,,createdAt (https://app.notion.com/p/createdAt-38131386182680479738d461b4c28892?pvs=21),1.1,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),,On prod,ID,Date,
+REMOVED,Favourites - Web,If the favorite was removed or not.,False,,isRemoved (https://app.notion.com/p/isRemoved-381313861826800fb94cd071f1eff8f9?pvs=21),,,,On prod,Editing,Boolean,
+TARGET_TEXT_EDITED,Favourites - Web,,espectáculo → show,,,,,Max 2000 chars,On prod,Editing,String,
+DOCUMENT_TITLE,Favourites - Web,Mainly used by extension. Title of the document where the favourite was marked.,"Away  S1:E3  Half the Sky
+
+theguardian.com",,,5.2,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),Max 200 chars,On prod,Read/Watch,String,
+DOCUMENT,Favourites - Web,Mainly used by extension. URL where the favourite was marked,"https://www.netflix.com/watch/80243605
+
+https://www.theguardian.com/us-news/2023/aug/01/donald-trump-charged-2020-election",,,5.3,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),Max 2000 chars,On prod,Read/Watch,String,
+SOURCE_SEGMENT,Favourites - Web,Mainly used by extension. Sentence that contains the SOURCE_TEXT.,"For a bit of gentle debunking, consider: The self-charging electric bike: fact or fiction?",,,5.1,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),Max 2000 chars,On prod,Read/Watch,String,
+SOURCE,Favourites - Web,"Device where the favourite was marked:
+0: Context web
+1: Mobile app
+2: Reader extension
+3: Chrome extension
+4: Desktop app",0,,,2.6,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),,On prod,Always,Integer,
+TARGET_TEXT,Favourites - Web,"Translation added as favourite. In Context, from filtered translation or the first highlight in the target context",espectáculo,,serverTargetText (https://app.notion.com/p/serverTargetText-381313861826801e87c4d8b70a40a761?pvs=21),2.4,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),Max 2000 chars,On prod,Always,String,
+COMMENT,Favourites - Web,"User’s comment about the entry. 
+
+Also used for storing the 2nd and 3rd translation of the search when marked as Favourite from History.","mostrar, enseñar",,comment (https://app.notion.com/p/comment-38131386182680f6bb50f97c423a66cf?pvs=21),4.5,From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21),Max 2000 chars,On prod,Optional,String,
+DOMAIN,Favourites - Web,"Linguistic domain. 
+
+Currently not used. There was a task started for this in the past",business,,,,,Max 200 chars,Not used,Other,String,
+HISTORY_ID,Favourites - Web,"ID of the entry in History table if the favourite was marked from History
+
+Question: who is using this field?",2158245,,,,From History (https://app.notion.com/p/From-History-38131386182680a69899eeedd8c0faf1?pvs=21),,On prod,Other,Integer,
+LAST_EDIT,Favourites - Web,Automatic value. Last time the favourite was edited.,2017-04-12 15:05:13,,modifiedAt (https://app.notion.com/p/modifiedAt-3813138618268082acc0d769aa6d75c2?pvs=21),,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),,On prod,Editing,Date,
+WORDCOUNT,Favourites - Web,"Number of words of the SOURCE_TEXT
+
+Question: who is using this field?",1,,,,,,On prod,Other,Integer,
+FAVTYPE,Favourites - Web,"Origin of the favourite:
+-blank-: Context
+syn: Synonyms
+mt: Machine translation
+ctx-genai: term generated with AI
+def, def-genai: term containing a defintion, possibly ai generated 
+
+see inside the page itself for much more info.",-,,favType (https://app.notion.com/p/favType-38131386182680d79f94fa12a20e3e10?pvs=21),2.5,"From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21), From MT result page (https://app.notion.com/p/From-MT-result-page-3833138618268014858adeb0ee1a118e?pvs=21), From Synonyms result page (https://app.notion.com/p/From-Synonyms-result-page-38331386182680568d89fb606041bf90?pvs=21)",Max 10 chars,On prod,Always,String,
+BACKGROUND_COLOR,Lists,Color of the list’s cover background (background for emoji),607D8B,,,,,6 characters color code,NA,,String,
+EMOJI,Lists,Unicode of emoji that is used as the cover of a list,U+1F600,,,,,unicode chars,NA,,String,
+ID,Lists,ID of the list,2938498,,,,,7 digits,NA,,Integer,
+SOURCE_TEXT,History - web,Source text of the history entry. Original search,cabeza,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),sourceText (https://app.notion.com/p/sourceText-38331386182680b1ab36e31e0dc09cf7?pvs=21),1.1,,Max 2000 chars,On prod,,String,
+TARGET_TEXT,History - web,Translation added as favourite. Currently not used. Probably to be used to store MT target text if we start saving this,head,,,,,Max 2000 chars,Not used,,String,
+SOURCE_LANG,History - web,Source language of the history entry,en,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),sourceLang (https://app.notion.com/p/sourceLang-383313861826805aaa98c3e332436a41?pvs=21),1.5,,Max 10 chars,On prod,,String,
+TARGET_LANG,History - web,Target language of the history entry,es,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),targetLang (https://app.notion.com/p/targetLang-38331386182680b38856f8cd45344f18?pvs=21),1.6,,Max 10 chars,On prod,,String,
+CREATION_DATE,History - web,When the History entry was added,2017-04-12 15:05:13,All scenarios (https://app.notion.com/p/All-scenarios-380313861826802d839ff21f72908a25?pvs=21),createdAt (https://app.notion.com/p/createdAt-38331386182680b9a301def6ad669f3d?pvs=21),2.1,,,On prod,,Date,
+PRIORITY,History - web,TO BE REMOVED,,,,,,,NA,,Integer,
+REMOVED,History - web,Whether the History entry was removed or not.,False,,isRemoved (https://app.notion.com/p/isRemoved-383313861826805681f7c66aaed535e3?pvs=21),3.3,,,On prod,,Boolean,
+STATUS,History - web,"Type of results given by the search:
+0: not found (default)
+1: partially found
+2: exact results in the original search
+3: found without translation",0,,status (https://app.notion.com/p/status-38331386182680f7bed7db2ff2672d23?pvs=21),8.1,,,On prod,,Integer,
+TRANSLATION1,History - web,First translation of SOURCE_TEXT,head,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21)",,1.2,,Max 100,On prod,,String,
+TRANSLATION2,History - web,Second translation of SOURCE_TEXT,mind,From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21),,1.3,,Max 100,On prod,,String,
+TRANSLATION3,History - web,Third translation of SOURCE_TEXT,lead,From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21),,1.4,,Max 100,On prod,,String,
+WORDCOUNT,History - web,Number of words of the SOURCE_TEXT,1,,,4.2,,,On prod,,Integer,
+SOURCE_CONTEXT,History - web,Source sentence where SOURCE_TEXT is found,"La Familia Real, aliviada al ver que Froilán va sentando la cabeza tras dejar las armas de fuego por las armas blancas",Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,5.1,,Max 2000 chars,On prod,,String,
+DOCUMENT_TITLE,History - web,Mainly used by extension. Title of the document where the History entry was marked.,elmundotoday.com,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,5.2,,Max 200 chars,On prod,,String,
+DOCUMENT,History - web,Mainly used by extension. URL where the History entry was marked,https://www.elmundotoday.com/2022/12/la-familia-real-aliviada-al-ver-que-froilan-va-asentando-la-cabeza-tras-dejar-las-armas-de-fuego-por-las-armas-blancas/,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,5.3,,Max 2000 chars,On prod,,String,
+SOURCE,History - web,"Device where the History entry was marked:
+0: Context web
+1: Mobile app
+2: Chrome extension
+3: Reader extension
+4: Desktop app
+5: Define web",2,,source (https://app.notion.com/p/source-38331386182680bb828af4e55df3c566?pvs=21),4.3,,,On prod,,Integer,
+COMMENT,History - web,User’s comment about the entry,“This is a translation a want to learn”,,,3.1,,Max 2000,On prod,,String,
+SOURCE_SENTENCE,History - web,"“Smart suggestion” that is mainly used by extension. Sentence, which is a superstring with meaning that contains the SOURCE_TEXT.",sentando la cabeza,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,6.1,,Max 2000,On prod,,String,
+SOURCE_SENTENCE_TRANSLATION1,History - web,First translation fo SOURCE_SENTENCE,settling down,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,6.2,,Max 100,On prod,,String,
+SOURCE_SENTENCE_TRANSLATION2,History - web,Second translation fo SOURCE_SENTENCE,,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,6.3,,Max 100,On prod,,String,
+SOURCE_SENTENCE_TRANSLATION3,History - web,Third translation fo SOURCE_SENTENCE,,Reading / Wathing (https://app.notion.com/p/Reading-Wathing-38031386182680ba8a14d76b80fc7af3?pvs=21),,6.4,,Max 100,On prod,,String,
+HISTTYPE,History - web,"Origin of the History entry:
+-blank-: Context
+syn: Synonyms
+mt: Machine translation",-,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",histType (https://app.notion.com/p/histType-38331386182680ffbaf8e05b0000e406?pvs=21),4.1,,Max 10 chars,On prod,,String,
+TARGET_LANG,Lists,Target language of the favourite,fr,,,,,2 chars,NA,,String,
+DIFFICULTY,Lists,Difficulty of the list (only for ‘indexed’ lists that are created and approved on Reverso’s side),,,,,,"‘beginner’, ‘intermediate’ or ‘advanced’",NA,,Variable,
+NUSER_ID,Lists,User ID of the list’s owner,58275634,,,,,,NA,,Integer,
+CREATION_DATE,Lists,Timestamp when the list was created,2017-04-12 15:05:13,,,,,,NA,,Date,
+LAST_EDIT_DATE,Lists,Timestamp when the list was last modified,2017-04-12 15:05:13,,,,,,NA,,Date,
+REMOVED,Lists,If the list was deleted or not,,,,,,,NA,,Boolean,
+FAVOURITE_ID,Favourites - MultiLists,References the word from the user favourites,,,,1,,,NA,,Integer,
+LIST_ID,Favourites - MultiLists,References the list the word appears in,,,,2,,,NA,,Integer,
+SOURCE_POS,Favourites - Web,"POS for source term
+see more below in the https://app.notion.com/p/DOC-Saving-Favorites-History-DBQuestions-db21075253fb4e13a0031dcd55169737?pvs=21 section.","adj, nm, nfpl, v",,sourcePos (https://app.notion.com/p/sourcePos-3813138618268001afc4e5ff81798741?pvs=21),4.1,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",Max 30 chars,On prod,Optional,String,
+TARGET_POS,Favourites - Web,"POS for source term
+see more below in the https://app.notion.com/p/DOC-Saving-Favorites-History-DBQuestions-db21075253fb4e13a0031dcd55169737?pvs=21 section.","adj, nm, nfpl, v",,targetPos (https://app.notion.com/p/targetPos-381313861826801dbcd6ddf9dc3f34d6?pvs=21),4.2,"From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21)",Max 30 chars,On prod,Optional,String,
+SOURCE_TEXT,Learn - Web,Source term,surreptitious,,searchText (https://app.notion.com/p/searchText-c49716bd68d1443d81647024a17cbb56?pvs=21),1.3,,"Max  250 chars
+
+right now we have 24 on mobile, must be extended to 250 for regular flashcards",NA,,String,
+TARGET_LIST,Learn - Web,the Context Translation Result response from bst-query-service,,,translationsList (https://app.notion.com/p/translationsList-aef7b5e823684822bdaa57bb3116eab4?pvs=21),1.4,,Text LOB,NA,,Transformable,translationsList (https://app.notion.com/p/translationsList-aef7b5e823684822bdaa57bb3116eab4?pvs=21)
+EXAMPLES_LIST,Learn - Web,"(6 first examples in mobile app from History and only 1 from Favourites) for every card generated from reverse or suggestion, we save the examples.
+  - the values are from bst-query-service json under “list” key",,,examplesList (https://app.notion.com/p/examplesList-6ec8fdf2d1d14b9985ac8555c0b5b6d1?pvs=21),1.5,,"Text LOB
+
+Saves pairs of source and target examples as a list",NA,,Transformable,examplesList (https://app.notion.com/p/examplesList-6ec8fdf2d1d14b9985ac8555c0b5b6d1?pvs=21)
+SOURCE_LANG,Learn - Web,source language for the text,,,sourceLanguage (https://app.notion.com/p/sourceLanguage-de33691317984247b94b08f2b972654a?pvs=21),1.1,,Max 10 chars,NA,,String,sourceLanguage (https://app.notion.com/p/sourceLanguage-de33691317984247b94b08f2b972654a?pvs=21)
+TARGET_LANG,Learn - Web,target language for the text,,,targetLanguage (https://app.notion.com/p/targetLanguage-a1d595a8c1ef409b9d6f440ea488cab2?pvs=21),1.2,,Max 10 chars,NA,,String,targetLanguage (https://app.notion.com/p/targetLanguage-a1d595a8c1ef409b9d6f440ea488cab2?pvs=21)
+FIRST_SEEN_DATE,Learn - Web,Date a flashcard was first seen,,,firstSeenDate (https://app.notion.com/p/firstSeenDate-6075b54c546d49a8b7da40ca6adfbd3e?pvs=21),2.1,,,NA,,Date,firstSeenDate (https://app.notion.com/p/firstSeenDate-6075b54c546d49a8b7da40ca6adfbd3e?pvs=21)
+LAST_SEEN_DATE,Learn - Web,Date a flashcard was last seen,,,lastSeenDate (https://app.notion.com/p/lastSeenDate-1d3574c43c2c47a2b843df874bce4ca1?pvs=21),2.2,,,NA,,Date,lastSeenDate (https://app.notion.com/p/lastSeenDate-1d3574c43c2c47a2b843df874bce4ca1?pvs=21)
+TIMES_SEEN,Learn - Web,number of times a flashcard was seen,,,countNumberOfTimes (https://app.notion.com/p/countNumberOfTimes-0145f93936c745ef998b99abacab022c?pvs=21),2.3,,,NA,,Integer,
+SRS_COUNTER,Learn - Web,keep track of cards marked as Memorized,"0, 1, 2, 3, 4",,isReadyToMemorize (https://app.notion.com/p/isReadyToMemorize-59da72ecf3824610befb7c1f03861a44?pvs=21),3.1,,,NA,,Integer,countNumberOfTimes (https://app.notion.com/p/countNumberOfTimes-0145f93936c745ef998b99abacab022c?pvs=21)
+LAST_STATUS,Learn - Web,Last status of a Flashcard,"Yes, No or Partially (integer!). “Partially” = “in progress”",,lastStatus (https://app.notion.com/p/lastStatus-b4951ff5dec641f79a4238728000a8f9?pvs=21),3.2,,"ENUM(’CORRECT’,’INCORRECT’,’PARTIALLY’)",NA,,Enum,lastStatus (https://app.notion.com/p/lastStatus-b4951ff5dec641f79a4238728000a8f9?pvs=21)
+MEMORIZED,Learn - Web,Boolean to display the card in Memorized section even if it is reused,True / False,,wasMemorized (https://app.notion.com/p/wasMemorized-a87630a608b440e0a8f13cadc77ac844?pvs=21),3.3,,,NA,,Boolean,wasMemorized (https://app.notion.com/p/wasMemorized-a87630a608b440e0a8f13cadc77ac844?pvs=21)
+CLASSIFICATION,Learn - Web,"Indicates whether a card is deleted, should be ignore or should be prioritized from games","ignore, deleted, priority, default",,"excludedFromQuiz (https://app.notion.com/p/excludedFromQuiz-18131386182680c2a10ee0a9f41a014e?pvs=21), isIgnored (https://app.notion.com/p/isIgnored-8950a09c2d2344a78f6e45c746fa503f?pvs=21), cardPriority (https://app.notion.com/p/cardPriority-b040836814ae4de6b92c896a54e1d554?pvs=21)",3.4,,"ENUM(’DEFAULT’,’PRIORITY’,’IGNORED’)
+
+ignored → the user explicitly don’t want to learn this term anymore
+deleted → the favorite related to this term was deleted by the user → still show in stats, not in new quiz
+priority → learn this term in priority",NA,,Enum,excludedFromQuiz (https://app.notion.com/p/excludedFromQuiz-18131386182680c2a10ee0a9f41a014e?pvs=21)
+SOURCE,Learn - Web,"Indicates whether a card was added from history or favorites or none of it. Here we save if an item is added from history or favorites (or none of it). ","history, favorite",,source (https://app.notion.com/p/source-29c1255112a840abbaca35a7b07ea6c1?pvs=21),1.6,,"ENUM(’UNKNOWN’,’HISTORY’,’FAVOURITES’)
+
+It’s taken into account when, for example, user changes the strategy and wants to play favorites only. Among all “in progress” cards, only “source: favorites” will appear in the game",NA,,Enum,source (https://app.notion.com/p/source-29c1255112a840abbaca35a7b07ea6c1?pvs=21)
+TYPE,Learn - Web,"Type of card: 
+- Definition
+- Context
+- MT
+…","mt, def, syn, ctx",,cardType (https://app.notion.com/p/cardType-1813138618268068b433d787a5022ec8?pvs=21),1.7,,Max 10 chars,NA,,String,
+FAVOURITE_ID,Learn - Web,Id of the favorite if the word is in the user’s favorites,,,,1.8,,,NA,,Integer,
+ID,Learn - Web,Identifier of the card,"1, 2, 3…",,,1.0,,,NA,,Long,
+NUSER_ID,Learn - Web,User identifier,"1, 2, 3…",,,1.0,,,NA,,Long,
+cardType,Learn - Mobile,"Type of card (context, definitions, etc.)","Context, Definition, MT, Synonyms",,,4.2,,,NA,,Integer,TYPE (https://app.notion.com/p/TYPE-17b3138618268075b8d9dc80aa392898?pvs=21)
+excludedFromQuiz,Learn - Mobile,"If entries are not suitable for Quiz, they should be tagged as true her (Ex. definitions, context duplicates, …)",isExcludedFromQuiz = 0;,,CLASSIFICATION (https://app.notion.com/p/CLASSIFICATION-17b313861826800190cecacf5c455f1d?pvs=21),4.3,,,NA,,Boolean,CLASSIFICATION (https://app.notion.com/p/CLASSIFICATION-17b313861826800190cecacf5c455f1d?pvs=21)
+TARGET_TEXT,Learn - Web,Only the first element of Translation List,,,translationsList (https://app.notion.com/p/translationsList-aef7b5e823684822bdaa57bb3116eab4?pvs=21),1.3,,Max 250 chars,NA,,String,
+REGISTER,Favourites - Web,Used to show informal terms in editorial vocabulary lists (maybe we’ll add more register to display to the users),Informal,,,4.3,"From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",,In progress,Optional,String,
+LANGUAGE_LEVEL,Favourites - Web,Used to store the CERF level of a word (only for monolingual fav for now and for vocabulary lists),A1/A2/B1/B2/C1/C2/Rare,,,4.4,"From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",,In progress,Optional,String,
+ID,Goals,ID of the list,2938498,,,,,7 digits,NA,,Integer,
+ID,Featured Sections,ID of the list,2938498,,,,,7 digits,NA,,Integer,
+NAME,Featured Sections,,,,,,,,NA,,,
+SORT_ORDER,Featured Sections,,,,,,,,NA,,,
+GOAL_ID,Featured Sections,,,,,,,,NA,,,
+favType,Favorites - Mobile,"0 → noneRegular context favorite
+1 → mtMachine translation
+2 → webSearchWeb search result
+3 → genAIGenAI result
+4 → defDefinition
+5 → synSynonym",,,,,,Integer 16,NA,,Integer,FAVTYPE (https://app.notion.com/p/FAVTYPE-8c61352af41a49968637e4a0a264c7fa?pvs=21)
+comment,Favorites - Mobile,,,,,,,,NA,Optional,String,COMMENT (https://app.notion.com/p/COMMENT-051bd52e483c4438a5a2fd5be3328b71?pvs=21)
+sourcePos,Favorites - Mobile,,,,,,,,NA,Optional,String,SOURCE_POS (https://app.notion.com/p/SOURCE_POS-c1401b0b2a4f410b8c750509aa7eb94c?pvs=21)
+targetPos,Favorites - Mobile,,,,,,,,NA,Optional,String,TARGET_POS (https://app.notion.com/p/TARGET_POS-1c69d6508c594731aed95d6d385e0928?pvs=21)
+sourceLanguage,Favorites - Mobile,,,,,,,,NA,Always,String,SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-6bb365d9a6ab4855b3bc0ba0cf90c218?pvs=21)
+targetLanguage,Favorites - Mobile,,,,,,,,NA,Always,String,TARGET_LANG (https://app.notion.com/p/TARGET_LANG-87528e6e692947d686d9f2b9c81fbb59?pvs=21)
+sourceText,Favorites - Mobile,,,,,,,,NA,Always,String,SOURCE_CONTEXT (https://app.notion.com/p/SOURCE_CONTEXT-022b1bed3c3043d585c6d923e5f05ff5?pvs=21)
+targetText,Favorites - Mobile,,,,,,,,NA,Always,String,TARGET_CONTEXT (https://app.notion.com/p/TARGET_CONTEXT-3bb3d304fcb848cfb55c4bf6f70b9928?pvs=21)
+searchText,Favorites - Mobile,,,,,,,,NA,Always,String,SOURCE_TEXT (https://app.notion.com/p/SOURCE_TEXT-d2e5153780cc4d67bd417b0c90784bec?pvs=21)
+serverTargetText,Favorites - Mobile,,,,,,,"Original server translation (kept when user edits)
+
+This is where we store definitions",NA,Always,,TARGET_TEXT (https://app.notion.com/p/TARGET_TEXT-1044b75c8e854e318b0cb56f6cd94b45?pvs=21)
+createdAt,Favorites - Mobile,,,,,,,,NA,Always,,CREATION_DATE (https://app.notion.com/p/CREATION_DATE-61be111b80cc483aaaeaa1cd193f69f8?pvs=21)
+modifiedAt,Favorites - Mobile,,,,,,,,NA,Always,,LAST_EDIT (https://app.notion.com/p/LAST_EDIT-ace85e82f89d49aa9eaa9d8d66a6b7bb?pvs=21)
+deletedAt,Favorites - Mobile,,,,,,,,NA,,,
+reference,Favorites - Mobile,Source reference of the example,,,,,,,NA,,,
+editedSource,Favorites - Mobile,User-edited versions of the example pair,,,,,,,NA,,,
+editedTranslation,Favorites - Mobile,User-edited versions of the example pair,,,,,,,NA,,,
+serverID,Favorites - Mobile,Backend ID for account sync,,,,,,,NA,,,
+isRemoved,Favorites - Mobile,,,,,,,,NA,,,REMOVED (https://app.notion.com/p/REMOVED-164f9da5f5d54941b494576b459bb815?pvs=21)
+isExpanded,Favorites - Mobile,UI state (expanded cell in the list),,,,,,,NA,,,
+sourceText,History - mobile,The word/phrase searched,movie,,,,,,NA,Always,String,SOURCE_TEXT (https://app.notion.com/p/SOURCE_TEXT-843ba20d821d493895326bd0f6b892f7?pvs=21)
+SOURCE_TRANSLIT,Favourites - Web,,,,,,"Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21)",,NA,,String,
+TARGET_TRANSLIT,Favourites - Web,,,,,,"Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",,NA,,String,
+IMAGE,Favourites - Web,,,,,,"Creating editorial list (https://app.notion.com/p/Creating-editorial-list-3833138618268022a07aeffb72d5f9c6?pvs=21), From Context result page (https://app.notion.com/p/From-Context-result-page-38331386182680759f59fc9873faac9b?pvs=21), From Define result page (https://app.notion.com/p/From-Define-result-page-3803138618268072a3bbf288daa9956c?pvs=21), From BilingualCombined result page (https://app.notion.com/p/From-BilingualCombined-result-page-38331386182680a5ae27f2998501f8ae?pvs=21)",,NA,,String,
+ORIGINAL_LIST_ID,Favourites - Web,List ID of the editorial Reverso list the term was saved from,,,,,From a list (https://app.notion.com/p/From-a-list-380313861826803a85a3d227d8ef975a?pvs=21),,NA,,Integer,
+sourceLang,History - mobile,Source language code,en,,,,,,NA,,String,SOURCE_LANG (https://app.notion.com/p/SOURCE_LANG-b35fb8300a3841049097ebaf2ebbbdf9?pvs=21)
+targetLang,History - mobile,Target language code,fr,,,,,,NA,,String,TARGET_LANG (https://app.notion.com/p/TARGET_LANG-ababee0a78864e0cb1570ac10ad32d01?pvs=21)
+translationsEntries,History - mobile,"Parsed translation results, as [BSTDictionaryEntry]","film, cinéma, vidéo",,,,,,NA,,Transformable,
+responseDict,History - mobile,Full raw API response; most other data is derived from it,Too large to display,,,,,,NA,,Transformable,
+status,History - mobile,"Search outcome (Status enum): 
+1 = notFound
+2 =  partiallyFound
+3 = exactResults
+4 = noTranslations",3,,,,,,NA,,Integer,STATUS (https://app.notion.com/p/STATUS-b4b8bea5125d4a9c8b54bcd26802ab45?pvs=21)
+histType,History - mobile,History type (HistType): 1 = def (definition lookup). 0 = normal context search,0,,,,,,NA,,Integer,HISTTYPE (https://app.notion.com/p/HISTTYPE-7571fcab115f44d2b2591a943ddb846f?pvs=21)
+source,History - mobile,"Origin (SourceType): 0 contextWeb, 1 mobile, 2 chromeExtension",1,,,,,,NA,,Integer,SOURCE (https://app.notion.com/p/SOURCE-448c54fd99a64a7f9b4e82182985707d?pvs=21)
+isFromSuggestion,History - mobile,"Whether the user tapped a suggestion vs. typed it
+
+Is this actually used?",nil → not from a suggestion,,,,,,NA,Optional,Boolean,
+isPerformedOffline,History - mobile,Whether it ran against the offline dictionary,0 → online search,Saving offline (https://app.notion.com/p/Saving-offline-3833138618268036a7fdfe8f6335c24f?pvs=21),,,Saving offline (https://app.notion.com/p/Saving-offline-3833138618268036a7fdfe8f6335c24f?pvs=21),,NA,,Boolean,
+isWatchSearch,History - mobile,Whether it originated on the Apple Watch,nil → not a Watch search,,,,,,NA,,Boolean,
+isRemoved,History - mobile,"Soft-delete flag (marked deleted, kept for sync)",nil → not removed,,,,,,NA,,Boolean,REMOVED (https://app.notion.com/p/REMOVED-72c7870b4e4c461cb7cbc8c6ad2cbc61?pvs=21)
+createdAt,History - mobile,When the entry was first created,2026-06-18 14:37:39 +0000,,,,,,NA,ID,Date,CREATION_DATE (https://app.notion.com/p/CREATION_DATE-21ab4060ac3f4502ac6962033385b1b5?pvs=21)
+modifiedAt,History - mobile,"When it was last modified
+
+What does it mean for a History to be “modified”? Can we even edit a history term?",2026-06-18 14:37:39 +0000 (same → never edited),,,,,,NA,,Date,
+serverID,History - mobile,"Matching record ID on Reverso's server, for cross-device sync",0 → not yet synced / no server ID,,,,,,NA,ID,Integer,ID (https://app.notion.com/p/ID-a8ce264f9281432bb7e0df8c598b624f?pvs=21)
+card (relationship),History - mobile,Links this history entry to its flashcard (Learn/Quiz games),nil → no flashcard created,,,,,,NA,,CDFlashcard,
