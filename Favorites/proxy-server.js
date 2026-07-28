@@ -1,6 +1,6 @@
 /**
  * Local proxy for the Favourites API tester.
- * Avoids CORS when calling context.preprod from the browser.
+ * Avoids CORS when calling context.reverso.net from the browser.
  *
  * Usage: node Favorites/proxy-server.js
  * Then open http://localhost:3847/
@@ -14,7 +14,7 @@ const { URL } = require("url");
 const PORT = process.env.PORT || 3847;
 const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
-  "https://context.preprod.reverso.net:8443/bst-web-user-0.0.0-SNAPSHOT-WEB-2892";
+  "https://context.reverso.net/bst-web-user";
 
 const HTML_PATH = path.join(__dirname, "api-tester.html");
 const FILTER_DEMO_PATH = path.join(__dirname, "filtering-demo.html");

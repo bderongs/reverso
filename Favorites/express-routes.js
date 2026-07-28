@@ -7,7 +7,7 @@ const { URL } = require("url");
 
 const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
-  "https://context.preprod.reverso.net:8443/bst-web-user-0.0.0-SNAPSHOT-WEB-2892";
+  "https://context.reverso.net/bst-web-user";
 
 const FAV_DIR = __dirname;
 

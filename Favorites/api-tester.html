@@ -363,7 +363,7 @@
     <section class="panel" id="cors-note">
       <h2>Why a local relay?</h2>
       <p class="note" style="margin:0">
-        Swagger works because it is hosted on <code>context.preprod.reverso.net</code> — same origin as the API,
+        Swagger works because it is hosted on <code>context.reverso.net</code> — same origin as the API,
         so the browser allows the call. This page is on <code>localhost</code>, so a direct browser call is blocked by CORS.
         The relay only forwards the exact same request; it does not change the payload.
         Open this UI via <code>http://localhost:3847/</code> (not as a file).
@@ -395,7 +395,7 @@
         </div>
         <div class="field mid">
           <label for="api-base">API base URL</label>
-          <input id="api-base" type="text" value="https://context.preprod.reverso.net:8443/bst-web-user-0.0.0-SNAPSHOT-WEB-2892">
+          <input id="api-base" type="text" value="https://context.reverso.net/bst-web-user">
         </div>
         <div class="actions" style="display:flex; gap:0.5rem; align-items:center;">
           <label style="display:flex; gap:0.4rem; align-items:center; font-size:0.85rem; color:var(--muted);">
