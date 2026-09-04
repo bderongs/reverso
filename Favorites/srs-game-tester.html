@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SRS game tester</title>
+  <style>
+    :root {
+      --ink: #1c1c1e;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --surface: #fff;
+      --bg: #e8eaef;
+      --blue: #1a73e8;
+      --green: #16a34a;
+      --green-bg: #e6f6ee;
+      --err: #b42318;
+      --err-bg: #fef3f2;
+      --warn-bg: #fff7ed;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --config-bg: #eef2ff;
+      --config-border: #c7d2fe;
+      --config-head: #3730a3;
+      --run-bg: #f0fdf4;
+      --run-border: #86efac;
+      --tech-bg: #f5f3ff;
+      --tech-border: #ddd6fe;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #111827;
+      color: #fff;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .topbar h1 { font-size: 1rem; font-weight: 650; }
+    .topbar p { font-size: 0.8rem; opacity: 0.8; }
+    .topbar nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .topbar a {
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.75rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .zone {
+      border-radius: 16px;
+      border: 1px solid transparent;
+      padding: 1.15rem 1.25rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .zone-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.45rem 0.85rem;
+    }
+    .zone-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 800;
+    }
+    .zone-desc { font-size: 0.8rem; color: var(--muted); }
+    .zone-config { background: var(--config-bg); border-color: var(--config-border); }
+    .zone-config .zone-label { color: var(--config-head); }
+    .zone-run { background: var(--run-bg); border-color: var(--run-border); }
+    .zone-run .zone-label { color: #166534; }
+    .zone-tech { background: var(--tech-bg); border-color: var(--tech-border); }
+    .zone-tech .zone-label { color: #5b21b6; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+    }
+    .panel h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+    details.auth-panel {
+      padding: 0;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--config-border);
+    }
+    details.auth-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      padding: 0.75rem 1rem;
+      user-select: none;
+    }
+    details.auth-panel > summary::-webkit-details-marker { display: none; }
+    details.auth-panel > summary .sum-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--config-head);
+      font-weight: 700;
+    }
+    details.auth-panel > summary .sum-chev { margin-left: auto; color: var(--muted); }
+    details.auth-panel[open] > summary .sum-chev { transform: rotate(180deg); }
+    details.auth-panel .auth-body {
+      padding: 0 1rem 0.9rem;
+      border-top: 1px solid var(--config-border);
+      padding-top: 0.85rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 140px; min-width: 0; }
+    .field.full { flex: 1 1 100%; }
+    .field.narrow { flex: 0 1 110px; }
+    label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      font: inherit;
+      background: #fff;
+    }
+    textarea.auth { min-height: 2.6rem; font-family: var(--mono); font-size: 0.72rem; }
+    .btn {
+      appearance: none; border: none; border-radius: 8px;
+      padding: 0.5rem 0.85rem; font: inherit; font-weight: 650;
+      cursor: pointer; background: var(--blue); color: #fff;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .btn.danger { background: var(--err); }
+    .btn.success { background: var(--green); }
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.74rem; padding: 0.18rem 0.55rem; border-radius: 999px;
+      background: #eef2f7; color: var(--muted); font-weight: 650;
+    }
+    .pill.ok { background: var(--green-bg); color: var(--green); }
+    .pill.err { background: var(--err-bg); color: var(--err); }
+    .pill.run { background: #dbeafe; color: #1d4ed8; }
+    .note { font-size: 0.78rem; color: var(--muted); }
+    .jwt-badge {
+      display: inline-flex; font-size: 0.74rem; padding: 0.18rem 0.55rem;
+      border-radius: 999px; background: #eef2f7; color: var(--muted); font-weight: 650;
+    }
+    .jwt-badge.ok { background: var(--green-bg); color: var(--green); }
+    .jwt-badge.warn { background: var(--warn-bg); color: #c2410c; }
+    .jwt-badge.err { background: var(--err-bg); color: var(--err); }
+    .jwt-warn-inline {
+      margin-top: 0.45rem; font-size: 0.78rem; padding: 0.45rem 0.6rem;
+      border-radius: 8px; background: var(--warn-bg); color: #9a3412;
+      border: 1px solid #fed7aa; display: none;
+    }
+    .jwt-warn-inline.show { display: block; }
+    .jwt-warn-inline.err { background: var(--err-bg); color: var(--err); border-color: #fecaca; }
+    .stats-bar { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.5rem; }
+    .stat {
+      border: 1px solid var(--line); border-radius: 8px;
+      padding: 0.4rem 0.55rem; min-width: 6.5rem; background: #fafafa;
+    }
+    .stat .k {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--muted); font-weight: 700;
+    }
+    .stat .v { font-family: var(--mono); font-weight: 700; margin-top: 0.1rem; }
+    .log {
+      font-family: var(--mono); font-size: 0.72rem;
+      background: #0f1724; color: #d7e0ef; border-radius: 8px;
+      padding: 0.75rem; max-height: 320px; overflow: auto;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .log .ok { color: #86efac; }
+    .log .err { color: #fca5a5; }
+    .log .warn { color: #fcd34d; }
+    pre.raw {
+      background: #0f1724; color: #d7e0ef; border-radius: 8px;
+      padding: 0.75rem; font-family: var(--mono); font-size: 0.7rem;
+      overflow: auto; max-height: 220px; white-space: pre-wrap; word-break: break-word;
+    }
+    .hidden { display: none !important; }
+    .radio-row {
+      display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; align-items: center;
+    }
+    .radio-row label {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.82rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    }
+    .radio-row input { width: auto; accent-color: var(--blue); }
+    .srs-report {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .srs-report h3 { font-size: 0.92rem; margin: 0; }
+    .srs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.55rem;
+    }
+    .srs-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.55rem 0.65rem;
+      background: #fafafa;
+    }
+    .srs-card .k {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--muted); font-weight: 700;
+    }
+    .srs-card .v { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; margin-top: 0.15rem; }
+    .srs-card .sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.35; }
+    .srs-card.warn { border-color: #fdba74; background: #fff7ed; }
+    .srs-card.ok { border-color: #86efac; background: #f0fdf4; }
+    .srs-card.err { border-color: #fca5a5; background: #fef2f2; }
+    .srs-table-wrap { overflow: auto; max-height: 280px; border: 1px solid var(--line); border-radius: 8px; }
+    table.srs-table {
+      width: 100%; border-collapse: collapse; font-size: 0.74rem;
+    }
+    table.srs-table th, table.srs-table td {
+      padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--line); text-align: left;
+      vertical-align: top;
+    }
+    table.srs-table th {
+      position: sticky; top: 0; background: #f8fafc;
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    }
+    table.srs-table td.num { font-family: var(--mono); }
+    .srs-empty { font-size: 0.82rem; color: var(--muted); }
+    .muted-id { color: var(--muted); font-size: 0.72rem; font-family: var(--mono); font-weight: 500; }
+    .word-totals {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .word-totals h3 { font-size: 0.92rem; margin: 0; }
+    .word-totals-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      justify-content: space-between;
+    }
+    .word-cell-sub { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+    table.srs-table td.num.ok { color: var(--green); font-weight: 700; }
+    table.srs-table td.num.srs-changed { color: #1d4ed8; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>SRS game tester</h1>
+      <p>Auto-play flashcard quizzes via <code>GET /user/learn/cards/quiz</code> + <code>POST /user/learn/cards/quiz/update</code></p>
+    </div>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/filtering-demo.html">Filtering demo</a>
+      <a href="/srs-game-tester.html">SRS tester</a>
+    </nav>
+  </div>
+
+  <main>
+    <section class="zone zone-config">
+      <div class="zone-head">
+        <span class="zone-label">Configuration</span>
+        <span class="zone-desc">Auth, load lists &amp; language pairs, then set game options</span>
+      </div>
+
+      <details class="panel auth-panel" id="auth-panel" open>
+        <summary>
+          <span class="sum-title">Auth &amp; load</span>
+          <span id="jwt-badge" class="jwt-badge">No token</span>
+          <span id="status-pill" class="pill">Idle</span>
+          <span id="status-meta" class="note"></span>
+          <span class="sum-chev">▾</span>
+        </summary>
+        <div class="auth-body">
+          <div class="row">
+            <div class="field full">
+              <label for="refresh-token">Refresh token</label>
+              <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field full">
+              <label for="auth-token">Access token (auto)</label>
+              <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
+            </div>
+          </div>
+          <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
+          <div class="row" style="margin-top:0.55rem;">
+            <div class="field">
+              <label for="origin-header">X-Reverso-Origin</label>
+              <input id="origin-header" type="text" value="mainweb">
+            </div>
+            <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
+            <button type="button" class="btn" id="btn-load-account">Load account</button>
+          </div>
+          <p class="note" style="margin-top:0.55rem;">
+            Local server only: requests go through <code>/proxy</code> → production API.
+            Paste your refresh token once; the page calls
+            <code>POST /api/v1/account/accessToken</code> when the JWT expires.
+          </p>
+        </div>
+      </details>
+
+      <div class="panel">
+        <h2>Game source</h2>
+        <div class="row">
+          <div class="field">
+            <label for="source-strategy">Source strategy</label>
+            <select id="source-strategy">
+              <option value="VOCABULARYLIST">Vocabulary list</option>
+              <option value="FAVOURITES">Favourites</option>
+              <option value="ALL">All</option>
+              <option value="HISTORY">History</option>
+            </select>
+          </div>
+          <div class="field" id="list-field">
+            <label for="vocabulary-list">List</label>
+            <select id="vocabulary-list">
+              <option value="">— load account first —</option>
+            </select>
+            <p class="note hidden" id="list-lang-hint" style="margin-top:0.35rem;"></p>
+          </div>
+          <div class="field" id="source-lang-field">
+            <label for="source-lang">Source lang</label>
+            <select id="source-lang"><option value="">—</option></select>
+          </div>
+          <div class="field" id="target-lang-field">
+            <label for="target-lang">Target lang</label>
+            <select id="target-lang"><option value="">—</option></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:0.55rem;">
+          <div class="field">
+            <label for="learning-strategy">Learning strategy</label>
+            <select id="learning-strategy">
+              <option value="SRS">SRS (review)</option>
+              <option value="NEW">NEW (new terms only)</option>
+              <option value="MIXED" selected>MIXED</option>
+            </select>
+          </div>
+          <div class="field narrow">
+            <label for="nb-terms">Cards / game</label>
+            <input id="nb-terms" type="number" min="1" max="20" value="7">
+          </div>
+        </div>
+        <p class="note" style="margin-top:0.35rem;">
+          Quiz uses <code>nbTerms</code> + <code>length</code> (pagination defaults to 6 without it).
+          MIXED fills up to the requested count; SRS/NEW may return fewer if not enough cards match.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>Automation</h2>
+        <div class="row">
+          <div class="field narrow">
+            <label for="game-count">Games to play</label>
+            <input id="game-count" type="number" min="1" max="500" value="10">
+          </div>
+          <div class="field narrow">
+            <label for="delay-ms">Delay (ms)</label>
+            <input id="delay-ms" type="number" min="0" max="10000" step="100" value="400">
+          </div>
+        </div>
+        <p class="note" style="margin:0.55rem 0;">Answer mode for every card in each game:</p>
+        <div class="radio-row" style="margin-top:0.35rem;">
+          <label><input type="radio" name="answer-mode" value="CORRECT" checked> All correct</label>
+          <label><input type="radio" name="answer-mode" value="INCORRECT"> All incorrect</label>
+          <label><input type="radio" name="answer-mode" value="RANDOM"> Random</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="zone zone-run">
+      <div class="zone-head">
+        <span class="zone-label">Run</span>
+        <span class="zone-desc">Plays full games sequentially (start quiz → answer all cards → submit update)</span>
+        <span id="run-pill" class="pill">Ready</span>
+      </div>
+      <div class="row">
+        <button type="button" class="btn success" id="btn-run">Play games</button>
+        <button type="button" class="btn danger hidden" id="btn-stop">Stop</button>
+      </div>
+      <div class="stats-bar" id="stats-bar"></div>
+      <div class="log" id="log">Waiting…</div>
+
+      <div class="srs-report" id="srs-report">
+        <h3>SRS reality check</h3>
+        <p class="note" id="srs-report-empty">Run games to compare quiz selection and SRS updates.</p>
+        <div class="srs-grid hidden" id="srs-grid"></div>
+        <details class="hidden" id="srs-anomalies-wrap">
+          <summary class="note" style="cursor:pointer; font-weight:600;">Anomalies (correct but SRS unchanged / mastered cards drawn)</summary>
+          <div class="srs-table-wrap" style="margin-top:0.55rem;">
+            <table class="srs-table">
+              <thead>
+                <tr>
+                  <th>Game</th>
+                  <th>Word</th>
+                  <th>Answer</th>
+                  <th>SRS before→after</th>
+                  <th>Seen</th>
+                  <th>Mastered</th>
+                  <th>Issue</th>
+                </tr>
+              </thead>
+              <tbody id="srs-anomalies"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <div class="word-totals" id="word-totals-panel">
+        <div class="word-totals-head">
+          <h3>Session word totals</h3>
+          <button type="button" class="btn ghost hidden" id="btn-clear-word-totals">Clear totals</button>
+        </div>
+        <p class="note" id="word-totals-empty">Counts how often each word was drawn across all Play runs in this tab.</p>
+        <p class="note hidden" id="word-totals-summary"></p>
+        <div class="hidden" id="word-totals-wrap">
+          <div class="srs-table-wrap" style="max-height: 360px;">
+            <table class="srs-table">
+              <thead>
+                <tr>
+                  <th>Word</th>
+                  <th>ID</th>
+                  <th>Played</th>
+                  <th>First SRS</th>
+                  <th>Latest SRS</th>
+                  <th>Mastered</th>
+                </tr>
+              </thead>
+              <tbody id="word-totals-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="zone zone-tech">
+      <div class="zone-head">
+        <span class="zone-label">Technical data</span>
+        <span class="zone-desc">Last quiz + update payloads</span>
+      </div>
+      <section class="panel">
+        <h2>Last GET /user/learn/cards/quiz</h2>
+        <pre class="raw" id="raw-quiz">—</pre>
+      </section>
+      <section class="panel">
+        <h2>Last POST /user/learn/cards/quiz/update</h2>
+        <pre class="raw" id="raw-update">—</pre>
+      </section>
+    </section>
+  </main>
+
+  <script src="/fav-auth.js"></script>
+  <script>
+    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+
+    const state = {
+      lists: [],
+      countMap: {},
+      running: false,
+      abort: null,
+      stats: {
+        gamesPlayed: 0,
+        gamesSkipped: 0,
+        cardsAnswered: 0,
+        errors: 0,
+      },
+      srsReport: null,
+      /** @type {Map<number, { id: number, sourceText: string, targetText: string, count: number, firstSrs: number, latestSrs: number, mastered: boolean }>} */
+      wordTotals: new Map(),
+    };
+
+    function emptySrsReport() {
+      return {
+        plays: [],
+        aggregates: {
+          totalPlays: 0,
+          newPlays: 0,
+          reviewPlays: 0,
+          masteredAtDraw: 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          correctNonMastered: 0,
+          correctSrsIncreased: 0,
+          correctSrsUnchanged: 0,
+          correctSrsDecreased: 0,
+          correctNonMasteredSrsIncreased: 0,
+          correctNonMasteredSrsUnchanged: 0,
+          correctNewlyMemorized: 0,
+          incorrectSrsDecreased: 0,
+        },
+      };
+    }
+
+    function snapshotCard(card) {
+      return {
+        id: card.id,
+        sourceText: card.sourceText || "",
+        targetText: card.targetText || "",
+        timesSeen: Number(card.timesSeen ?? 0),
+        srsCounter: Number(card.srsCounter ?? 0),
+        memorized: !!card.memorized,
+        lastStatus: card.lastStatus || "",
+        firstSeenDate: card.firstSeenDate || "",
+      };
+    }
+
+    function wordLabel(card, maxLen = 48) {
+      const text = String(card?.sourceText || card?.targetText || "").trim();
+      const label = text || `card ${card?.id ?? "?"}`;
+      return label.length > maxLen ? `${label.slice(0, maxLen - 1)}…` : label;
+    }
+
+    function wordWithId(card, maxLen = 40) {
+      const id = card?.id;
+      const label = wordLabel(card, maxLen);
+      return id != null ? `${label} (#${id})` : label;
+    }
+
+    function recordWordPlays(cards, updatedCards) {
+      const afterById = new Map();
+      for (const card of updatedCards || []) {
+        if (card?.id != null) afterById.set(card.id, card);
+      }
+
+      for (const card of cards) {
+        const id = card?.id;
+        if (id == null) continue;
+        const before = snapshotCard(card);
+        const afterRaw = afterById.get(id);
+        const after = afterRaw ? snapshotCard(afterRaw) : null;
+        const srsAtDraw = before.srsCounter;
+        const srsAfter = after ? after.srsCounter : srsAtDraw;
+        const mastered = after ? after.memorized : before.memorized;
+
+        const prev = state.wordTotals.get(id);
+        if (prev) {
+          prev.count += 1;
+          if (!prev.sourceText && card.sourceText) prev.sourceText = card.sourceText;
+          if (!prev.targetText && card.targetText) prev.targetText = card.targetText;
+          prev.latestSrs = srsAfter;
+          prev.mastered = mastered;
+        } else {
+          state.wordTotals.set(id, {
+            id,
+            sourceText: card.sourceText || "",
+            targetText: card.targetText || "",
+            count: 1,
+            firstSrs: srsAtDraw,
+            latestSrs: srsAfter,
+            mastered,
+          });
+        }
+      }
+      renderWordTotals();
+    }
+
+    function formatMastered(value) {
+      return value ? "Y" : "N";
+    }
+
+    function renderWordTotals() {
+      const wrap = document.getElementById("word-totals-wrap");
+      const body = document.getElementById("word-totals-body");
+      const empty = document.getElementById("word-totals-empty");
+      const summary = document.getElementById("word-totals-summary");
+      const clearBtn = document.getElementById("btn-clear-word-totals");
+      const rows = [...state.wordTotals.values()].sort(
+        (a, b) => b.count - a.count || wordLabel(a).localeCompare(wordLabel(b))
+      );
+
+      if (!rows.length) {
+        empty.classList.remove("hidden");
+        summary.classList.add("hidden");
+        summary.textContent = "";
+        wrap.classList.add("hidden");
+        clearBtn.classList.add("hidden");
+        body.innerHTML = "";
+        return;
+      }
+
+      const totalPlays = rows.reduce((sum, row) => sum + row.count, 0);
+      empty.classList.add("hidden");
+      summary.classList.remove("hidden");
+      summary.textContent = `${rows.length} word(s) · ${totalPlays} total draws this session.`;
+      wrap.classList.remove("hidden");
+      clearBtn.classList.remove("hidden");
+
+      body.innerHTML = rows.map((row) => {
+        const target = row.targetText ? `<span class="word-cell-sub">${escapeHtml(row.targetText)}</span>` : "";
+        const srsChanged = row.firstSrs !== row.latestSrs;
+        const latestSrs = srsChanged
+          ? `<span title="Started at ${row.firstSrs} this session">${row.latestSrs}</span>`
+          : String(row.latestSrs);
+        const masteredCls = row.mastered ? "ok" : "";
+        return `<tr>
+          <td>${escapeHtml(wordLabel(row))}${target}</td>
+          <td class="num muted-id">${row.id}</td>
+          <td class="num">${row.count}</td>
+          <td class="num">${row.firstSrs}</td>
+          <td class="num${srsChanged ? " srs-changed" : ""}">${latestSrs}</td>
+          <td class="num ${masteredCls}">${formatMastered(row.mastered)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function clearWordTotals() {
+      state.wordTotals.clear();
+      renderWordTotals();
+    }
+
+    function classifyNewness(timesSeen) {
+      // Before this play: never or only seen once = "new" in the deck
+      return timesSeen <= 1 ? "new" : "review";
+    }
+
+    function recordSrsPlays(cards, entries, updateData, gameIndex) {
+      if (!state.srsReport) state.srsReport = emptySrsReport();
+      const afterById = new Map();
+      for (const card of updateData.entries || []) {
+        afterById.set(card.id, snapshotCard(card));
+      }
+      const entryById = new Map(entries.map((e) => [e.id, e.status]));
+
+      for (const card of cards) {
+        const before = snapshotCard(card);
+        const after = afterById.get(card.id) || null;
+        const answer = entryById.get(card.id) || "?";
+        const newness = classifyNewness(before.timesSeen);
+        const play = { gameIndex, answer, before, after, newness };
+
+        const agg = state.srsReport.aggregates;
+        agg.totalPlays += 1;
+        if (newness === "new") agg.newPlays += 1;
+        else agg.reviewPlays += 1;
+        if (before.memorized) agg.masteredAtDraw += 1;
+
+        if (after) {
+          if (answer === "CORRECT") {
+            agg.correctAnswers += 1;
+            if (after.srsCounter > before.srsCounter) agg.correctSrsIncreased += 1;
+            else if (after.srsCounter === before.srsCounter) agg.correctSrsUnchanged += 1;
+            else agg.correctSrsDecreased += 1;
+            if (!before.memorized) {
+              agg.correctNonMastered += 1;
+              if (after.srsCounter > before.srsCounter) agg.correctNonMasteredSrsIncreased += 1;
+              else agg.correctNonMasteredSrsUnchanged += 1;
+            }
+            if (!before.memorized && after.memorized) agg.correctNewlyMemorized += 1;
+          } else if (answer === "INCORRECT") {
+            agg.incorrectAnswers += 1;
+            if (after.srsCounter < before.srsCounter) agg.incorrectSrsDecreased += 1;
+          }
+        }
+
+        state.srsReport.plays.push(play);
+      }
+    }
+
+    function pct(n, total) {
+      if (!total) return "0%";
+      return `${((n / total) * 100).toFixed(1)}%`;
+    }
+
+    function renderSrsReport() {
+      const report = state.srsReport;
+      const emptyEl = document.getElementById("srs-report-empty");
+      const grid = document.getElementById("srs-grid");
+      const anomaliesWrap = document.getElementById("srs-anomalies-wrap");
+      const anomaliesBody = document.getElementById("srs-anomalies");
+
+      if (!report || !report.aggregates.totalPlays) {
+        emptyEl.classList.remove("hidden");
+        grid.classList.add("hidden");
+        anomaliesWrap.classList.add("hidden");
+        grid.innerHTML = "";
+        anomaliesBody.innerHTML = "";
+        return;
+      }
+
+      const a = report.aggregates;
+      emptyEl.classList.add("hidden");
+      grid.classList.remove("hidden");
+
+      const masteredShare = a.masteredAtDraw / a.totalPlays;
+      const srsOkRate = a.correctNonMastered
+        ? a.correctNonMasteredSrsIncreased / a.correctNonMastered
+        : 0;
+
+      grid.innerHTML = [
+        {
+          title: "New vs review",
+          value: `${a.newPlays} / ${a.reviewPlays}`,
+          sub: `New = timesSeen ≤ 1 before play (${pct(a.newPlays, a.totalPlays)}). Review = seen before.`,
+          cls: "",
+        },
+        {
+          title: "Mastered at draw",
+          value: `${a.masteredAtDraw}`,
+          sub: `${pct(a.masteredAtDraw, a.totalPlays)} of card plays were already mastered`,
+          cls: masteredShare > 0.15 ? "warn" : "ok",
+        },
+        {
+          title: "CORRECT → SRS ↑",
+          value: `${a.correctNonMasteredSrsIncreased} / ${a.correctNonMastered}`,
+          sub: `Learning cards only (excl. already mastered). Unchanged: ${a.correctNonMasteredSrsUnchanged}. All CORRECT: ${a.correctSrsIncreased}/${a.correctAnswers} increased.`,
+          cls: srsOkRate < 0.8 && a.correctNonMastered > 0 ? "warn" : "ok",
+        },
+        {
+          title: "Newly memorized",
+          value: `${a.correctNewlyMemorized}`,
+          sub: `After CORRECT answers (memorized false → true)`,
+          cls: "",
+        },
+        {
+          title: "INCORRECT → SRS ↓",
+          value: `${a.incorrectSrsDecreased} / ${a.incorrectAnswers}`,
+          sub: a.incorrectAnswers ? `${pct(a.incorrectSrsDecreased, a.incorrectAnswers)} decreased` : "—",
+          cls: "",
+        },
+        {
+          title: "Total card plays",
+          value: `${a.totalPlays}`,
+          sub: `Across ${state.stats.gamesPlayed} completed game(s)`,
+          cls: "",
+        },
+      ].map((item) => `
+        <div class="srs-card ${item.cls}">
+          <div class="k">${item.title}</div>
+          <div class="v">${item.value}</div>
+          <div class="sub">${item.sub}</div>
+        </div>
+      `).join("");
+
+      const anomalies = report.plays.filter((play) => {
+        if (!play.after) return true;
+        if (play.before.memorized) return true;
+        if (
+          play.answer === "CORRECT" &&
+          !play.before.memorized &&
+          play.after.srsCounter <= play.before.srsCounter
+        ) return true;
+        return false;
+      }).slice(-80);
+
+      if (anomalies.length) {
+        anomaliesWrap.classList.remove("hidden");
+        anomaliesBody.innerHTML = anomalies.map((play) => {
+          const issues = [];
+          if (!play.after) issues.push("no update row");
+          if (play.before.memorized) issues.push("mastered drawn");
+          if (
+            play.after &&
+            play.answer === "CORRECT" &&
+            !play.before.memorized &&
+            play.after.srsCounter <= play.before.srsCounter
+          ) {
+            issues.push("SRS not increased");
+          }
+          const srs = play.after
+            ? `${play.before.srsCounter}→${play.after.srsCounter}`
+            : `${play.before.srsCounter}→?`;
+          const mastered = play.after
+            ? `${play.before.memorized ? "Y" : "N"}→${play.after.memorized ? "Y" : "N"}`
+            : play.before.memorized ? "Y" : "N";
+          const word = wordLabel(play.before, 36);
+          return `<tr>
+            <td class="num">${play.gameIndex}</td>
+            <td>${escapeHtml(word)} <span class="muted-id">#${play.before.id}</span></td>
+            <td>${play.answer}</td>
+            <td class="num">${srs}</td>
+            <td class="num">${play.before.timesSeen}${play.after ? `→${play.after.timesSeen}` : ""}</td>
+            <td class="num">${mastered}</td>
+            <td>${escapeHtml(issues.join(", "))}</td>
+          </tr>`;
+        }).join("");
+      } else {
+        anomaliesWrap.classList.add("hidden");
+        anomaliesBody.innerHTML = "";
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function logSrsSummary() {
+      const a = state.srsReport?.aggregates;
+      if (!a?.totalPlays) return;
+      logLine(
+        `SRS summary: new ${pct(a.newPlays, a.totalPlays)} · mastered drawn ${pct(a.masteredAtDraw, a.totalPlays)} · learning+CORRECT→SRS↑ ${pct(a.correctNonMasteredSrsIncreased, a.correctNonMastered)}`,
+        a.masteredAtDraw / a.totalPlays > 0.15 ? "warn" : "ok"
+      );
+    }
+
+    function loadAuth() { return FavAuth.loadAuth(); }
+    function saveAuth() { FavAuth.saveAuth(); }
+    function updateJwtUi() { return FavAuth.updateJwtUi(); }
+
+    function setStatus(ok, text, meta) {
+      const pill = document.getElementById("status-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      document.getElementById("status-meta").textContent = meta || "";
+    }
+
+    function setRunStatus(text, cls) {
+      const pill = document.getElementById("run-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (cls || "");
+    }
+
+    function qs(params) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v === undefined || v === null || v === "") continue;
+        sp.set(k, String(v));
+      }
+      return sp.toString();
+    }
+
+    async function apiGet(path, params) {
+      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
+      const url = "/proxy" + path + "?" + qs(params);
+      const res = await FavAuth.fetchWithAuth(url);
+      const data = await FavAuth.readJsonResponse(res, path);
+      return { url, data };
+    }
+
+    async function apiPost(path, body, queryParams) {
+      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
+      const suffix = queryParams ? "?" + qs(queryParams) : "";
+      const url = "/proxy" + path + suffix;
+      const res = await FavAuth.fetchWithAuth(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await FavAuth.readJsonResponse(res, path);
+      return { url, data };
+    }
+
+    function logLine(text, cls) {
+      const el = document.getElementById("log");
+      const span = document.createElement("span");
+      if (cls) span.className = cls;
+      span.textContent = text + "\n";
+      el.append(span);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById("log").textContent = "";
+    }
+
+    function renderStats() {
+      const s = state.stats;
+      document.getElementById("stats-bar").innerHTML = [
+        { k: "Games played", v: s.gamesPlayed },
+        { k: "Skipped", v: s.gamesSkipped },
+        { k: "Cards answered", v: s.cardsAnswered },
+        { k: "Errors", v: s.errors },
+      ].map((it) => `<div class="stat"><div class="k">${it.k}</div><div class="v">${it.v}</div></div>`).join("");
+    }
+
+    function pairLabel(code) {
+      const [a, b] = String(code).split("-");
+      return a && b ? `${a.toUpperCase()} → ${b.toUpperCase()}` : code;
+    }
+
+    function populateLanguageSelects(countMap) {
+      const pairs = Object.keys(countMap || {}).sort((a, b) => (countMap[b] || 0) - (countMap[a] || 0));
+      const srcSel = document.getElementById("source-lang");
+      const tgtSel = document.getElementById("target-lang");
+      const prevSrc = srcSel.value;
+      const prevTgt = tgtSel.value;
+      srcSel.innerHTML = "";
+      tgtSel.innerHTML = "";
+      for (const pair of pairs) {
+        const [src, tgt] = pair.split("-");
+        if (!src || !tgt) continue;
+        const opt1 = document.createElement("option");
+        opt1.value = src;
+        opt1.textContent = `${src} (${pairLabel(pair)} · ${countMap[pair]})`;
+        opt1.dataset.pair = pair;
+        srcSel.append(opt1);
+        const opt2 = document.createElement("option");
+        opt2.value = tgt;
+        opt2.textContent = `${tgt} (${pairLabel(pair)} · ${countMap[pair]})`;
+        opt2.dataset.pair = pair;
+        tgtSel.append(opt2);
+      }
+      if (pairs.length) {
+        const restore = pairs.find((p) => {
+          const [s, t] = p.split("-");
+          return s === prevSrc && t === prevTgt;
+        }) || pairs[0];
+        const [s, t] = restore.split("-");
+        srcSel.value = s;
+        tgtSel.value = t;
+      }
+    }
+
+    function getSelectedList() {
+      const id = document.getElementById("vocabulary-list").value;
+      if (!id) return null;
+      return state.lists.find((list) => String(list.id ?? list.listId) === String(id)) || null;
+    }
+
+    function listLangs(list) {
+      if (!list) return { sourceLang: "", targetLang: "" };
+      return {
+        sourceLang: list.srcLang || list.sourceLang || "",
+        targetLang: list.trgLang || list.targetLang || "",
+      };
+    }
+
+    function populateLists(results) {
+      const sel = document.getElementById("vocabulary-list");
+      sel.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = results.length ? "— pick a list —" : "No lists";
+      sel.append(empty);
+      for (const list of results) {
+        const id = list.id ?? list.listId;
+        if (id == null) continue;
+        const { sourceLang, targetLang } = listLangs(list);
+        const opt = document.createElement("option");
+        opt.value = String(id);
+        const n = Number(list.numFavourites ?? 0);
+        const dir = sourceLang && targetLang ? ` · ${sourceLang}→${targetLang}` : "";
+        opt.textContent = `${list.listName || list.name || "List " + id} (${n} favs${dir})`;
+        opt.dataset.sourceLang = sourceLang;
+        opt.dataset.targetLang = targetLang;
+        sel.append(opt);
+      }
+      updateListLangHint();
+    }
+
+    function updateListLangHint() {
+      const hint = document.getElementById("list-lang-hint");
+      const list = getSelectedList();
+      const { sourceLang, targetLang } = listLangs(list);
+      if (sourceLang && targetLang) {
+        hint.textContent = `List direction: ${sourceLang.toUpperCase()} → ${targetLang.toUpperCase()} (from list metadata)`;
+        hint.classList.remove("hidden");
+      } else if (list) {
+        hint.textContent = "This list has no srcLang/trgLang in the API response.";
+        hint.classList.remove("hidden");
+      } else {
+        hint.textContent = "";
+        hint.classList.add("hidden");
+      }
+    }
+
+    function syncSourceFieldsVisibility() {
+      const strategy = document.getElementById("source-strategy").value;
+      const isList = strategy === "VOCABULARYLIST";
+      document.getElementById("list-field").classList.toggle("hidden", !isList);
+      document.getElementById("source-lang-field").classList.toggle("hidden", isList);
+      document.getElementById("target-lang-field").classList.toggle("hidden", isList);
+      updateListLangHint();
+    }
+
+    function resolveQuizLangs() {
+      const sourceStrategy = document.getElementById("source-strategy").value;
+      if (sourceStrategy === "VOCABULARYLIST") {
+        const list = getSelectedList();
+        return listLangs(list);
+      }
+      return {
+        sourceLang: document.getElementById("source-lang").value,
+        targetLang: document.getElementById("target-lang").value,
+      };
+    }
+
+    function getAnswerMode() {
+      const checked = document.querySelector('input[name="answer-mode"]:checked');
+      return checked ? checked.value : "CORRECT";
+    }
+
+    function pickStatus(answerMode) {
+      if (answerMode === "CORRECT") return "CORRECT";
+      if (answerMode === "INCORRECT") return "INCORRECT";
+      return Math.random() < 0.5 ? "CORRECT" : "INCORRECT";
+    }
+
+    function getNbTerms() {
+      const raw = Number(document.getElementById("nb-terms").value);
+      if (!Number.isFinite(raw) || raw < 1) return 7;
+      return Math.min(20, Math.floor(raw));
+    }
+
+    function extractQuizCards(quiz) {
+      const raw = Array.isArray(quiz?.results)
+        ? quiz.results
+        : Array.isArray(quiz?.entries)
+          ? quiz.entries
+          : [];
+      return raw.filter((card) => card && card.id != null);
+    }
+
+    function extractUpdateCards(updateData) {
+      if (!updateData) return [];
+      if (Array.isArray(updateData.entries)) return updateData.entries;
+      if (Array.isArray(updateData.results)) return updateData.results;
+      if (Array.isArray(updateData)) return updateData;
+      return [];
+    }
+
+    function quizParams() {
+      const sourceStrategy = document.getElementById("source-strategy").value;
+      const { sourceLang, targetLang } = resolveQuizLangs();
+      const nbTerms = getNbTerms();
+      const params = {
+        sourceLang,
+        targetLang,
+        sourceStrategy,
+        learningStrategy: document.getElementById("learning-strategy").value,
+        nbTerms,
+        // Quiz responses are paginated like favourites; default page size is 6.
+        length: nbTerms,
+      };
+      if (sourceStrategy === "VOCABULARYLIST") {
+        const listId = document.getElementById("vocabulary-list").value;
+        if (listId) params.vocabularyListId = Number(listId);
+      }
+      return params;
+    }
+
+    function validateBeforeRun() {
+      const params = quizParams();
+      if (params.sourceStrategy === "VOCABULARYLIST") {
+        if (!params.vocabularyListId) throw new Error("Pick a vocabulary list.");
+        if (!params.sourceLang || !params.targetLang) {
+          throw new Error("Selected list is missing srcLang/trgLang.");
+        }
+        return params;
+      }
+      if (!params.sourceLang || !params.targetLang) {
+        throw new Error("Pick source and target language.");
+      }
+      return params;
+    }
+
+    async function loadAccount() {
+      saveAuth();
+      if (!FavAuth.authReadyForLiveApi()) {
+        setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
+        document.getElementById("auth-panel").open = true;
+        return;
+      }
+      setStatus(null, "Loading…", "");
+      try {
+        await FavAuth.ensureAccessToken();
+        updateJwtUi();
+        const [favsRes, listsRes] = await Promise.all([
+          apiGet("/user/favourites", { length: 1, start: 0, learningInfo: true, includeDef: "YES" }),
+          apiGet("/user/favouritesLists", { length: 100, start: 0, learningInfo: true, includeDef: "YES" }),
+        ]);
+        state.countMap = favsRes.data.count || favsRes.data.countByPair || {};
+        state.lists = listsRes.data.results || [];
+        populateLanguageSelects(state.countMap);
+        populateLists(state.lists);
+        setStatus(true, "OK", `${Object.keys(state.countMap).length} pairs · ${state.lists.length} lists`);
+        document.getElementById("auth-panel").open = false;
+      } catch (err) {
+        setStatus(false, "Error", "");
+        logLine(err.message, "err");
+      }
+    }
+
+    function sleep(ms, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal?.aborted) return reject(new DOMException("Aborted", "AbortError"));
+        const t = setTimeout(resolve, ms);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(t);
+          reject(new DOMException("Aborted", "AbortError"));
+        }, { once: true });
+      });
+    }
+
+    async function playOneGame(gameIndex, answerMode, signal) {
+      const params = quizParams();
+      const requested = params.nbTerms;
+      const quizRes = await apiGet("/user/learn/cards/quiz", params);
+      document.getElementById("raw-quiz").textContent = JSON.stringify({
+        requestUrl: quizRes.url,
+        requestedNbTerms: requested,
+        ...quizRes.data,
+      }, null, 2);
+
+      const quiz = quizRes.data;
+      const cards = extractQuizCards(quiz);
+      const rawCount = Array.isArray(quiz?.results) ? quiz.results.length : cards.length;
+
+      if (!cards.length) {
+        const reason = quiz.reason || quiz.message || "no cards";
+        logLine(`Game ${gameIndex}: skipped — ${reason}`, "warn");
+        state.stats.gamesSkipped += 1;
+        renderStats();
+        return { skipped: true };
+      }
+
+      if (cards.length < requested) {
+        logLine(
+          `Game ${gameIndex}: API returned ${cards.length}/${requested} cards (raw results: ${rawCount}). Check list size or learning strategy.`,
+          "warn"
+        );
+      }
+
+      const entries = cards.map((card) => ({
+        id: card.id,
+        status: pickStatus(answerMode),
+      }));
+
+      const updateBody = { entries };
+      const updateRes = await apiPost("/user/learn/cards/quiz/update", updateBody, params);
+      document.getElementById("raw-update").textContent = JSON.stringify(updateRes.data, null, 2);
+
+      const updatedCards = extractUpdateCards(updateRes.data);
+      recordSrsPlays(cards, entries, { entries: updatedCards }, gameIndex);
+      renderSrsReport();
+
+      const statuses = entries.reduce((acc, e) => {
+        acc[e.status] = (acc[e.status] || 0) + 1;
+        return acc;
+      }, {});
+      const statusSummary = Object.entries(statuses).map(([k, v]) => `${v}×${k}`).join(", ");
+      const wordSummary = cards.map((c) => wordWithId(c, 32)).join(", ");
+      logLine(
+        `Game ${gameIndex}: ${cards.length}/${requested} cards [${statusSummary}] — ${wordSummary}`,
+        cards.length < requested ? "warn" : "ok"
+      );
+
+      recordWordPlays(cards, updatedCards);
+      state.stats.gamesPlayed += 1;
+      state.stats.cardsAnswered += cards.length;
+      renderStats();
+      return { skipped: false, count: cards.length };
+    }
+
+    async function runGames() {
+      if (state.running) return;
+      if (!LIVE_API_ENABLED) {
+        logLine("Start the local server (npm start) — Vercel cannot proxy the live API.", "err");
+        return;
+      }
+
+      if (!FavAuth.authReadyForLiveApi()) {
+        logLine("Paste a refresh token in Auth & load first.", "err");
+        return;
+      }
+
+      let params;
+      try {
+        params = validateBeforeRun();
+      } catch (err) {
+        logLine(err.message, "err");
+        return;
+      }
+
+      const totalGames = Math.max(1, Math.min(500, Number(document.getElementById("game-count").value) || 1));
+      const delayMs = Math.max(0, Number(document.getElementById("delay-ms").value) || 0);
+      const answerMode = getAnswerMode();
+
+      state.running = true;
+      state.abort = new AbortController();
+      state.stats = { gamesPlayed: 0, gamesSkipped: 0, cardsAnswered: 0, errors: 0 };
+      state.srsReport = emptySrsReport();
+      renderStats();
+      renderSrsReport();
+      clearLog();
+      logLine(`Starting ${totalGames} game(s) · ${params.sourceLang}→${params.targetLang} · ${params.sourceStrategy} · ${params.learningStrategy} · answers: ${answerMode}`);
+
+      document.getElementById("btn-run").disabled = true;
+      document.getElementById("btn-stop").classList.remove("hidden");
+      setRunStatus("Running…", "run");
+
+      try {
+        for (let i = 1; i <= totalGames; i += 1) {
+          if (state.abort.signal.aborted) break;
+          await playOneGame(i, answerMode, state.abort.signal);
+          if (i < totalGames && delayMs > 0) {
+            await sleep(delayMs, state.abort.signal);
+          }
+        }
+        if (state.abort.signal.aborted) {
+          logLine("Stopped by user.", "warn");
+          setRunStatus("Stopped", "");
+        } else {
+          logLine("Done.", "ok");
+          logSrsSummary();
+          setRunStatus("Done", "ok");
+        }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          logLine("Stopped.", "warn");
+          logSrsSummary();
+          setRunStatus("Stopped", "");
+        } else {
+          state.stats.errors += 1;
+          renderStats();
+          logLine(err.message, "err");
+          setRunStatus("Error", "err");
+        }
+      } finally {
+        state.running = false;
+        state.abort = null;
+        document.getElementById("btn-run").disabled = false;
+        document.getElementById("btn-stop").classList.add("hidden");
+      }
+    }
+
+    function stopGames() {
+      if (state.abort) state.abort.abort();
+    }
+
+    function init() {
+      FavAuth.initAuthUi();
+
+      document.getElementById("btn-load-account").onclick = loadAccount;
+      document.getElementById("btn-run").onclick = runGames;
+      document.getElementById("btn-stop").onclick = stopGames;
+      document.getElementById("btn-clear-word-totals").onclick = clearWordTotals;
+      document.getElementById("source-strategy").addEventListener("change", syncSourceFieldsVisibility);
+      document.getElementById("vocabulary-list").addEventListener("change", updateListLangHint);
+
+      syncSourceFieldsVisibility();
+      renderStats();
+      renderSrsReport();
+      renderWordTotals();
+
+      if (!LIVE_API_ENABLED) {
+        logLine("Deployed build: auth UI works, but /proxy is disabled. Run locally to play games.", "warn");
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1374 @@
+/**
+ * Favourites filtering — console checker for developers.
+ *
+ * ── How to use (cookie session — preferred) ──────────────────────────
+ * 1. Open https://context.reverso.net while logged in (Swagger or any page).
+ * 2. DevTools → Console → paste this whole file.
+ * 3. Run the full test plan (draggable panel with STEP 1…N):
+ *      await favFilterTestPlan()
+ *      await favFilterTestPlan({ languagePairs: "en-ar" })
+ *
+ * Single snapshot (optional):
+ *      await favFilterCheck()
+ *
+ * Auth uses your logged-in session cookies (credentials:include).
+ * Optional: await favFilterDiscoverAuth()
+ *
+ * Fallback only if cookie auth fails:
+ *   await favFilterTestPlan({ token: "Bearer …" });
+ */
+(function (global) {
+  "use strict";
+
+  const DEFAULT_BASE = "https://context.reverso.net/bst-web-user";
+  /** Favourites UI always sends this — counts/results diverge without it. */
+  const INCLUDE_DEF = "YES";
+  const STATUS_ROWS = [
+    { id: "IN_PROGRESS", label: "Learning", field: "inProgressCardsFiltered" },
+    { id: "MEMORIZED", label: "Mastered", field: "memorizedOnceCardsFiltered" },
+    { id: "IGNORED", label: "Ignored", field: "ignoredCardsFiltered" },
+    {
+      id: "NOT_STARTED",
+      label: "Not Started",
+      field: "totalFilteredItemsNotStarted",
+      fallback: true,
+    },
+  ];
+
+  function qs(params) {
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v != null && v !== "") sp.set(k, String(v));
+    }
+    const s = sp.toString();
+    return s ? "?" + s : "";
+  }
+
+  function pairLabel(code) {
+    const [a, b] = String(code).split("-");
+    return a && b ? `${a.toUpperCase()} ↔ ${b.toUpperCase()}` : code;
+  }
+
+  const ACCESS_COOKIE_NAMES = [
+    "reverso.net.ReversoAccessToken",
+    "ReversoAccessToken",
+    ".ReversoAccessToken",
+  ];
+
+  function getCookieMap() {
+    const map = {};
+    if (typeof document === "undefined" || !document.cookie) return map;
+    for (const part of document.cookie.split(";")) {
+      const i = part.indexOf("=");
+      if (i < 1) continue;
+      const k = part.slice(0, i).trim();
+      const v = part.slice(i + 1).trim();
+      try {
+        map[k] = decodeURIComponent(v);
+      } catch {
+        map[k] = v;
+      }
+    }
+    return map;
+  }
+
+  function getCookie(name) {
+    return getCookieMap()[name];
+  }
+
+  function looksLikeJwt(value) {
+    const raw = String(value || "").replace(/^Bearer\s+/i, "").trim();
+    const parts = raw.split(".");
+    return parts.length === 3 && parts.every((p) => p.length > 0);
+  }
+
+  function scanStorageForJwt() {
+    const hits = [];
+    const stores = [];
+    try {
+      if (global.localStorage) stores.push(["localStorage", global.localStorage]);
+    } catch (_) { /* ignore */ }
+    try {
+      if (global.sessionStorage) stores.push(["sessionStorage", global.sessionStorage]);
+    } catch (_) { /* ignore */ }
+
+    for (const [storeName, store] of stores) {
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i);
+        if (!key) continue;
+        let val;
+        try {
+          val = store.getItem(key);
+        } catch {
+          continue;
+        }
+        if (!val) continue;
+        if (looksLikeJwt(val)) {
+          hits.push({ store: storeName, key, value: val });
+          continue;
+        }
+        if (val.startsWith("{")) {
+          try {
+            const obj = JSON.parse(val);
+            for (const [k, v] of Object.entries(obj)) {
+              if (typeof v === "string" && looksLikeJwt(v)) {
+                hits.push({ store: storeName, key: `${key}.${k}`, value: v });
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    }
+    return hits;
+  }
+
+  function normalizeToken(token) {
+    const t = String(token).trim();
+    if (!t) throw new Error("Empty token.");
+    if (/^Bearer\s+/i.test(t) || !looksLikeJwt(t)) return t;
+    return "Bearer " + t;
+  }
+
+  function buildHeaders(origin, authorization) {
+    const headers = { Accept: "application/json" };
+    if (origin) headers["X-Reverso-Origin"] = origin;
+    if (authorization) headers.Authorization = authorization;
+    return headers;
+  }
+
+  async function probeFavourites(base, headers) {
+    const url =
+      base.replace(/\/$/, "") +
+      "/user/favourites" +
+      qs({ length: 1, start: 0, learningInfo: true, includeDef: INCLUDE_DEF });
+    const res = await fetch(url, { headers, credentials: "include" });
+    return { ok: res.ok, status: res.status };
+  }
+
+  /**
+   * Inspect auth sources without running the full check.
+   * Useful to see whether cookies / storage are visible to JS.
+   */
+  async function favFilterDiscoverAuth(opts = {}) {
+    const base = opts.baseUrl || DEFAULT_BASE;
+    const origin = opts.origin || "mainweb";
+    const cookies = getCookieMap();
+    const accessCookie = ACCESS_COOKIE_NAMES.map((n) => ({ name: n, value: cookies[n] })).find(
+      (c) => c.value
+    );
+    const storageHits = scanStorageForJwt();
+    let demoToken = null;
+    try {
+      const saved = JSON.parse(localStorage.getItem("fav-api-tester.v1") || "{}");
+      if (saved.authToken) demoToken = saved.authToken;
+    } catch (_) { /* ignore */ }
+
+    const strategies = [];
+
+    const cookieOnlyHeaders = buildHeaders(origin, null);
+    const cookieProbe = await probeFavourites(base, cookieOnlyHeaders);
+    strategies.push({
+      mode: "cookie-session",
+      source: "browser cookies (credentials:include, no Authorization header)",
+      readableToJs: false,
+      note: "HttpOnly session cookies are not visible in document.cookie but are still sent.",
+      works: cookieProbe.ok,
+      httpStatus: cookieProbe.status,
+    });
+
+    if (accessCookie) {
+      const bearer = normalizeToken(accessCookie.value);
+      const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+      strategies.push({
+        mode: "bearer-from-cookie",
+        source: `document.cookie → ${accessCookie.name}`,
+        readableToJs: true,
+        works: probe.ok,
+        httpStatus: probe.status,
+      });
+    } else {
+      strategies.push({
+        mode: "bearer-from-cookie",
+        source: "reverso.net.ReversoAccessToken",
+        readableToJs: false,
+        note: "Cookie not in document.cookie (likely HttpOnly) — use cookie-session instead.",
+        works: false,
+      });
+    }
+
+    for (const hit of storageHits.slice(0, 5)) {
+      const bearer = normalizeToken(hit.value);
+      const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+      strategies.push({
+        mode: "bearer-from-storage",
+        source: `${hit.store}["${hit.key}"]`,
+        readableToJs: true,
+        works: probe.ok,
+        httpStatus: probe.status,
+      });
+    }
+
+    if (demoToken) {
+      const bearer = normalizeToken(demoToken);
+      const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+      strategies.push({
+        mode: "bearer-demo-local",
+        source: 'localStorage["fav-api-tester.v1"].authToken',
+        readableToJs: true,
+        works: probe.ok,
+        httpStatus: probe.status,
+      });
+    }
+
+    const working = strategies.filter((s) => s.works);
+    const report = {
+      host: global.location?.hostname,
+      cookieNamesVisibleToJs: Object.keys(cookies),
+      hasReversoAccessToken: !!accessCookie,
+      storageJwtHits: storageHits.map((h) => `${h.store}["${h.key}"]`),
+      strategies,
+      recommendation: working[0]
+        ? `Use mode "${working[0].mode}" (${working[0].source})`
+        : "Log in on context.reverso.net, or pass { token: \"Bearer …\" } from Swagger / Network tab.",
+    };
+
+    console.log("favFilterDiscoverAuth", report);
+    console.table(strategies);
+    return report;
+  }
+
+  async function resolveAuth(opts) {
+    const origin = opts.origin || "mainweb";
+    const base = opts.baseUrl || DEFAULT_BASE;
+    // Default: cookie session on Reverso hosts (what favFilterDiscoverAuth confirms works).
+    const host = String(global.location?.hostname || "");
+    const onReverso = /\.reverso\.net$/i.test(host) || host === "reverso.net";
+    const authMode = opts.auth || (onReverso ? "cookie" : "auto");
+
+    if (opts.token) {
+      return {
+        headers: buildHeaders(origin, normalizeToken(opts.token)),
+        mode: "bearer-explicit",
+        source: "opts.token",
+      };
+    }
+
+    if (authMode === "cookie") {
+      const probe = await probeFavourites(base, buildHeaders(origin, null));
+      if (!probe.ok) {
+        throw new Error(
+          `Cookie auth failed (HTTP ${probe.status}). Stay logged in on context.reverso.net, or pass { token: "Bearer …" }.`
+        );
+      }
+      return {
+        headers: buildHeaders(origin, null),
+        mode: "cookie-session",
+        source: "browser session cookies (credentials:include)",
+      };
+    }
+
+    // auto: try cookie first, then readable cookie / storage / demo / prompt
+    if (authMode !== "bearer") {
+      const probe = await probeFavourites(base, buildHeaders(origin, null));
+      if (probe.ok) {
+        return {
+          headers: buildHeaders(origin, null),
+          mode: "cookie-session",
+          source: "browser session cookies",
+        };
+      }
+    }
+
+    // Readable Reverso access cookie (only if not HttpOnly)
+    const cookies = getCookieMap();
+    for (const name of ACCESS_COOKIE_NAMES) {
+      if (!cookies[name]) continue;
+      const bearer = normalizeToken(cookies[name]);
+      const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+      if (probe.ok) {
+        return {
+          headers: buildHeaders(origin, bearer),
+          mode: "bearer-from-cookie",
+          source: `document.cookie → ${name}`,
+        };
+      }
+    }
+
+    // JWT in web storage
+    for (const hit of scanStorageForJwt()) {
+      const bearer = normalizeToken(hit.value);
+      const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+      if (probe.ok) {
+        return {
+          headers: buildHeaders(origin, bearer),
+          mode: "bearer-from-storage",
+          source: `${hit.store}["${hit.key}"]`,
+        };
+      }
+    }
+
+    // Filtering demo localStorage (localhost)
+    try {
+      const saved = JSON.parse(localStorage.getItem("fav-api-tester.v1") || "{}");
+      if (saved.authToken) {
+        const bearer = normalizeToken(saved.authToken);
+        const probe = await probeFavourites(base, buildHeaders(origin, bearer));
+        if (probe.ok) {
+          return {
+            headers: buildHeaders(origin, bearer),
+            mode: "bearer-demo-local",
+            source: 'localStorage["fav-api-tester.v1"]',
+          };
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    if (opts.promptToken !== false) {
+      const entered = global.prompt(
+        "Cookie auth failed. Paste Authorization (Bearer … or Swagger JWT):"
+      );
+      if (entered) {
+        return {
+          headers: buildHeaders(origin, normalizeToken(entered)),
+          mode: "bearer-prompt",
+          source: "prompt",
+        };
+      }
+    }
+
+    throw new Error(
+      "Could not authenticate. Log in on context.reverso.net and retry, run favFilterDiscoverAuth(), or pass { token: \"Bearer …\" }."
+    );
+  }
+
+  async function apiGet(base, path, params, headers) {
+    const url = base.replace(/\/$/, "") + path + qs(params);
+    const res = await fetch(url, { headers, credentials: "include" });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+    if (!res.ok) {
+      const msg = typeof data === "object" ? JSON.stringify(data) : String(data);
+      throw new Error(`${res.status} ${path}: ${msg.slice(0, 300)}`);
+    }
+    return { url, data };
+  }
+
+  function statusCounts(fav) {
+    const ls = fav?.learningStatus || {};
+    const learning = Number(ls.inProgressCardsFiltered ?? 0);
+    const mastered = Number(ls.memorizedOnceCardsFiltered ?? 0);
+    const ignored = Number(ls.ignoredCardsFiltered ?? 0);
+    const denom = Number(
+      fav?.numFilteredLearningResults ?? ls.totalCardsFiltered ?? 0
+    );
+    let notStarted;
+    if (ls.totalFilteredItemsNotStarted != null && ls.totalFilteredItemsNotStarted !== "") {
+      notStarted = Math.max(0, Number(ls.totalFilteredItemsNotStarted) || 0);
+    } else {
+      notStarted = Math.max(0, denom - learning - mastered - ignored);
+    }
+    return { learning, mastered, ignored, notStarted, denom };
+  }
+
+  function freemiumSnapshot(fav) {
+    const fl = fav?.freemiumLimit;
+    if (!fl) return null;
+    return {
+      limitReached: !!fl.limitReached,
+      storedItems: Number(fl.storedItems ?? fl.storedFavsNo ?? 0),
+      maxAllowed: Number(fl.maxAllowed ?? fl.numberOfFavsAllowed ?? 40),
+    };
+  }
+
+  function bannerHints(fav, isAnonymous) {
+    const fl = freemiumSnapshot(fav);
+    const n = Number(fav?.numFilteredResults ?? 0);
+    const hints = [];
+    if (!fl) {
+      hints.push("No premium / register banner (premium account)");
+      return hints;
+    }
+    if (fl.limitReached) {
+      hints.push("Top: premium banner (favourites limit reached)");
+    }
+    if (fl.limitReached && n > fl.maxAllowed) {
+      hints.push(`Terms label shows orange ${fl.maxAllowed}/${n}`);
+    }
+    if (!fl.limitReached && n > 10) {
+      hints.push("Top + bottom: premium upgrade banners");
+    }
+    if (isAnonymous) {
+      hints.push("Top (stacked): register banner");
+    } else if (!fl.limitReached && n < 10) {
+      hints.push("No banner");
+    }
+    return hints;
+  }
+
+  function buildRows(favs, lists, filters) {
+    const countMap = favs.count || favs.countByPair || {};
+    const sc = statusCounts(favs);
+    const fl = freemiumSnapshot(favs);
+    const returned = Array.isArray(favs.results) ? favs.results.length : 0;
+    const rows = [
+      {
+        where: "Technical data → Total",
+        expect: favs.numTotalResults,
+        field: "numTotalResults",
+      },
+      {
+        where: "Technical data → Filtered",
+        expect: favs.numFilteredResults,
+        field: "numFilteredResults",
+      },
+      {
+        where: "Technical data → Returned",
+        expect: returned,
+        field: "results.length",
+      },
+      {
+        where: "Technical data → Learn denom",
+        expect: favs.numFilteredLearningResults,
+        field: "numFilteredLearningResults",
+      },
+      {
+        where: 'Demo → "Terms" count (under list title)',
+        expect: favs.numFilteredResults,
+        field: "numFilteredResults",
+      },
+      {
+        where: "Demo → favourite rows shown",
+        expect: returned,
+        field: "results.length (capped by length & freemium)",
+      },
+    ];
+
+    if (fl) {
+      rows.push(
+        {
+          where: "Technical data → limitReached",
+          expect: fl.limitReached,
+          field: "freemiumLimit.limitReached",
+        },
+        {
+          where: "Technical data → storedItems",
+          expect: fl.storedItems,
+          field: "freemiumLimit.storedItems",
+        },
+        {
+          where: "Technical data → maxAllowed",
+          expect: fl.maxAllowed,
+          field: "freemiumLimit.maxAllowed",
+        }
+      );
+    }
+
+    for (const row of STATUS_ROWS) {
+      const val =
+        row.id === "NOT_STARTED"
+          ? sc.notStarted
+          : row.id === "IN_PROGRESS"
+            ? sc.learning
+            : row.id === "MEMORIZED"
+              ? sc.mastered
+              : sc.ignored;
+      rows.push({
+        where: `Status sheet → ${row.label}`,
+        expect: val,
+        field: row.fallback
+          ? "totalFilteredItemsNotStarted OR numFilteredLearningResults − sum"
+          : `learningStatus.${row.field}`,
+      });
+    }
+
+    if (!filters.languagePairs && !filters.listId && !filters.learningStatus) {
+      for (const [code, n] of Object.entries(countMap).sort(
+        (a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])
+      )) {
+        rows.push({
+          where: `Language sheet → ${pairLabel(code)}`,
+          expect: Number(n) || 0,
+          field: `count["${code}"]`,
+        });
+      }
+    } else if (filters.languagePairs) {
+      rows.push({
+        where: `Language chip (active)`,
+        expect: pairLabel(filters.languagePairs),
+        field: `languagePairs=${filters.languagePairs}`,
+      });
+      rows.push({
+        where: `Language sheet → ${pairLabel(filters.languagePairs)}`,
+        expect: Number(countMap[filters.languagePairs] ?? 0),
+        field: `count["${filters.languagePairs}"]`,
+      });
+    }
+
+    const listResults = Array.isArray(lists?.results) ? lists.results : [];
+    for (const list of listResults) {
+      const id = list.id ?? list.listId;
+      const name = list.listName || list.name || `List ${id}`;
+      rows.push({
+        where: `List sheet → ${name}`,
+        expect: Number(list.numFavourites ?? 0),
+        field: `favouritesLists.results[id=${id}].numFavourites`,
+      });
+    }
+
+    if (filters.listId) {
+      const hit = listResults.find(
+        (l) => String(l.id ?? l.listId) === String(filters.listId)
+      );
+      rows.push({
+        where: "List chip (active)",
+        expect: hit?.listName || `List ${filters.listId}`,
+        field: `listId=${filters.listId}`,
+      });
+    }
+
+    if (filters.learningStatus) {
+      const label =
+        STATUS_ROWS.find((r) => r.id === filters.learningStatus)?.label ||
+        filters.learningStatus;
+      rows.push({
+        where: "Status chip (active)",
+        expect: label,
+        field: `learningStatus=${filters.learningStatus}`,
+      });
+    }
+
+    return rows;
+  }
+
+  function narrative(filters, favs, lists, favReq, listsReq) {
+    const lines = [];
+    const sc = statusCounts(favs);
+    const filterDesc = [
+      filters.languagePairs && `Language=${filters.languagePairs}`,
+      filters.listId && `List=${filters.listId}`,
+      filters.learningStatus && `Status=${filters.learningStatus}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    lines.push(
+      filterDesc
+        ? `Active filters: ${filterDesc}`
+        : "No filters (baseline load)"
+    );
+    lines.push(`Favourites request: ${favReq}`);
+    lines.push(`Lists request: ${listsReq}`);
+    lines.push("");
+    lines.push(
+      `At the "Terms" row you should see => ${favs.numFilteredResults} (numFilteredResults)`
+    );
+    lines.push(
+      `In Technical data → Filtered you should see => ${favs.numFilteredResults}`
+    );
+    lines.push(
+      `Favourite rows rendered => ${Array.isArray(favs.results) ? favs.results.length : 0} (results.length, max length=${filters.length})`
+    );
+
+    const countMap = favs.count || favs.countByPair || {};
+    if (!filters.languagePairs) {
+      const top = Object.entries(countMap).sort(
+        (a, b) => Number(b[1]) - Number(a[1])
+      )[0];
+      if (top) {
+        lines.push("");
+        lines.push(
+          `If you open Language chip, top pair ${pairLabel(top[0])} should show => ${top[1]} (count["${top[0]}"])`
+        );
+      }
+    } else {
+      lines.push("");
+      lines.push(
+        `With Language chip set to ${pairLabel(filters.languagePairs)}, open Status chip — you should ALWAYS see 4 rows (even at 0):`
+      );
+      lines.push(`  Learning => ${sc.learning}`);
+      lines.push(`  Mastered => ${sc.mastered}`);
+      lines.push(`  Ignored => ${sc.ignored}`);
+      lines.push(`  Not Started => ${sc.notStarted}`);
+      lines.push(
+        `(Status counts use language+list only; learningStatus filter is NOT applied to the sheet)`
+      );
+
+      const listsWithFavs = (lists?.results || []).filter(
+        (l) => Number(l.numFavourites ?? 0) > 0
+      );
+      if (listsWithFavs.length) {
+        const first = listsWithFavs[0];
+        const lid = first.id ?? first.listId;
+        lines.push("");
+        lines.push(
+          `If you then click List → "${first.listName || first.name}" (id ${lid}), Terms should reflect list filter (re-fetch with listId).`
+        );
+        lines.push(
+          `  List sheet count for that list now => ${first.numFavourites} (favouritesLists with languagePairs)`
+        );
+      }
+    }
+
+    if (filters.learningStatus && filters.languagePairs) {
+      const label =
+        STATUS_ROWS.find((r) => r.id === filters.learningStatus)?.label ||
+        filters.learningStatus;
+      lines.push("");
+      lines.push(
+        `With Language=${filters.languagePairs} + Status=${label}, result list length => ${Array.isArray(favs.results) ? favs.results.length : 0} and numFilteredResults => ${favs.numFilteredResults}`
+      );
+    }
+
+    const banners = bannerHints(favs, !!filters.isAnonymous);
+    if (banners.length) {
+      lines.push("");
+      lines.push("Premium banner mode hints (demo placeholders):");
+      for (const b of banners) lines.push(`  • ${b}`);
+    }
+
+    return lines;
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function makePanelDraggable(panel, handle) {
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let originLeft = 0;
+    let originTop = 0;
+
+    handle.style.cursor = "grab";
+    handle.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest("button")) return;
+      dragging = true;
+      handle.setPointerCapture(e.pointerId);
+      handle.style.cursor = "grabbing";
+      const rect = panel.getBoundingClientRect();
+      // Switch from right-anchored to left/top for free drag.
+      panel.style.right = "auto";
+      panel.style.left = `${rect.left}px`;
+      panel.style.top = `${rect.top}px`;
+      startX = e.clientX;
+      startY = e.clientY;
+      originLeft = rect.left;
+      originTop = rect.top;
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const maxL = Math.max(8, window.innerWidth - panel.offsetWidth - 8);
+      const maxT = Math.max(8, window.innerHeight - 48);
+      panel.style.left = `${Math.min(maxL, Math.max(8, originLeft + dx))}px`;
+      panel.style.top = `${Math.min(maxT, Math.max(8, originTop + dy))}px`;
+    });
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.cursor = "grab";
+      try {
+        handle.releasePointerCapture(e.pointerId);
+      } catch (_) { /* ignore */ }
+    };
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  }
+
+  /**
+   * @param {object} opts
+   * @param {string} opts.title
+   * @param {Array<{n:number, action:string, expect:string[]}>} [opts.steps]
+   * @param {Array<{where:string, expect:*, field:string}>} [opts.rows]
+   * @param {string[]} [opts.lines]
+   */
+  function renderPanel({ title, steps, rows, lines }) {
+    const id = "fav-filter-check-panel";
+    document.getElementById(id)?.remove();
+
+    const panel = document.createElement("div");
+    panel.id = id;
+    panel.style.cssText = [
+      "position:fixed",
+      "top:12px",
+      "right:12px",
+      "z-index:2147483646",
+      "width:min(560px,94vw)",
+      "max-height:min(86vh,720px)",
+      "display:flex",
+      "flex-direction:column",
+      "background:#0f172a",
+      "color:#e2e8f0",
+      "border:1px solid #334155",
+      "border-radius:12px",
+      "font:13px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif",
+      "box-shadow:0 12px 40px rgba(0,0,0,.45)",
+      "overflow:hidden",
+    ].join(";");
+
+    const header = document.createElement("div");
+    header.id = `${id}-handle`;
+    header.style.cssText =
+      "display:flex;justify-content:space-between;gap:8px;align-items:center;" +
+      "padding:10px 12px;background:#1e293b;border-bottom:1px solid #334155;user-select:none;flex-shrink:0";
+    header.innerHTML =
+      `<div style="display:flex;align-items:center;gap:8px;min-width:0">` +
+      `<span style="color:#64748b;font-size:11px;letter-spacing:.04em">⠿ DRAG</span>` +
+      `<strong style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(title)}</strong>` +
+      `</div>` +
+      `<button type="button" id="${id}-close" style="background:#334155;border:0;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;flex-shrink:0">×</button>`;
+
+    const body = document.createElement("div");
+    body.style.cssText = "overflow:auto;padding:12px 14px;flex:1";
+
+    let html = "";
+
+    if (steps && steps.length) {
+      html +=
+        `<div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#38bdf8;margin:0 0 8px">TEST PLAN</div>`;
+      for (const step of steps) {
+        html +=
+          `<div style="border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#111827">` +
+          `<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:6px">` +
+          `<span style="background:#0369a1;color:#fff;font-weight:800;font-size:11px;border-radius:999px;padding:2px 8px;flex-shrink:0">STEP ${escHtml(step.n)}</span>` +
+          `<strong style="color:#f8fafc">${escHtml(step.action)}</strong>` +
+          `</div>` +
+          (step.request
+            ? `<div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#a5b4fc;background:#0f172a;border-radius:6px;padding:6px 8px;margin:0 0 8px;word-break:break-all">GET ${escHtml(step.request)}</div>`
+            : "") +
+          `<div style="font-size:11px;font-weight:700;color:#94a3b8;margin:0 0 4px">You should see</div>` +
+          `<ul style="margin:0;padding-left:1.1rem;color:#cbd5e1">` +
+          step.expect.map((e) => `<li style="margin:2px 0">${escHtml(e)}</li>`).join("") +
+          `</ul></div>`;
+      }
+    }
+
+    if (rows && rows.length) {
+      html +=
+        `<details style="margin-top:4px"><summary style="cursor:pointer;color:#94a3b8;font-size:12px;margin-bottom:6px">Field reference table</summary>` +
+        `<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><tbody>` +
+        rows
+          .map(
+            (r) =>
+              `<tr><td style="padding:4px 8px 4px 0;vertical-align:top;color:#94a3b8">${escHtml(r.where)}</td>` +
+              `<td style="padding:4px 6px;font-weight:700;color:#f8fafc">${escHtml(r.expect)}</td>` +
+              `<td style="padding:4px 0 4px 6px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#c4b5fd">${escHtml(r.field)}</td></tr>`
+          )
+          .join("") +
+        `</tbody></table></details>`;
+    }
+
+    if (lines && lines.length) {
+      html +=
+        `<details style="margin-top:6px"><summary style="cursor:pointer;color:#94a3b8;font-size:12px;margin-bottom:6px">Raw notes</summary>` +
+        `<pre style="margin:0;white-space:pre-wrap;font-size:12px;color:#cbd5e1;background:#1e293b;padding:8px;border-radius:8px">${escHtml(lines.join("\n"))}</pre></details>`;
+    }
+
+    body.innerHTML = html;
+    panel.append(header, body);
+    document.body.append(panel);
+    document.getElementById(`${id}-close`).onclick = () => panel.remove();
+    makePanelDraggable(panel, header);
+  }
+
+  function stepExpectFromSnapshot(favs, lists, filters, favsForStatus) {
+    const sc = statusCounts(favsForStatus || favs);
+    const countMap = favs.count || favs.countByPair || {};
+    const returned = Array.isArray(favs.results) ? favs.results.length : 0;
+    const filtered = Number(favs.numFilteredResults ?? 0);
+    const fl = freemiumSnapshot(favs);
+    const expect = [];
+
+    // Header "Terms (…)" — what you see next to the title
+    if (fl?.limitReached && filtered > fl.maxAllowed) {
+      expect.push(`Header shows Terms (${fl.maxAllowed}/${filtered}) with ${fl.maxAllowed} in orange`);
+    } else {
+      expect.push(`Header shows Terms (${filtered})`);
+    }
+
+    // Visible list under the chips
+    // results.length is the first page (request `length`, default 40) — not a premium cap.
+    // Premium users still paginate; Terms (numFilteredResults) is the on-screen total.
+    if (returned === 0) {
+      expect.push("Favourite list is empty (no cards)");
+    } else if (filtered > returned) {
+      expect.push(
+        `Favourite list has cards (first page ~${returned}; scroll/load more) — header Terms (${filtered}) is the count to trust`
+      );
+    } else {
+      expect.push(
+        `Favourite list shows ${returned} card${returned === 1 ? "" : "s"}`
+      );
+    }
+
+    // Active chip labels (only what differs from default)
+    const chipBits = [];
+    if (filters.languagePairs) {
+      chipBits.push(`Language = ${pairLabel(filters.languagePairs)}`);
+    }
+    if (filters.listId) {
+      const listResultsForChip = Array.isArray(lists?.results) ? lists.results : [];
+      const hit = listResultsForChip.find(
+        (l) => String(l.id ?? l.listId) === String(filters.listId)
+      );
+      chipBits.push(
+        `List = ${hit?.listName || hit?.name || `List ${filters.listId}`}`
+      );
+    }
+    if (filters.learningStatus) {
+      const st =
+        STATUS_ROWS.find((r) => r.id === filters.learningStatus)?.label ||
+        filters.learningStatus;
+      chipBits.push(`Status = ${st}`);
+    }
+    expect.push(
+      chipBits.length
+        ? `Active chips: ${chipBits.join(" · ")}`
+        : "No filter chips active"
+    );
+
+    // Sheets you open from chips — only options / counts on screen
+    if (!filters.languagePairs) {
+      const pairs = Object.entries(countMap)
+        .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]))
+        .slice(0, 6);
+      if (pairs.length) {
+        expect.push(
+          "Open Language → options: " +
+            pairs.map(([c, n]) => `${pairLabel(c)} (${n})`).join(", ")
+        );
+      }
+    }
+
+    expect.push(
+      `Open Status → always 4 options: Learning (${sc.learning}), Mastered (${sc.mastered}), Ignored (${sc.ignored}), Not Started (${sc.notStarted})`
+    );
+
+    const listResults = Array.isArray(lists?.results) ? lists.results : [];
+    if (listResults.length) {
+      const topLists = listResults
+        .slice()
+        .sort((a, b) => Number(b.numFavourites ?? 0) - Number(a.numFavourites ?? 0))
+        .slice(0, 5);
+      expect.push(
+        "Open List → options: " +
+          topLists
+            .map((l) => `${l.listName || l.name || l.id} (${l.numFavourites ?? 0})`)
+            .join(", ")
+      );
+    } else if (filters.languagePairs || filters.learningStatus) {
+      expect.push("Open List → no lists (or all at 0) for these filters");
+    }
+
+    // Banner placeholders (only if something shows)
+    const banners = bannerHints(favs, !!filters.isAnonymous).filter(
+      (b) => !/^No banner/.test(b) && !/^No premium/.test(b)
+    );
+    for (const b of banners.slice(0, 2)) expect.push(b);
+
+    return expect;
+  }
+
+  function stepFromSnapshot(n, action, snap, extraExpect = []) {
+    const expect = snap
+      ? [...stepExpectFromSnapshot(
+          snap.favourites,
+          snap.lists,
+          snap.filters,
+          snap.favsForStatus
+        ), ...extraExpect]
+      : extraExpect;
+    return {
+      n,
+      action,
+      request: snap?.favRequest || "",
+      expect,
+    };
+  }
+
+  async function fetchSnapshot(opts, filters) {
+    const base = opts.baseUrl || DEFAULT_BASE;
+    const auth = opts._auth || (await resolveAuth(opts));
+    const headers = auth.headers;
+    const length = String(filters.length ?? opts.length ?? 40);
+
+    const favParams = {
+      length,
+      start: 0,
+      learningInfo: true,
+      includeDef: INCLUDE_DEF,
+      ...(filters.languagePairs ? { languagePairs: filters.languagePairs } : {}),
+      ...(filters.listId ? { listId: filters.listId } : {}),
+      ...(filters.learningStatus ? { learningStatus: filters.learningStatus } : {}),
+    };
+    const statusParams = {
+      length,
+      start: 0,
+      learningInfo: true,
+      includeDef: INCLUDE_DEF,
+      ...(filters.languagePairs ? { languagePairs: filters.languagePairs } : {}),
+      ...(filters.listId ? { listId: filters.listId } : {}),
+    };
+    const listParams = {
+      length: "50",
+      start: 0,
+      learningInfo: true,
+      includeDef: INCLUDE_DEF,
+      ...(filters.languagePairs ? { languagePairs: filters.languagePairs } : {}),
+      ...(filters.learningStatus
+        ? { favouriteLearningStatus: filters.learningStatus }
+        : {}),
+    };
+
+    const needStatusOnly = !!filters.learningStatus;
+    const [favsRes, listsRes, statusRes] = await Promise.all([
+      apiGet(base, "/user/favourites", favParams, headers),
+      apiGet(base, "/user/favouritesLists", listParams, headers),
+      needStatusOnly
+        ? apiGet(base, "/user/favourites", statusParams, headers)
+        : Promise.resolve(null),
+    ]);
+
+    const favsForStatus = needStatusOnly ? statusRes.data : favsRes.data;
+    const favs = favsRes.data;
+    const lists = listsRes.data;
+    const rows = buildRows(favs, lists, filters);
+    // Status sheet counts ignore learningStatus filter
+    const statusRows = buildRows(favsForStatus, lists, {
+      ...filters,
+      learningStatus: "",
+    }).filter((r) => r.where.startsWith("Status sheet"));
+    for (const sr of statusRows) {
+      const idx = rows.findIndex((r) => r.where === sr.where);
+      if (idx >= 0) rows[idx] = sr;
+      else rows.push(sr);
+    }
+
+    return {
+      auth,
+      filters: { ...filters, length },
+      favourites: favs,
+      lists,
+      favsForStatus,
+      rows,
+      favRequest: favsRes.url.replace(base, "") || favsRes.url,
+      listsRequest: listsRes.url.replace(base, "") || listsRes.url,
+      narrative: narrative(
+        { ...filters, length },
+        favs,
+        lists,
+        favsRes.url.replace(base, ""),
+        listsRes.url.replace(base, "")
+      ),
+    };
+  }
+
+  /**
+   * @param {object} opts
+   * @param {string} [opts.token] Authorization header (Bearer …) — skips cookie auth
+   * @param {"cookie"|"auto"|"bearer"} [opts.auth] default "cookie" on *.reverso.net
+   * @param {string} [opts.baseUrl] API base (default prod bst-web-user)
+   * @param {string} [opts.origin] X-Reverso-Origin (default mainweb)
+   * @param {string} [opts.languagePairs] e.g. "en-ar"
+   * @param {string} [opts.listId]
+   * @param {string} [opts.learningStatus] IN_PROGRESS | MEMORIZED | IGNORED | NOT_STARTED
+   * @param {number|string} [opts.length=40]
+   * @param {boolean} [opts.isAnonymous=false] for banner hints only
+   * @param {boolean} [opts.scenarios=true] also fetch language+status walkthrough for top pairs
+   * @param {boolean} [opts.panel=true] show floating summary panel
+   * @param {boolean} [opts.quiet=false] skip console output (for nested scenario calls)
+   */
+  async function favFilterCheck(opts = {}) {
+    const snap = await fetchSnapshot(opts, {
+      languagePairs: opts.languagePairs || "",
+      listId: opts.listId || "",
+      learningStatus: opts.learningStatus || "",
+      length: opts.length ?? 40,
+      isAnonymous: !!opts.isAnonymous,
+    });
+    opts._auth = snap.auth;
+
+    if (!opts.quiet) {
+      console.log(`Auth: ${snap.auth.mode} (${snap.auth.source})`);
+    }
+
+    const title = "Favourites filtering check";
+    const steps = [
+      {
+        n: 1,
+        action: Object.entries({
+          Language: snap.filters.languagePairs && pairLabel(snap.filters.languagePairs),
+          List: snap.filters.listId,
+          Status:
+            snap.filters.learningStatus &&
+            (STATUS_ROWS.find((r) => r.id === snap.filters.learningStatus)?.label ||
+              snap.filters.learningStatus),
+        })
+          .filter(([, v]) => v)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(", ") || "No filter applied",
+        expect: stepExpectFromSnapshot(
+          snap.favourites,
+          snap.lists,
+          snap.filters,
+          snap.favsForStatus
+        ),
+      },
+    ];
+
+    if (!opts.quiet) {
+      console.group(`%c${title}`, "font-weight:bold;font-size:14px");
+      console.log(`STEP 1 — ${steps[0].action}`);
+      for (const e of steps[0].expect) console.log(`  → ${e}`);
+      console.table(
+        snap.rows.map((r) => ({ where: r.where, expect: r.expect, apiField: r.field }))
+      );
+      for (const line of snap.narrative) console.log(line);
+    }
+
+    if (opts.scenarios !== false && !snap.filters.languagePairs && !opts.quiet) {
+      const countMap = snap.favourites.count || snap.favourites.countByPair || {};
+      const pairs = Object.entries(countMap)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .slice(0, 3);
+      if (pairs.length) {
+        console.group("Scenario previews (top language pairs)");
+        for (const [code] of pairs) {
+          const sub = await favFilterCheck({
+            ...opts,
+            languagePairs: code,
+            scenarios: false,
+            panel: false,
+            quiet: true,
+            promptToken: false,
+          });
+          console.log(`--- ${pairLabel(code)} ---`);
+          console.log(sub.narrative.join("\n"));
+        }
+        console.groupEnd();
+      }
+      console.groupEnd();
+    } else if (!opts.quiet) {
+      console.groupEnd();
+    }
+
+    if (opts.panel !== false && typeof document !== "undefined") {
+      renderPanel({
+        title,
+        steps: steps.map(({ n, action, expect }) => ({ n, action, expect })),
+      });
+    }
+
+    return {
+      filters: snap.filters,
+      auth: snap.auth,
+      favourites: snap.favourites,
+      lists: snap.lists,
+      rows: snap.rows,
+      narrative: snap.narrative,
+      steps,
+      requests: {
+        favourites: "(see narrative)",
+        favouritesLists: "(see narrative)",
+      },
+    };
+  }
+
+  /**
+   * Full walkthrough: no filters → language → status sheet → list → status filter → clear.
+   * Preferred entry point for QA / app review.
+   *
+   *   await favFilterTestPlan()
+   *   await favFilterTestPlan({ languagePairs: "en-ar" })
+   */
+  async function favFilterTestPlan(opts = {}) {
+    const length = opts.length ?? 40;
+    const auth = await resolveAuth(opts);
+    const shared = { ...opts, _auth: auth, promptToken: false };
+
+    if (!opts.quiet) {
+      console.log(`Auth: ${auth.mode} (${auth.source})`);
+      console.group("%cFavourites filtering — TEST PLAN", "font-weight:bold;font-size:14px");
+    }
+
+    // Step 1 — baseline
+    const baseline = await fetchSnapshot(shared, {
+      languagePairs: "",
+      listId: "",
+      learningStatus: "",
+      length,
+      isAnonymous: !!opts.isAnonymous,
+    });
+    const countMap = baseline.favourites.count || baseline.favourites.countByPair || {};
+    const topPairs = Object.entries(countMap).sort(
+      (a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0])
+    );
+    const pickPair =
+      opts.languagePairs ||
+      (topPairs[0] && topPairs[0][0]) ||
+      "";
+
+    const steps = [
+      stepFromSnapshot(
+        1,
+        "No filter applied (clear Language / List / Status) — call WITHOUT languagePairs",
+        baseline
+      ),
+    ];
+
+    // Step 2 — language
+    let langSnap = null;
+    if (pickPair) {
+      langSnap = await fetchSnapshot(shared, {
+        languagePairs: pickPair,
+        listId: "",
+        learningStatus: "",
+        length,
+        isAnonymous: !!opts.isAnonymous,
+      });
+      steps.push(
+        stepFromSnapshot(
+          2,
+          `Apply Language filter → ${pairLabel(pickPair)}`,
+          langSnap
+        )
+      );
+    } else {
+      steps.push({
+        n: 2,
+        action: "Apply Language filter",
+        request: "",
+        expect: ["No language pairs in count{} — skip or seed favourites first."],
+      });
+    }
+
+    // Step 3 — list under language (if any)
+    let listSnap = null;
+    let pickList = opts.listId || "";
+    let pickListName = "";
+    if (langSnap) {
+      const listResults = Array.isArray(langSnap.lists?.results)
+        ? [...langSnap.lists.results]
+        : [];
+      listResults.sort(
+        (a, b) => Number(b.numFavourites ?? 0) - Number(a.numFavourites ?? 0)
+      );
+      const withFavs = listResults.filter((l) => Number(l.numFavourites ?? 0) > 0);
+      const chosen = pickList
+        ? listResults.find((l) => String(l.id ?? l.listId) === String(pickList))
+        : withFavs[0];
+      if (chosen) {
+        pickList = String(chosen.id ?? chosen.listId);
+        pickListName = chosen.listName || chosen.name || `List ${pickList}`;
+        listSnap = await fetchSnapshot(shared, {
+          languagePairs: pickPair,
+          listId: pickList,
+          learningStatus: "",
+          length,
+          isAnonymous: !!opts.isAnonymous,
+        });
+        steps.push(
+          stepFromSnapshot(
+            3,
+            `Keep Language=${pairLabel(pickPair)}, apply List → "${pickListName}"`,
+            listSnap
+          )
+        );
+      } else {
+        steps.push({
+          n: 3,
+          action: `Keep Language=${pairLabel(pickPair)}, open List chip`,
+          request: langSnap.listsRequest || "",
+          expect: [
+            `Lists call with languagePairs=${pickPair} returned no lists with favourites.`,
+            "List sheet may be empty; Language + Status checks still apply.",
+          ],
+        });
+      }
+    }
+
+    // Step 4 — status filter (Learning) with language (+ list if we have one)
+    const statusId = opts.learningStatus || "IN_PROGRESS";
+    const statusLabel =
+      STATUS_ROWS.find((r) => r.id === statusId)?.label || statusId;
+    const statusFilters = {
+      languagePairs: pickPair || "",
+      listId: pickList || "",
+      learningStatus: statusId,
+      length,
+      isAnonymous: !!opts.isAnonymous,
+    };
+    let statusSnap = null;
+    if (pickPair) {
+      statusSnap = await fetchSnapshot(shared, statusFilters);
+      const filterBits = [
+        `Language=${pairLabel(pickPair)}`,
+        pickListName && `List="${pickListName}"`,
+        `Status=${statusLabel}`,
+      ]
+        .filter(Boolean)
+        .join(" + ");
+      steps.push(
+        stepFromSnapshot(
+          steps.length + 1,
+          `Apply ${filterBits}`,
+          statusSnap
+        )
+      );
+    }
+
+    // Step 5 — clear all (same response as Step 1)
+    steps.push(
+      stepFromSnapshot(
+        steps.length + 1,
+        "Clear all filters (Language × / List × / Status ×)",
+        baseline
+      )
+    );
+
+    if (!opts.quiet) {
+      for (const step of steps) {
+        console.log(`%cSTEP ${step.n} — ${step.action}`, "font-weight:bold;color:#38bdf8");
+        if (step.request) console.log(`  request: GET ${step.request}`);
+        for (const e of step.expect) console.log(`  → ${e}`);
+      }
+      console.groupEnd();
+    }
+
+    if (opts.panel !== false && typeof document !== "undefined") {
+      // Visual-only: no API field table / raw notes — just STEP checklists
+      renderPanel({
+        title: "Favourites filtering — TEST PLAN",
+        steps: steps.map(({ n, action, expect }) => ({ n, action, expect })),
+      });
+    }
+
+    return {
+      auth,
+      languagePairs: pickPair,
+      listId: pickList,
+      learningStatus: statusId,
+      steps,
+      baseline,
+      language: langSnap,
+      list: listSnap,
+      status: statusSnap,
+    };
+  }
+
+  function favFilterHelp() {
+    const host = String((global.location && global.location.hostname) || "");
+    const onReverso = /\.reverso\.net$/i.test(host) || host === "reverso.net";
+    const lines = [
+      "══════════════════════════════════════════════════",
+      "  favourites filter checker — helpme()",
+      "══════════════════════════════════════════════════",
+      onReverso
+        ? "  Auth: logged-in session cookies  |  includeDef=YES"
+        : "  ⚠ Open console on https://context.reverso.net (logged in)",
+      "",
+      "  ▶ START HERE (full test plan + draggable panel):",
+      "      await favFilterTestPlan()",
+      '      await favFilterTestPlan({ languagePairs: "en-ar" })',
+      "",
+      "  Other:",
+      "      await favFilterCheck()",
+      "      await favFilterDiscoverAuth()",
+      "      helpme()",
+      "══════════════════════════════════════════════════",
+    ];
+    const text = lines.join("\n");
+    // Plain text first — always visible even if styled logs are filtered.
+    console.log(text);
+    console.info(
+      "%c favourites filter checker ready ",
+      "background:#0369a1;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px"
+    );
+    console.info("Run →  await favFilterTestPlan()");
+    showHelpToast(text);
+    return {
+      preferred: "await favFilterTestPlan()",
+      commands: [
+        "await favFilterTestPlan()",
+        'await favFilterTestPlan({ languagePairs: "en-ar" })',
+        "await favFilterCheck()",
+        "await favFilterDiscoverAuth()",
+        "helpme()",
+      ],
+      text,
+    };
+  }
+
+  function showHelpToast(text) {
+    try {
+      if (typeof document === "undefined" || !document.body) return;
+      const id = "fav-filter-help-toast";
+      document.getElementById(id)?.remove();
+      const el = document.createElement("div");
+      el.id = id;
+      el.style.cssText = [
+        "position:fixed",
+        "left:12px",
+        "bottom:12px",
+        "z-index:2147483647",
+        "max-width:min(420px,92vw)",
+        "background:#0f172a",
+        "color:#e2e8f0",
+        "border:1px solid #38bdf8",
+        "border-radius:12px",
+        "padding:12px 14px",
+        "font:12px/1.45 ui-monospace,Menlo,Consolas,monospace",
+        "box-shadow:0 12px 40px rgba(0,0,0,.45)",
+        "white-space:pre-wrap",
+      ].join(";");
+      el.textContent = text;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Close";
+      btn.style.cssText =
+        "margin-top:8px;background:#334155;border:0;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font:12px sans-serif";
+      btn.onclick = () => el.remove();
+      el.appendChild(document.createElement("br"));
+      el.appendChild(btn);
+      document.body.appendChild(el);
+    } catch (_) { /* ignore */ }
+  }
+
+  global.favFilterCheck = favFilterCheck;
+  global.favFilterDiscoverAuth = favFilterDiscoverAuth;
+  global.favFilterTestPlan = favFilterTestPlan;
+  global.favFilterHelp = favFilterHelp;
+  global.helpme = favFilterHelp;
+  global.favHelp = favFilterHelp;
+  // Extra aliases on window when paste target is a page with a custom globalThis.
+  try {
+    if (typeof window !== "undefined") {
+      window.favFilterCheck = favFilterCheck;
+      window.favFilterDiscoverAuth = favFilterDiscoverAuth;
+      window.favFilterTestPlan = favFilterTestPlan;
+      window.favFilterHelp = favFilterHelp;
+      window.helpme = favFilterHelp;
+      window.favHelp = favFilterHelp;
+    }
+  } catch (_) { /* ignore */ }
+
+  const _boot = favFilterHelp();
+  // Returning a string makes Chrome print it as the paste evaluation result.
+  return (
+    "✓ Loaded. Run:  await favFilterTestPlan()   |   help again: helpme()"
+  );
+})(typeof window !== "undefined" ? window : typeof globalThis !== "undefined" ? globalThis : this);

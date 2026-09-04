@@ -18,6 +18,7 @@ const DEFAULT_BASE =
 
 const HTML_PATH = path.join(__dirname, "api-tester.html");
 const FILTER_DEMO_PATH = path.join(__dirname, "filtering-demo.html");
+const CONSOLE_CHECK_PATH = path.join(__dirname, "filtering-console-check.js");
 
 function send(res, status, body, headers = {}) {
   res.writeHead(status, {
@@ -29,10 +30,10 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
-function serveHtml(res, filePath) {
+function serveHtml(res, filePath, contentType = "text/html; charset=utf-8") {
   try {
     const html = fs.readFileSync(filePath);
-    return send(res, 200, html, { "Content-Type": "text/html; charset=utf-8" });
+    return send(res, 200, html, { "Content-Type": contentType });
   } catch (err) {
     return send(res, 500, `Missing ${path.basename(filePath)}: ${err.message}`, {
       "Content-Type": "text/plain",
@@ -117,6 +118,10 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === "/filtering-demo.html" || url.pathname === "/filtering") {
     return serveHtml(res, FILTER_DEMO_PATH);
+  }
+
+  if (url.pathname === "/filtering-console-check.js") {
+    return serveHtml(res, CONSOLE_CHECK_PATH, "application/javascript; charset=utf-8");
   }
 
   if (url.pathname === "/api/config") {

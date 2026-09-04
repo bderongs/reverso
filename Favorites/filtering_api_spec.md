@@ -23,6 +23,7 @@ On a real preprod account **or a predefined persona**, make it obvious:
 | `Favorites/proxy-server.js` | Local relay on port **3847** (CORS + Cloudflare-friendly `User-Agent`) |
 | `Favorites/filtering-demo.html` | Main demo UI (filters + optional premium placeholders + **persona selector**) — **edit this** |
 | `Favorites/api-tester.html` | Create/inspect favourites; shares auth via `localStorage` |
+| `Favorites/filtering-console-check.js` | Paste-in-console checker — calls prod API from **context.reverso.net** and prints expected UI values |
 | `Favorites/filtering_api_spec.md` | This handoff doc |
 
 Shared auth key: `localStorage["fav-api-tester.v1"]` (`authToken`, `origin`).
@@ -113,9 +114,9 @@ Persona catalogue + fixture builder live in `filtering-demo.html` (`PERSONAS`, `
 
 | Filter | Request | Count field(s) |
 |--------|---------|----------------|
-| Language pairs | `GET /user/favourites?learningInfo=true` (+ other filters except language itself for the `count` map) | `count["en-fr"]`, … |
-| Lists | `GET /user/favouritesLists?learningInfo=true` (+ `languagePairs`, `favouriteLearningStatus` when set) | `results[].numFavourites` |
-| Learning status | Same favourites GET | `learningStatus.inProgressCardsFiltered` (Learning), `memorizedOnceCardsFiltered` (Mastered), `ignoredCardsFiltered` (Ignored); Not Started = `numFilteredLearningResults −` sum of the three |
+| Language pairs | `GET /user/favourites?learningInfo=true&includeDef=YES` (+ other filters except language itself for the `count` map) | `count["en-fr"]`, … |
+| Lists | `GET /user/favouritesLists?learningInfo=true&includeDef=YES` (+ `languagePairs`, `favouriteLearningStatus` when set) | `results[].numFavourites` |
+| Learning status | Same favourites GET (**ignore** `learningStatus` for the chip counts; still apply language/list; always send `includeDef=YES`) | Always show **all 4**: Learning / Mastered / Ignored / Not Started, **even at 0**. Fields: `learningStatus.inProgressCardsFiltered`, `memorizedOnceCardsFiltered`, `ignoredCardsFiltered`; Not Started = `totalFilteredItemsNotStarted` or `numFilteredLearningResults −` sum of the three |
 
 Result list uses `results` / `numFilteredResults` from `GET /user/favourites`.
 
@@ -175,6 +176,41 @@ Prefer personas when you need a specific freemium / size edge case without seedi
 4. **Demo**: walk Language → List → Status; with premium on, point at top/bottom placeholders and the orange `40/N` terms label.
 5. **Technical data**: open counters / raw JSON when someone asks “which field?”.
 6. Use the API tester to create/inspect individual favourites if needed (Live only).
+
+## Console checker (for app developers on context.reverso.net)
+
+When the filtering demo runs on Vercel, Live API calls are blocked (Cloudflare). App devs verify values by running requests **from the Reverso origin with their session cookies**:
+
+1. Open [context.reverso.net](https://context.reverso.net/) **while logged in** (Swagger on that host works too).
+2. DevTools → Console → paste `Favorites/filtering-console-check.js` (or **Copy script** on the filtering demo).
+3. Run the full test plan (no token):
+
+```javascript
+await favFilterTestPlan();
+await favFilterTestPlan({ languagePairs: "en-ar" });
+```
+
+A **draggable** panel opens with numbered steps:
+
+| Step | Action | Expect |
+|------|--------|--------|
+| 1 | No filter applied | Baseline Terms / language pairs / 4 statuses / lists |
+| 2 | Apply Language (top pair or `languagePairs`) | Filtered counts + Status sheet still shows all 4 |
+| 3 | Apply List (largest under that language) | Combined language×list counts |
+| 4 | Apply Status = Learning | Result list filtered; status *sheet* counts still ignore Status |
+| 5 | Clear all filters | Back to Step 1 values |
+
+Auth: on `*.reverso.net`, defaults to **cookie-session** (`credentials: "include"`).
+
+Optional: `await favFilterDiscoverAuth()` / `await favFilterCheck()` for a single snapshot.
+
+Output:
+
+- `console.table` — **where** in the demo / app UI → **expected value** → **API field**
+- Narrative lines — e.g. “At the Terms row you should see => 67”, “If you open Language → EN ↔ AR, then Status, you should ALWAYS see 4 rows…”
+- Optional floating panel on the page (close with ×)
+
+Cookie auth is the default on `*.reverso.net`. Token / demo-localStorage are fallbacks only.
 
 ## Continuing the work — likely next steps
 

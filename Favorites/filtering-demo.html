@@ -629,6 +629,16 @@
     }
     .formula { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
     .hidden { display: none !important; }
+    .console-check {
+      border: 1px dashed var(--tech-border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      background: #fff;
+    }
+    .console-check h3 { font-size: 0.92rem; margin-bottom: 0.35rem; }
+    .console-check ol { margin: 0.5rem 0 0.75rem 1.1rem; font-size: 0.84rem; color: var(--muted); }
+    .console-check code { font-family: var(--mono); font-size: 0.8rem; }
+    .console-check .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; }
   </style>
 </head>
 <body>
@@ -640,6 +650,7 @@
     <div style="display:flex; gap:0.5rem;">
       <a href="/">API tester</a>
       <a href="/filtering-demo.html">Filtering demo</a>
+      <a href="/srs-game-tester.html">SRS tester</a>
     </div>
   </div>
 
@@ -662,8 +673,14 @@
         <div class="auth-body">
           <div class="row">
             <div class="field full">
-              <label for="auth-token">Authorization</label>
-              <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Bearer … or raw JWT"></textarea>
+              <label for="refresh-token">Refresh token</label>
+              <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field full">
+              <label for="auth-token">Access token (auto)</label>
+              <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
             </div>
           </div>
           <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
@@ -676,9 +693,14 @@
               <label for="page-length">length</label>
               <input id="page-length" type="number" value="40" min="1" max="100">
             </div>
+            <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
             <button type="button" class="btn" id="btn-load">Load</button>
             <button type="button" class="btn ghost" id="btn-clear-filters">Clear filters</button>
           </div>
+          <p class="note" style="margin-top:0.55rem;">
+            Paste your refresh token once; access tokens are renewed via
+            <code>POST /api/v1/account/accessToken</code> when they expire.
+          </p>
         </div>
       </details>
 
@@ -783,6 +805,26 @@
         <span class="zone-desc">Response counters and raw payloads for the current filters</span>
       </div>
 
+      <section class="panel console-check">
+        <h3>Console checker (session cookies on context.reverso.net)</h3>
+        <p class="note" style="margin:0">
+          For app devs: run on <strong>context.reverso.net while logged in</strong>.
+          Opens a <strong>draggable</strong> panel with a full STEP-by-STEP test plan
+          (no filter → language → list → status → clear) and expected values.
+        </p>
+        <ol>
+          <li>Open <a href="https://context.reverso.net/" target="_blank" rel="noopener">context.reverso.net</a> (logged in).</li>
+          <li>DevTools → Console → <strong>Copy script</strong> → paste → Enter.</li>
+          <li>Run <code>await favFilterTestPlan()</code> or <code>await favFilterTestPlan({ languagePairs: "en-ar" })</code>.</li>
+          <li>Drag the panel by its header; follow STEP 1…N in the app UI.</li>
+        </ol>
+        <div class="actions">
+          <button type="button" class="btn" id="btn-copy-console-check">Copy script</button>
+          <button type="button" class="btn ghost" id="btn-copy-console-snippet">Copy run commands</button>
+        </div>
+        <p class="note" id="console-check-status" style="margin-top:0.5rem;"></p>
+      </section>
+
       <section class="panel">
         <h2>Response counters</h2>
         <div class="stats-bar" id="stats-bar"></div>
@@ -803,8 +845,8 @@
     </section>
   </main>
 
+  <script src="/fav-auth.js"></script>
   <script>
-    const STORAGE_KEY = "fav-api-tester.v1";
 
     const LEARNING_UI = [
       {
@@ -828,23 +870,54 @@
       {
         id: "NOT_STARTED",
         label: "Not Started",
-        path: "numFilteredLearningResults − (Learning + Mastered + Ignored)",
+        // Prefer API field; fall back to spec formula when omitted.
+        path: "learningStatus.totalFilteredItemsNotStarted (or numFilteredLearningResults − Learning − Mastered − Ignored)",
         get: (fav) => {
-          const denom = Number(fav?.numFilteredLearningResults ?? fav?.learningStatus?.totalCardsFiltered ?? 0);
+          const explicit = fav?.learningStatus?.totalFilteredItemsNotStarted;
+          if (explicit != null && explicit !== "") return Math.max(0, Number(explicit) || 0);
+          const denom = Number(
+            fav?.numFilteredLearningResults ?? fav?.learningStatus?.totalCardsFiltered ?? 0
+          );
           const learning = Number(fav?.learningStatus?.inProgressCardsFiltered ?? 0);
           const mastered = Number(fav?.learningStatus?.memorizedOnceCardsFiltered ?? 0);
           const ignored = Number(fav?.learningStatus?.ignoredCardsFiltered ?? 0);
           return Math.max(0, denom - learning - mastered - ignored);
         },
-        formula: (fav) => {
-          const denom = Number(fav?.numFilteredLearningResults ?? fav?.learningStatus?.totalCardsFiltered ?? 0);
-          const learning = Number(fav?.learningStatus?.inProgressCardsFiltered ?? 0);
-          const mastered = Number(fav?.learningStatus?.memorizedOnceCardsFiltered ?? 0);
-          const ignored = Number(fav?.learningStatus?.ignoredCardsFiltered ?? 0);
-          return `${denom} − (${learning} + ${mastered} + ${ignored})`;
-        },
       },
     ];
+
+    /** Spec: always show all 4 statuses, whatever the counts (including 0). */
+    function statusOptionCount(fav, row) {
+      if (!fav) return 0;
+      const n = row.get(fav);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    /** Fill missing learningStatus fields with 0 so the Status sheet never looks empty. */
+    function ensureLearningStatusShape(fav) {
+      if (!fav || typeof fav !== "object") return fav;
+      const ls = fav.learningStatus && typeof fav.learningStatus === "object"
+        ? fav.learningStatus
+        : {};
+      const learning = Number(ls.inProgressCardsFiltered ?? 0);
+      const mastered = Number(ls.memorizedOnceCardsFiltered ?? 0);
+      const ignored = Number(ls.ignoredCardsFiltered ?? 0);
+      const denom = Number(
+        fav.numFilteredLearningResults ?? ls.totalCardsFiltered ?? 0
+      );
+      const notStarted = ls.totalFilteredItemsNotStarted != null && ls.totalFilteredItemsNotStarted !== ""
+        ? Math.max(0, Number(ls.totalFilteredItemsNotStarted) || 0)
+        : Math.max(0, denom - learning - mastered - ignored);
+      fav.learningStatus = {
+        ...ls,
+        inProgressCardsFiltered: learning,
+        memorizedOnceCardsFiltered: mastered,
+        ignoredCardsFiltered: ignored,
+        totalCardsFiltered: Number(ls.totalCardsFiltered ?? denom),
+        totalFilteredItemsNotStarted: notStarted,
+      };
+      return fav;
+    }
 
     /**
      * Predefined demo users — client-side fixtures that still go through the same
@@ -1142,6 +1215,7 @@
       const inProgress = filtered.filter((f) => f._status === "IN_PROGRESS").length;
       const memorized = filtered.filter((f) => f._status === "MEMORIZED").length;
       const ignored = filtered.filter((f) => f._status === "IGNORED").length;
+      const notStarted = filtered.filter((f) => f._status === "NOT_STARTED").length;
       const numFiltered = filtered.length;
 
       const maxAllowed = pool.freemium?.maxAllowed ?? pageLength;
@@ -1161,6 +1235,7 @@
           memorizedOnceCardsFiltered: memorized,
           ignoredCardsFiltered: ignored,
           totalCardsFiltered: numFiltered,
+          totalFilteredItemsNotStarted: notStarted,
         },
       };
       if (pool.freemium) favs.freemiumLimit = { ...pool.freemium };
@@ -1196,6 +1271,8 @@
       draft: { languagePair: "", listId: "", learningStatus: "" },
       openSheet: null,
       favs: null,
+      /** Favourites payload for Status sheet counts (language + list only; never learningStatus). */
+      statusOptionsFavs: null,
       lists: null,
       listMeta: {},
       countMap: {},
@@ -1207,109 +1284,9 @@
       personaPool: null, // cached pool for active persona
     };
 
-    function loadAuth() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
-      catch { return {}; }
-    }
-    function saveAuth() {
-      const prev = loadAuth();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        ...prev,
-        authToken: document.getElementById("auth-token").value.trim(),
-        origin: document.getElementById("origin-header").value.trim(),
-      }));
-    }
-
-    function decodeJwtPayload(token) {
-      const raw = String(token || "").replace(/^Bearer\s+/i, "").trim();
-      const parts = raw.split(".");
-      if (parts.length < 2) return null;
-      try {
-        const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const json = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
-        return JSON.parse(json);
-      } catch {
-        return null;
-      }
-    }
-
-    function formatDuration(sec) {
-      const s = Math.max(0, Math.floor(sec));
-      if (s < 60) return `${s}s`;
-      const m = Math.floor(s / 60);
-      const r = s % 60;
-      if (m < 60) return r ? `${m}m ${r}s` : `${m}m`;
-      const h = Math.floor(m / 60);
-      return `${h}h ${m % 60}m`;
-    }
-
-    /** @returns {{ level: 'empty'|'invalid'|'ok'|'warn'|'err', badge: string, detail: string }} */
-    function jwtValidity(token) {
-      const raw = String(token || "").trim();
-      if (!raw) {
-        return { level: "empty", badge: "No token", detail: "" };
-      }
-      const payload = decodeJwtPayload(raw);
-      if (!payload) {
-        return {
-          level: "invalid",
-          badge: "Not a JWT",
-          detail: "Couldn’t decode token. Paste a Bearer JWT (header.payload.signature).",
-        };
-      }
-      if (!payload.exp) {
-        return {
-          level: "warn",
-          badge: "No exp claim",
-          detail: "Token has no exp — can’t tell if it’s still valid.",
-        };
-      }
-      const now = Date.now() / 1000;
-      const remaining = payload.exp - now;
-      const when = new Date(payload.exp * 1000).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-      if (remaining <= 0) {
-        return {
-          level: "err",
-          badge: `Expired ${formatDuration(-remaining)} ago`,
-          detail: `JWT exp was ${when}. GAS tokens last ~15 min — paste a fresh Authorization value.`,
-        };
-      }
-      if (remaining <= 120) {
-        return {
-          level: "warn",
-          badge: `Expires in ${formatDuration(remaining)}`,
-          detail: `JWT exp at ${when}. Refresh soon to avoid 401s.`,
-        };
-      }
-      return {
-        level: "ok",
-        badge: `Valid · ${formatDuration(remaining)} left`,
-        detail: `JWT exp at ${when}.`,
-      };
-    }
-
-    function updateJwtUi() {
-      const token = document.getElementById("auth-token").value;
-      const info = jwtValidity(token);
-      const badge = document.getElementById("jwt-badge");
-      const inline = document.getElementById("jwt-warn-inline");
-      badge.textContent = info.badge;
-      badge.className = "jwt-badge" + (
-        info.level === "ok" ? " ok"
-          : info.level === "warn" || info.level === "invalid" ? " warn"
-            : info.level === "err" ? " err"
-              : ""
-      );
-      const showWarn = info.level === "err" || info.level === "warn" || info.level === "invalid";
-      inline.classList.toggle("show", showWarn);
-      inline.classList.toggle("err", info.level === "err");
-      inline.textContent = showWarn ? info.detail : "";
-      return info;
-    }
+    function loadAuth() { return FavAuth.loadAuth(); }
+    function saveAuth() { FavAuth.saveAuth(); }
+    function updateJwtUi() { return FavAuth.updateJwtUi(); }
 
     function collapseAuthPanel() {
       document.getElementById("auth-panel").open = false;
@@ -1317,19 +1294,6 @@
 
     function expandAuthPanel() {
       document.getElementById("auth-panel").open = true;
-    }
-
-    function authHeaders() {
-      let token = document.getElementById("auth-token").value.trim();
-      const origin = document.getElementById("origin-header").value.trim();
-      const headers = { Accept: "application/json" };
-      if (token) {
-        headers.Authorization = /^Bearer\s+/i.test(token) || token.split(".").length !== 3
-          ? token
-          : "Bearer " + token;
-      }
-      if (origin) headers["X-Reverso-Origin"] = origin;
-      return headers;
     }
 
     function setStatus(ok, text, meta) {
@@ -1348,16 +1312,14 @@
       return sp.toString();
     }
 
+    // Live API only on local relay — Vercel/production must not hit /proxy (firewall).
+    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+
     async function apiGet(path, params) {
+      if (!LIVE_API_ENABLED) return null;
       const url = "/proxy" + path + "?" + qs(params);
-      const res = await fetch(url, { headers: authHeaders() });
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { data = text; }
-      if (!res.ok) {
-        const msg = typeof data === "object" ? JSON.stringify(data) : String(data);
-        throw new Error(`${res.status} ${path}: ${msg.slice(0, 240)}`);
-      }
+      const res = await FavAuth.fetchWithAuth(url);
+      const data = await FavAuth.readJsonResponse(res, path);
       return { url, data };
     }
 
@@ -1469,7 +1431,7 @@
       const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "");
       const query = entries.map(([k, v]) => `${k}=${v}`).join("&");
       const applied = entries
-        .filter(([k]) => !["length", "start", "learningInfo"].includes(k))
+        .filter(([k]) => !["length", "start", "learningInfo", "includeDef"].includes(k))
         .map(([k, v]) => `${k}=${v}`);
       return {
         full: query ? `${methodPath}?${query}` : methodPath,
@@ -1485,15 +1447,17 @@
       const anno = {
         lang: "Values from GET /user/favourites → count",
         list: "Values from GET /user/favouritesLists → results[].numFavourites",
-        status: "Values from GET /user/favourites → learningStatus / numFilteredLearningResults",
+        status: "Always show all 4 statuses (even at 0). Counts from GET /user/favourites → learningStatus (language + list apply; learningStatus filter ignored for counts)",
       }[kind];
       document.getElementById("sheet-title").textContent = title;
       document.getElementById("sheet-anno").textContent = anno;
 
-      // List sheet is fed by favouritesLists — which should include languagePairs / favouriteLearningStatus
+      // Status option counts ignore learningStatus (spec); list sheet uses favouritesLists.
       const reqInfo = kind === "list"
         ? formatRequestLine("GET /user/favouritesLists", listParams())
-        : formatRequestLine("GET /user/favourites", favParams());
+        : kind === "status"
+          ? formatRequestLine("GET /user/favourites", statusOptionsParams())
+          : formatRequestLine("GET /user/favourites", favParams());
       document.getElementById("sheet-request").innerHTML =
         `<strong>${escapeHtml(reqInfo.full)}</strong>` +
         `<div class="req-params">${escapeHtml(reqInfo.highlight)}</div>`;
@@ -1550,7 +1514,10 @@
         }));
         if (!results.length) {
           const extra = state.languagePair ? ` (languagePairs=${state.languagePair} was sent)` : "";
-          body.innerHTML += `<div class="empty">No lists in response for current filters${extra}.</div>`;
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = `No lists in response for current filters${extra}.`;
+          body.append(empty);
         }
         for (const list of results) {
           const id = list.id ?? list.listId;
@@ -1569,6 +1536,12 @@
       }
 
       if (kind === "status") {
+        // Spec: Always display the 4 values (Learning, Mastered, Not Started, Ignored),
+        // whatever the counts — including when language/list filters yield zeros.
+        // Counts come from statusOptionsFavs (language + list only; never learningStatus).
+        const statusSrc = ensureLearningStatusShape(
+          state.statusOptionsFavs || state.favs || { learningStatus: {}, numFilteredLearningResults: 0 }
+        );
         body.append(sheetOpt({
           selected: !state.draft.learningStatus,
           label: "All statuses",
@@ -1577,26 +1550,27 @@
           count: null,
           onClick: () => { state.draft.learningStatus = ""; renderSheet(); },
         }));
+        let anyPositive = false;
         for (const row of LEARNING_UI) {
-          const n = state.favs ? row.get(state.favs) : null;
-          const jsonPath = row.id === "NOT_STARTED"
-            ? "numFilteredLearningResults − (inProgressCardsFiltered + memorizedOnceCardsFiltered + ignoredCardsFiltered)"
-            : row.path;
-          const el = sheetOpt({
+          const n = statusOptionCount(statusSrc, row);
+          if (n > 0) anyPositive = true;
+          body.append(sheetOpt({
             selected: state.draft.learningStatus === row.id,
             label: row.label,
             request: "GET /user/favourites",
-            jsonPath,
+            jsonPath: row.path,
             count: n,
             onClick: () => { state.draft.learningStatus = row.id; renderSheet(); },
-          });
-          if (row.formula && state.favs) {
-            const f = document.createElement("div");
-            f.className = "formula";
-            f.textContent = "computed: " + row.formula(state.favs);
-            el.querySelector(".left").append(f);
-          }
-          body.append(el);
+          }));
+        }
+        if (!anyPositive) {
+          const note = document.createElement("div");
+          note.className = "empty";
+          note.style.padding = "0.75rem 1rem";
+          note.textContent = state.languagePair || state.listId
+            ? "All status counts are 0 for the current language/list filters — the 4 statuses stay listed (spec)."
+            : "All status counts are 0 — the 4 statuses stay listed (spec).";
+          body.append(note);
         }
       }
     }
@@ -1802,9 +1776,23 @@
         length,
         start: 0,
         learningInfo: true,
+        includeDef: "YES",
         ...(state.languagePair ? { languagePairs: state.languagePair } : {}),
         ...(state.listId ? { listId: state.listId } : {}),
         ...(state.learningStatus ? { learningStatus: state.learningStatus } : {}),
+      };
+    }
+
+    /** Params for status-chip counts: language + list apply; learningStatus must not. */
+    function statusOptionsParams() {
+      const length = document.getElementById("page-length").value || "40";
+      return {
+        length,
+        start: 0,
+        learningInfo: true,
+        includeDef: "YES",
+        ...(state.languagePair ? { languagePairs: state.languagePair } : {}),
+        ...(state.listId ? { listId: state.listId } : {}),
       };
     }
 
@@ -1813,6 +1801,7 @@
         length: "50",
         start: 0,
         learningInfo: true,
+        includeDef: "YES",
         ...(state.languagePair ? { languagePairs: state.languagePair } : {}),
         ...(state.learningStatus ? { favouriteLearningStatus: state.learningStatus } : {}),
       };
@@ -1839,28 +1828,38 @@
         return;
       }
 
-      const jwt = updateJwtUi();
-      if (!document.getElementById("auth-token").value.trim()) {
-        setStatus(false, "Missing auth", "Paste a token first — or pick a predefined user.");
-        expandAuthPanel();
+      // Production (Vercel): never call the live API — no request, no status message.
+      if (!LIVE_API_ENABLED) {
         btn.disabled = false;
         return;
       }
-      if (jwt.level === "err") {
-        setStatus(false, "Token expired", jwt.detail);
-        expandAuthPanel();
-        btn.disabled = false;
-        return;
-      }
+
       saveAuth();
+      if (!FavAuth.authReadyForLiveApi()) {
+        setStatus(false, "Missing auth", "Paste a refresh token — or pick a predefined user.");
+        expandAuthPanel();
+        btn.disabled = false;
+        return;
+      }
       setStatus(null, "Loading…", "");
 
       try {
-        const [favsRes, listsRes] = await Promise.all([
+        await FavAuth.ensureAccessToken();
+        updateJwtUi();
+        const needStatusOptionsCall = !!state.learningStatus;
+        const [favsRes, listsRes, statusOptsRes] = await Promise.all([
           apiGet("/user/favourites", favParams()),
           apiGet("/user/favouritesLists", listParams()),
+          needStatusOptionsCall
+            ? apiGet("/user/favourites", statusOptionsParams())
+            : Promise.resolve(null),
         ]);
-        state.favs = favsRes.data;
+        state.favs = ensureLearningStatusShape(favsRes.data);
+        // Status menu must keep all 4 options even when language/list filters zero them out,
+        // and must not apply learningStatus to the chip counts (spec).
+        state.statusOptionsFavs = ensureLearningStatusShape(
+          needStatusOptionsCall ? statusOptsRes?.data : favsRes.data
+        );
         state.lists = listsRes.data;
         state.countMap = state.favs.count || state.favs.countByPair || {};
         rememberLists(state.lists?.results || []);
@@ -1890,16 +1889,20 @@
       if (!persona) throw new Error(`Unknown persona: ${state.dataSource}`);
       if (!state.personaPool) state.personaPool = persona.build();
       const pageLength = Number(document.getElementById("page-length").value || 40);
-      const { favs, lists } = personaPayloads(
+      const filters = {
+        languagePair: state.languagePair,
+        listId: state.listId,
+        learningStatus: state.learningStatus,
+      };
+      const { favs, lists } = personaPayloads(state.personaPool, filters, pageLength);
+      // Status chip counts ignore learningStatus (keep language + list).
+      const { favs: statusFavs } = personaPayloads(
         state.personaPool,
-        {
-          languagePair: state.languagePair,
-          listId: state.listId,
-          learningStatus: state.learningStatus,
-        },
+        { ...filters, learningStatus: "" },
         pageLength,
       );
-      state.favs = favs;
+      state.favs = ensureLearningStatusShape(favs);
+      state.statusOptionsFavs = ensureLearningStatusShape(statusFavs);
       state.lists = lists;
       state.countMap = favs.count || {};
       rememberLists(lists.results || []);
@@ -1977,15 +1980,9 @@
     }
 
     function init() {
-      const saved = loadAuth();
-      if (saved.authToken) document.getElementById("auth-token").value = saved.authToken;
-      if (saved.origin) document.getElementById("origin-header").value = saved.origin;
+      FavAuth.initAuthUi();
 
       populatePersonaSelect();
-
-      const tokenInput = document.getElementById("auth-token");
-      tokenInput.addEventListener("input", updateJwtUi);
-      tokenInput.addEventListener("change", updateJwtUi);
 
       document.getElementById("btn-load").onclick = refresh;
       document.getElementById("btn-clear-filters").onclick = () => {
@@ -2029,12 +2026,47 @@
       syncDataSourceUi();
       syncPremiumModeUi();
       const jwt = updateJwtUi();
-      // Keep auth open if missing/expired so the warning is visible (live mode only)
-      if (state.dataSource === "live" && (jwt.level === "err" || jwt.level === "empty" || jwt.level === "invalid")) {
+      // Keep auth open if missing credentials (live mode only)
+      if (
+        state.dataSource === "live" &&
+        !FavAuth.authReadyForLiveApi() &&
+        (jwt.level === "err" || jwt.level === "empty" || jwt.level === "invalid")
+      ) {
         expandAuthPanel();
       }
-      setInterval(updateJwtUi, 15000);
-      if (state.dataSource === "live" && saved.authToken && jwt.level !== "err") refresh();
+      if (
+        LIVE_API_ENABLED &&
+        state.dataSource === "live" &&
+        FavAuth.authReadyForLiveApi()
+      ) {
+        refresh();
+      }
+
+      document.getElementById("btn-copy-console-check").onclick = async () => {
+        const status = document.getElementById("console-check-status");
+        try {
+          const res = await fetch("/filtering-console-check.js");
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const text = await res.text();
+          await navigator.clipboard.writeText(text);
+          status.textContent = "Script copied — paste in console on context.reverso.net; helpme() prints the commands to run.";
+        } catch (err) {
+          status.textContent = "Could not load script — copy Favorites/filtering-console-check.js from the repo.";
+        }
+      };
+      document.getElementById("btn-copy-console-snippet").onclick = async () => {
+        const status = document.getElementById("console-check-status");
+        const snippet =
+          `await favFilterTestPlan();\n` +
+          `// or: await favFilterTestPlan({ languagePairs: "en-ar" })\n` +
+          `// help again: helpme()`;
+        try {
+          await navigator.clipboard.writeText(snippet);
+          status.textContent = "Run commands copied — favFilterTestPlan() (cookie session).";
+        } catch {
+          status.textContent = snippet;
+        }
+      };
     }
 
     init();

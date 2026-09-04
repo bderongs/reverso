@@ -9,6 +9,9 @@ const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
   "https://context.reverso.net/bst-web-user";
 
+const DEFAULT_ACCOUNT_BASE =
+  process.env.ACCOUNT_API_BASE || "https://account.reverso.net";
+
 const FAV_DIR = __dirname;
 
 function corsHeaders() {
@@ -19,8 +22,8 @@ function corsHeaders() {
   };
 }
 
-function proxyRequest(req, res, targetPathWithQuery, bodyBuf) {
-  const base = new URL(DEFAULT_BASE.replace(/\/$/, "") + "/");
+function proxyRequest(req, res, targetPathWithQuery, bodyBuf, baseUrl) {
+  const base = new URL(String(baseUrl || DEFAULT_BASE).replace(/\/$/, "") + "/");
   const relative = targetPathWithQuery.replace(/^\//, "");
   const targetUrl = new URL(relative, base);
 
@@ -95,12 +98,29 @@ function mountFavoritesRoutes(app) {
     res.sendFile(path.join(FAV_DIR, "filtering-demo.html"));
   });
 
+  app.get(["/srs-game-tester", "/srs-game-tester.html"], (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "srs-game-tester.html"));
+  });
+
   app.get(["/api-tester", "/api-tester.html"], (_req, res) => {
     res.sendFile(path.join(FAV_DIR, "api-tester.html"));
   });
 
+  app.get("/filtering-console-check.js", (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "filtering-console-check.js"));
+  });
+
+  app.get("/fav-auth.js", (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "fav-auth.js"));
+  });
+
   app.get("/api/fav-config", (_req, res) => {
-    res.json({ baseUrl: DEFAULT_BASE, proxyPath: "/proxy" });
+    res.json({
+      baseUrl: DEFAULT_BASE,
+      proxyPath: "/proxy",
+      accountBaseUrl: DEFAULT_ACCOUNT_BASE,
+      accountProxyPath: "/account-proxy",
+    });
   });
 
   // Express 4: mount at /proxy so /proxy/user/... → req.url = /user/...
@@ -112,11 +132,26 @@ function mountFavoritesRoutes(app) {
     const targetPath = req.url || "/";
     try {
       const body = await readRawBody(req);
-      proxyRequest(req, res, targetPath, body);
+      proxyRequest(req, res, targetPath, body, DEFAULT_BASE);
     } catch (err) {
       res.status(500).json({ error: "Proxy failed", message: err.message });
     }
   });
+
+  // Account GAS API — refresh token → access token
+  app.use("/account-proxy", async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, corsHeaders());
+      return res.end();
+    }
+    const targetPath = req.url || "/";
+    try {
+      const body = await readRawBody(req);
+      proxyRequest(req, res, targetPath, body, DEFAULT_ACCOUNT_BASE);
+    } catch (err) {
+      res.status(500).json({ error: "Account proxy failed", message: err.message });
+    }
+  });
 }
 
-module.exports = { mountFavoritesRoutes, DEFAULT_BASE };
+module.exports = { mountFavoritesRoutes, DEFAULT_BASE, DEFAULT_ACCOUNT_BASE };
