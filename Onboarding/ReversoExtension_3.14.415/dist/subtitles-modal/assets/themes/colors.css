@@ -1,0 +1,24 @@
+/*host, NOT root!*/
+:host {
+    --text-blue-blue-secondary: #0A6CC2;
+    --text-base-base-tertiary: #607D8B;
+    --color-new-blue-200: #D9ECFC;
+    --bg-base-quaternary: #EAEEF1;
+    --color-black-0: #FFF;
+    --color-black-0-rgb: 255, 255, 255;
+    --color-black-rgb: 0, 0, 0;
+    --text-base-base-primary: #222C31;
+    --text-base-base-placeholder: #79929D;
+    --line-gray-gray-secondary: #DEE4E7;
+    --light-web-feedback-error-secondary: #E45C45;
+    --text-base-base-disabled: #92A6B0;
+    --bg-base-define: #E8F3FC;
+    --text-base-base-secondary: #3B4C55;
+    --text-blue-blue-primary: #2A8BDF;
+    --bg-base-define-blue-hover: #D9ECFC;
+    --color-new-blue-100: #F6FAFE;
+    --color-new-blue-100-rgb: 246, 250, 254;
+    --ref-Grey-900: #475D67;
+    --ref-Grey-800: #546D79;
+    --ref-New-Blue-1000: #07579C;
+}

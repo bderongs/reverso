@@ -1,0 +1,60 @@
+@mixin app-icon-size($size) {
+  display: flex;
+  width: $size;
+  height: $size;
+
+  ::ng-deep svg {
+    width: $size;
+    height: $size;
+  }
+}
+
+@mixin app-icon-fill($color) {
+  ::ng-deep svg.filled {
+    path {
+      fill: $color;
+    }
+  }
+}
+@mixin app-icon-stroke($color) {
+  ::ng-deep svg.stroked {
+    path {
+      stroke: $color;
+    }
+  }
+}
+
+@mixin app-icon-dimensions($width, $height) {
+  display: flex;
+  width: $width;
+  height: $height;
+
+  ::ng-deep svg {
+    width: $width;
+    height: $height;
+  }
+}
+@mixin modal-triangle() {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(12px, calc(50% - 24px));
+  content: '';
+  width: 12px;
+  height: 24px;
+  background: var(--color-black-0);
+  clip-path: polygon(0% 0, 100% 50%, 0 100%);
+}
+
+// z-index scale
+$z-index: (
+  negative: -1,
+  background: 0,
+  base: 1,
+  sticky: 900,
+  overlayBackdrop: 1040,
+  popup: 1050,
+  tooltip: 1060,
+  modal: 1070,
+  alert: 1080,
+);

@@ -2,3 +2,11 @@
 reports/
 .venv-browser/
 .browser-profile/
+Favorites/srs-logs/
+.maestro/auth.local.json
+.maestro/quiz-runs/corpus-*.json
+.maestro/quiz-runs/latest-score.json
+.maestro/quiz-runs/latest-score.txt
+.maestro/quiz-runs/archive/
+Android_testing/corpus-*.json
+

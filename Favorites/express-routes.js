@@ -1,9 +1,47 @@
 /**
  * Favourites demo + CORS proxy routes for Express (local server.js / Vercel).
  */
+const fs = require("fs");
 const https = require("https");
 const path = require("path");
 const { URL } = require("url");
+
+function sanitizeLogId(id) {
+  const cleaned = String(id || "")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .slice(0, 80);
+  return cleaned || `srs-${Date.now()}`;
+}
+
+function pruneSrsLogs() {
+  let names;
+  try {
+    names = fs.readdirSync(SRS_LOG_DIR);
+  } catch {
+    return;
+  }
+  const keepName = new Set(["latest.json", "latest.txt"]);
+  const files = names
+    .filter((name) => !keepName.has(name) && (name.endsWith(".json") || name.endsWith(".txt")))
+    .map((name) => {
+      const full = path.join(SRS_LOG_DIR, name);
+      let mtime = 0;
+      try {
+        mtime = fs.statSync(full).mtimeMs;
+      } catch {
+        mtime = 0;
+      }
+      return { full, mtime };
+    })
+    .sort((a, b) => b.mtime - a.mtime);
+  for (const file of files.slice(SRS_LOG_KEEP * 2)) {
+    try {
+      fs.unlinkSync(file.full);
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
@@ -13,6 +51,8 @@ const DEFAULT_ACCOUNT_BASE =
   process.env.ACCOUNT_API_BASE || "https://account.reverso.net";
 
 const FAV_DIR = __dirname;
+const SRS_LOG_DIR = path.join(FAV_DIR, "srs-logs");
+const SRS_LOG_KEEP = 30;
 
 function corsHeaders() {
   return {
@@ -102,6 +142,18 @@ function mountFavoritesRoutes(app) {
     res.sendFile(path.join(FAV_DIR, "srs-game-tester.html"));
   });
 
+  app.get(["/learning-progress", "/learning-progress.html"], (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "learning-progress.html"));
+  });
+
+  app.get(["/practice-talking", "/practice-talking.html"], (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "practice-talking.html"));
+  });
+
+  app.get(["/teacher-texts", "/teacher-texts.html"], (_req, res) => {
+    res.sendFile(path.join(FAV_DIR, "teacher-texts.html"));
+  });
+
   app.get(["/api-tester", "/api-tester.html"], (_req, res) => {
     res.sendFile(path.join(FAV_DIR, "api-tester.html"));
   });
@@ -121,6 +173,55 @@ function mountFavoritesRoutes(app) {
       accountBaseUrl: DEFAULT_ACCOUNT_BASE,
       accountProxyPath: "/account-proxy",
     });
+  });
+
+  app.post("/srs-log", async (req, res) => {
+    try {
+      const raw = await readRawBody(req);
+      if (!raw.length) {
+        return res.status(400).json({ error: "Empty log payload" });
+      }
+      if (raw.length > 6 * 1024 * 1024) {
+        return res.status(413).json({ error: "Log payload too large" });
+      }
+      let data;
+      try {
+        data = JSON.parse(raw.toString("utf8"));
+      } catch {
+        return res.status(400).json({ error: "Invalid JSON" });
+      }
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return res.status(400).json({ error: "Log payload must be an object" });
+      }
+      fs.mkdirSync(SRS_LOG_DIR, { recursive: true });
+      const id = sanitizeLogId(data.sessionId);
+      data.savedAt = new Date().toISOString();
+      const json = JSON.stringify(data, null, 2);
+      const sessionFile = `${id}.json`;
+      fs.writeFileSync(path.join(SRS_LOG_DIR, sessionFile), json);
+      fs.writeFileSync(path.join(SRS_LOG_DIR, "latest.json"), json);
+      const transcript = typeof data.transcript === "string" ? data.transcript : "";
+      if (transcript) {
+        fs.writeFileSync(path.join(SRS_LOG_DIR, "latest.txt"), transcript);
+        fs.writeFileSync(path.join(SRS_LOG_DIR, `${id}.txt`), transcript);
+      }
+      pruneSrsLogs();
+      res.json({
+        ok: true,
+        sessionId: id,
+        file: `Favorites/srs-logs/${sessionFile}`,
+        latest: "Favorites/srs-logs/latest.json",
+        latestTxt: transcript ? "Favorites/srs-logs/latest.txt" : "",
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/srs-log/latest", (_req, res) => {
+    const file = path.join(SRS_LOG_DIR, "latest.json");
+    if (!fs.existsSync(file)) return res.status(404).json({ error: "No log yet" });
+    res.sendFile(file);
   });
 
   // Express 4: mount at /proxy so /proxy/user/... → req.url = /user/...

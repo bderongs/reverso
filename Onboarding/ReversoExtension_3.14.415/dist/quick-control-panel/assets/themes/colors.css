@@ -1,0 +1,34 @@
+/*host, NOT root!*/
+:host {
+  --text-blue-blue-secondary: #0a6cc2;
+  --text-base-base-tertiary: #607d8b;
+  --color-new-blue-200: #d9ecfc;
+  --bg-base-quaternary: #eaeef1;
+  --color-black-0: #fff;
+  --bg-base-tertiary: #f7f9f9;
+  --text-base-base-primary: #222c31;
+  --text-base-base-placeholder: #79929d;
+  --line-gray-gray-secondary: #dee4e7;
+  --light-web-feedback-error-secondary: #e45c45;
+  --text-base-base-disabled: #92a6b0;
+  --bg-base-define: #e8f3fc;
+  --text-base-base-secondary: #3b4c55;
+  --text-blue-blue-primary: #2a8bdf;
+  --bg-base-define-blue-hover: #d9ecfc;
+  --color-new-blue-100: #f6fafe;
+  --color-new-blue-100-rgb: 246, 250, 254;
+  --ref-Black-300: #cecece;
+  --light-a-8: rgba(34, 44, 49, 0.1);
+  --decorative-facebook: #1877f2;
+  --premium-text-text-secondary: #9c7b1e;
+  --color-yellow-premium-700: #ffca31;
+  --rgba-shadow-1: rgba(0, 0, 0, 0.1);
+  --rgba-shadow-2: rgba(34, 44, 49, 0.25);
+  --rgba-text-1: rgba(255, 255, 255, 0.9);
+  --decorative-reverso-blue: #053661;
+  --text-blue-blue-quaternary: #bddef9;
+  --rgba-shadow-3: rgba(0, 0, 0, 0.14);
+  --rgba-shadow-4: rgba(0, 0, 0, 0.2);
+  --rgba-shadow-5: rgba(0, 0, 0, 0.12);
+  --action-secondary-secondary-hovered-2: #E8F3FC;
+}

@@ -1,0 +1,59 @@
+appId: com.softissimo.reverso.context
+---
+# Play one quiz set from the current question until the results screen.
+# Copies each displayed term (and example) before answering.
+- extendedWaitUntil:
+    visible:
+      id: "com.softissimo.reverso.context:id/btn_option_1"
+    timeout: 15000
+    label: Wait for a quiz question
+
+- repeat:
+    while:
+      visible:
+        id: "com.softissimo.reverso.context:id/btn_option_1"
+    commands:
+      - evalScript: ${output.currentExample = ""}
+      - copyTextFrom:
+          id: "com.softissimo.reverso.context:id/txt_word"
+          label: Copy the displayed quiz term
+      - evalScript: ${output.currentTerm = maestro.copiedText}
+      - runFlow:
+          when:
+            visible:
+              id: "com.softissimo.reverso.context:id/txt_translation_details"
+          commands:
+            - copyTextFrom:
+                id: "com.softissimo.reverso.context:id/txt_translation_details"
+                label: Copy the example sentence
+            - evalScript: ${output.currentExample = maestro.copiedText}
+      - runScript:
+          file: scripts/record-quiz-term.js
+          label: Store the presented term
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/btn_option_1"
+          label: Answer with the first option
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - runFlow:
+          file: dismiss-ad.yaml
+      - runFlow:
+          when:
+            notVisible:
+              id: "com.softissimo.reverso.context:id/flashcard_endgame_quizLearn_title"
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  id: "com.softissimo.reverso.context:id/btn_option_1"
+                timeout: 8000
+                optional: true
+                label: Wait for the next question
+
+- runFlow:
+    file: dismiss-ad.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "com.softissimo.reverso.context:id/flashcard_endgame_quizLearn_title"
+    timeout: 15000
+    label: Wait for quiz results

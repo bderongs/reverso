@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Stats | Reverso Vocabulary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1f2d3a;
+      --muted: #7a8b98;
+      --muted-strong: #5b6f7c;
+      --line: #e4edf4;
+      --line-soft: #eef4f8;
+      --surface: #fff;
+      --bg: #e8f3fb;
+      --blue: #2a8bdf;
+      --blue-hover: #0a6cc2;
+      --blue-deep: #0a4f7a;
+      --blue-soft: #dceefb;
+      --blue-bar: #b7d7f2;
+      --blue-bar-now: #4a9adf;
+      --green: #36ba69;
+      --green-line: #3dbe6e;
+      --err: #e45c45;
+      --err-bg: #fdf5f4;
+      --warn-bg: #fff8e5;
+      --warn-ink: #95581a;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      --radius-card: 16px;
+      --shadow: 0 8px 24px rgba(15, 55, 90, 0.06);
+      --header-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: var(--header-h);
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 1.25rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+      min-width: 0;
+    }
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: conic-gradient(from 210deg, #ec523b 0 50%, #2a8bdf 50% 100%);
+      flex: 0 0 auto;
+      position: relative;
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .brand-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--blue-deep);
+      letter-spacing: -0.01em;
+    }
+    .brand-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--line);
+      flex: 0 0 auto;
+    }
+    .brand-product { font-size: 0.95rem; font-weight: 500; color: #157cd5; }
+    .site-header nav {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .site-header nav a {
+      color: var(--muted-strong);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+    }
+    .site-header nav a:hover { color: var(--blue-hover); background: #eef6fc; }
+    .site-header nav a.active {
+      color: var(--blue-hover);
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 1.35rem 1.15rem 4.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow);
+    }
+    .card.pad { padding: 0.95rem 1.05rem 1.05rem; }
+    .hidden { display: none !important; }
+
+    details.auth-panel { overflow: hidden; }
+    details.auth-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      padding: 0.85rem 1.05rem;
+      user-select: none;
+    }
+    details.auth-panel > summary::-webkit-details-marker { display: none; }
+    details.auth-panel > summary .sum-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--blue-deep);
+      font-weight: 700;
+    }
+    details.auth-panel > summary .sum-chev { margin-left: auto; color: var(--muted); }
+    details.auth-panel[open] > summary .sum-chev { transform: rotate(180deg); }
+    details.auth-panel .auth-body {
+      padding: 0 1.05rem 1rem;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 0.85rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 140px; min-width: 0; }
+    .field.full { flex: 1 1 100%; }
+    label { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea.auth { min-height: 2.5rem; font-family: var(--mono); font-size: 0.72rem; }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--blue);
+      border-radius: 10px 10px 7px 7px;
+      padding: 0.5rem 0.95rem;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn:hover:not(:disabled) { background: var(--blue-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.ghost { background: #fff; color: var(--muted-strong); border-color: var(--line); }
+    .btn.success { background: var(--green); border-color: var(--green); }
+    .pill {
+      display: inline-flex; align-items: center;
+      font-size: 0.74rem; padding: 0.18rem 0.55rem; border-radius: 999px;
+      background: var(--blue-soft); color: var(--blue-deep); font-weight: 500;
+    }
+    .pill.ok { background: #e8f8ee; color: var(--green); }
+    .pill.err { background: var(--err-bg); color: var(--err); }
+    .note { font-size: 0.8rem; color: var(--muted); }
+    .note code { font-family: var(--mono); font-size: 0.72rem; }
+    .jwt-badge {
+      display: inline-flex; font-size: 0.74rem; padding: 0.18rem 0.55rem;
+      border-radius: 999px; background: var(--line-soft); color: var(--muted); font-weight: 500;
+    }
+    .jwt-badge.ok { background: #e8f8ee; color: var(--green); }
+    .jwt-badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .jwt-badge.err { background: var(--err-bg); color: var(--err); }
+    .jwt-warn-inline {
+      margin-top: 0.45rem; font-size: 0.78rem; padding: 0.45rem 0.6rem;
+      border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink);
+      border: 1px solid #ffecb4; display: none;
+    }
+    .jwt-warn-inline.show { display: block; }
+    .jwt-warn-inline.err { background: var(--err-bg); color: var(--err); border-color: #f8d7d1; }
+
+    .stats-head {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.95rem;
+      padding: 0.35rem 0 0.15rem;
+    }
+    .stats-head h1 {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: #24323c;
+      letter-spacing: -0.02em;
+    }
+    .period {
+      display: flex;
+      gap: 0.45rem;
+    }
+    .period button {
+      appearance: none;
+      border: 1.5px solid #c5d7e6;
+      background: #fff;
+      color: var(--muted-strong);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.92rem;
+      padding: 0.42rem 0.95rem;
+      border-radius: 999px;
+      cursor: pointer;
+      min-width: 4.4rem;
+    }
+    .period button[aria-pressed="true"] {
+      background: var(--blue-soft);
+      border-color: var(--blue-soft);
+      color: var(--blue-deep);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    .stat-card {
+      position: relative;
+      background: #fff;
+      border: none;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 0.85rem 0.9rem 0.75rem;
+      text-align: left;
+      cursor: pointer;
+      min-height: 8.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      font: inherit;
+      color: inherit;
+      transition: transform 0.12s ease;
+    }
+    .stat-card:hover { transform: translateY(-1px); }
+    .stat-card.is-open { outline: 2px solid #c5e0f5; }
+    .stat-card .ico { width: 38px; height: 38px; margin-bottom: 0.45rem; }
+    .stat-card .lab {
+      display: flex;
+      align-items: center;
+      gap: 0.28rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .info {
+      appearance: none;
+      border: 1px solid #cfdbe4;
+      background: #fff;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 700;
+      color: #8aa0b0;
+      line-height: 1;
+      padding: 0;
+      cursor: help;
+    }
+    .stat-card .val {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-top: 0.15rem;
+    }
+    .stat-card .chev {
+      position: absolute;
+      right: 0.85rem;
+      bottom: 0.7rem;
+      color: #b7c6d1;
+      font-size: 1.05rem;
+      font-weight: 400;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #5d6f7c;
+      margin: 0.35rem 0 0.55rem;
+    }
+
+    .lower {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+    .lang-list { display: flex; flex-direction: column; gap: 0.55rem; }
+    .lang-item {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .lang-item > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      font-size: 1.02rem;
+      user-select: none;
+    }
+    .lang-item > summary::-webkit-details-marker { display: none; }
+    .lang-flag { font-size: 1.35rem; line-height: 1; }
+    .lang-item .lang-chev {
+      margin-left: auto;
+      color: var(--muted);
+      transition: transform 0.15s ease;
+    }
+    .lang-item[open] .lang-chev { transform: rotate(180deg); }
+    .lang-mini {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      padding: 0 0.85rem 0.9rem;
+    }
+    .mini {
+      background: #f4f7fa;
+      border-radius: 12px;
+      padding: 0.55rem 0.65rem 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-height: 3.1rem;
+    }
+    .mini svg { width: 26px; height: 26px; flex: 0 0 auto; }
+    .mini b { font-size: 1.05rem; font-weight: 700; }
+
+    .activity {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 1rem 1.05rem 0.85rem;
+    }
+    .activity-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .activity-k {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .activity-v {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-top: 0.15rem;
+    }
+    .activity-v span { font-size: 1rem; font-weight: 500; color: var(--ink); }
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted-strong);
+      font-weight: 500;
+      margin-top: 0.35rem;
+    }
+    .legend i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-line);
+      display: inline-block;
+    }
+    .chart { width: 100%; height: 210px; margin-top: 0.35rem; display: block; }
+    .chart-empty { color: var(--muted); font-size: 0.88rem; padding: 1.5rem 0; }
+
+    .detail {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 1rem 1.05rem 1.05rem;
+    }
+    .detail-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.7rem;
+    }
+    .detail-head h2 { font-size: 1.05rem; font-weight: 700; flex: 1; }
+    .split { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.35rem 0 0.65rem; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 650;
+      padding: 0.22rem 0.55rem;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .chip.miss { background: #fff7ed; color: #c2410c; }
+    .chip.fresh { background: #eff6ff; color: #1d4ed8; }
+    .chip.new { background: #f5f3ff; color: #5b21b6; }
+    .chip.due { background: #ecfdf5; color: #166534; }
+    .plan-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .plan-row {
+      display: grid;
+      grid-template-columns: 5.5rem 1fr auto;
+      gap: 0.45rem;
+      align-items: center;
+      font-size: 0.86rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 10px;
+      background: #f7fafc;
+    }
+    .plan-row .tag {
+      font-size: 0.68rem;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .plan-row .word { font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .plan-row .meta { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); }
+    .tag.miss { color: #c2410c; }
+    .tag.fresh { color: #1d4ed8; }
+    .tag.new { color: #5b21b6; }
+    .tag.due { color: #166534; }
+    .spot-empty { font-size: 0.84rem; color: var(--muted); }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.55rem; }
+    .empty-banner {
+      text-align: center;
+      color: var(--muted-strong);
+      padding: 0.4rem 0 0.2rem;
+      font-size: 0.92rem;
+    }
+    .tip {
+      position: fixed;
+      z-index: 40;
+      max-width: 16rem;
+      background: #1f2d3a;
+      color: #fff;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+    .progress-line { font-size: 0.78rem; color: var(--muted); }
+
+    @media (min-width: 860px) {
+      .stats-head {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .stat-grid { grid-template-columns: repeat(3, 1fr); }
+      .lower {
+        display: grid;
+        grid-template-columns: 0.92fr 1.08fr;
+        align-items: start;
+        gap: 1.25rem;
+      }
+      .stat-card .val { font-size: 2.05rem; }
+    }
+    @media (max-width: 720px) {
+      .site-header {
+        height: auto;
+        min-height: 48px;
+        padding: 0.55rem 1rem;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+      }
+      :root { --header-h: 48px; }
+      .brand-product { display: none; }
+      .site-header nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        max-width: 62%;
+        justify-content: flex-end;
+      }
+      .site-header nav a { font-size: 0.72rem; padding: 0.25rem 0.45rem; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/learning-progress.html" aria-label="Reverso Vocabulary">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Reverso</span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-product">Vocabulary</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/filtering-demo.html">Filtering demo</a>
+      <a href="/srs-game-tester.html">SRS tester</a>
+      <a class="active" href="/learning-progress.html">Progress</a>
+      <a href="/practice-talking.html">Practice talking</a>
+    </nav>
+  </header>
+
+  <main>
+    <details class="card auth-panel" id="auth-panel" open>
+      <summary>
+        <span class="sum-title">Auth &amp; load</span>
+        <span id="jwt-badge" class="jwt-badge">No token</span>
+        <span id="status-pill" class="pill">Idle</span>
+        <span id="status-meta" class="note"></span>
+        <span class="sum-chev">▾</span>
+      </summary>
+      <div class="auth-body">
+        <div class="row">
+          <div class="field full">
+            <label for="refresh-token">Refresh token</label>
+            <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field full">
+            <label for="auth-token">Access token (auto)</label>
+            <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
+          </div>
+        </div>
+        <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
+        <div class="row" style="margin-top:0.55rem;">
+          <div class="field">
+            <label for="origin-header">X-Reverso-Origin</label>
+            <input id="origin-header" type="text" value="mainweb">
+          </div>
+          <div class="field">
+            <label for="source-strategy">Source</label>
+            <select id="source-strategy">
+              <option value="FAVOURITES" selected>Favourites</option>
+              <option value="ALL">All</option>
+              <option value="HISTORY">History</option>
+              <option value="VOCABULARYLIST">Vocabulary list</option>
+            </select>
+          </div>
+          <div class="field hidden" id="list-field">
+            <label for="vocabulary-list">List</label>
+            <select id="vocabulary-list"><option value="">— load account first —</option></select>
+          </div>
+          <div class="field hidden" id="source-lang-field">
+            <label for="source-lang">Source lang</label>
+            <select id="source-lang"><option value="">—</option></select>
+          </div>
+          <div class="field hidden" id="target-lang-field">
+            <label for="target-lang">Target lang</label>
+            <select id="target-lang"><option value="">—</option></select>
+          </div>
+          <div class="field">
+            <label for="learning-strategy">Next-game mix</label>
+            <select id="learning-strategy">
+              <option value="MIXED" selected>MIXED</option>
+              <option value="SRS">SRS</option>
+              <option value="NEW">NEW</option>
+            </select>
+          </div>
+          <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
+          <button type="button" class="btn" id="btn-load-account">Load account</button>
+        </div>
+        <p class="progress-line" id="load-status" style="margin-top:0.55rem;">Not loaded. Click Load account.</p>
+      </div>
+    </details>
+
+    <header class="stats-head">
+      <h1>My Stats</h1>
+      <div class="period" role="tablist" aria-label="Time period">
+        <button type="button" data-period="7" aria-pressed="false">7D</button>
+        <button type="button" data-period="30" aria-pressed="false">30D</button>
+        <button type="button" data-period="all" aria-pressed="true">All time</button>
+      </div>
+    </header>
+
+    <p id="dash-empty" class="empty-banner">Load an account to fill these stats from Favourites and History.</p>
+
+    <div id="stat-grid" class="stat-grid"></div>
+    <div id="detail" class="detail hidden"></div>
+
+    <div class="lower">
+      <section>
+        <h2 class="section-label">By language</h2>
+        <div id="lang-list" class="lang-list"></div>
+      </section>
+      <section>
+        <h2 class="section-label">Learning activity</h2>
+        <div class="activity">
+          <div class="activity-top">
+            <div>
+              <div class="activity-k">
+                <span id="activity-period-label">Last 30d</span>
+                <button type="button" class="info" data-tip="Days a learning card was last seen. Built from in-progress cards (up to 500), not a full daily-stats feed.">i</button>
+              </div>
+              <div class="activity-v" id="activity-total">— <span>terms</span></div>
+            </div>
+            <div class="legend"><i></i> Daily goal</div>
+          </div>
+          <div id="chart-wrap"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div id="tip" class="tip hidden"></div>
+
+  <script src="/fav-auth.js"></script>
+  <script>
+    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const GAME_SIZE = 7;
+    const DAY_MS = 86400000;
+    const SRS_INTERVAL_DAYS = { 1: 1, 2: 3, 3: 7, 4: 14 };
+    const LEARNING_PAGE = 100;
+    const LEARNING_MAX_PAGES = 5;
+    const SPOT_SHOW = 8;
+    const DAILY_GOAL = 7;
+    const LANG_NAMES = {
+      en: "English", fr: "French", es: "Spanish", de: "German", it: "Italian",
+      pt: "Portuguese", ru: "Russian", ar: "Arabic", he: "Hebrew", nl: "Dutch",
+      pl: "Polish", ja: "Japanese", zh: "Chinese", ko: "Korean", tr: "Turkish",
+      sv: "Swedish", da: "Danish", no: "Norwegian", fi: "Finnish", cs: "Czech",
+      el: "Greek", hu: "Hungarian", ro: "Romanian", uk: "Ukrainian", hi: "Hindi",
+    };
+    const LANG_FLAGS = {
+      en: "🇬🇧", fr: "🇫🇷", es: "🇪🇸", de: "🇩🇪", it: "🇮🇹", pt: "🇵🇹",
+      ru: "🇷🇺", ar: "🇸🇦", he: "🇮🇱", nl: "🇳🇱", pl: "🇵🇱", ja: "🇯🇵",
+      zh: "🇨🇳", ko: "🇰🇷", tr: "🇹🇷", sv: "🇸🇪", da: "🇩🇰", no: "🇳🇴",
+      fi: "🇫🇮", cs: "🇨🇿", el: "🇬🇷", hu: "🇭🇺", ro: "🇷🇴", uk: "🇺🇦", hi: "🇮🇳",
+    };
+    const STAT_TIPS = {
+      searches: "Lookups in History (all-time total). The period selector filters the activity chart.",
+      saved: "Favourites stored in this scope — current total, not a time window.",
+      tolearn: "Saved cards that have never been reviewed (Not started).",
+      learning: "Cards in progress (SRS 1–4). Opens your next quiz mix.",
+      failed: "In-progress cards whose last answer was wrong. Due now.",
+      mastered: "Cards marked memorized after the SRS cycle.",
+    };
+
+    const state = {
+      lists: [],
+      countMap: {},
+      historyCountMap: {},
+      loaded: false,
+      learning: emptyLearning(),
+      saved: 0,
+      searches: 0,
+      quizCards: [],
+      quizError: "",
+      almostThere: [],
+      failedLast: [],
+      learningRows: [],
+      learningFetched: 0,
+      pairStats: {},
+      period: "all",
+      openStat: "",
+      openLang: "",
+    };
+    let scopeTimer = null;
+
+    function emptyLearning() {
+      return { notStarted: 0, inProgress: 0, mastered: 0, ignored: 0, total: 0 };
+    }
+    function el(id) { return document.getElementById(id); }
+    function fmtNum(n) { return Number(n || 0).toLocaleString("en-US"); }
+    function langName(code) { return LANG_NAMES[code] || String(code || "").toUpperCase(); }
+    function langFlag(code) { return LANG_FLAGS[code] || "🏳️"; }
+
+    function setStatus(ok, text, meta) {
+      const pill = el("status-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      el("status-meta").textContent = meta || "";
+    }
+
+    function qs(params) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v === undefined || v === null || v === "") continue;
+        sp.set(k, String(v));
+      }
+      return sp.toString();
+    }
+
+    async function apiGet(path, params) {
+      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
+      const url = "/proxy" + path + "?" + qs(params);
+      const res = await FavAuth.fetchWithAuth(url);
+      return FavAuth.readJsonResponse(res, path);
+    }
+
+    function isLastStatusCorrect(value) {
+      if (value === true || value === 1) return true;
+      if (value === false || value === 0 || value == null || value === "") return false;
+      const s = String(value).trim().toUpperCase();
+      return s === "TRUE" || s === "CORRECT" || s === "KNOW" || s === "YES";
+    }
+
+    function parseLearningStatus(fav) {
+      const ls = fav?.learningStatus && typeof fav.learningStatus === "object" ? fav.learningStatus : {};
+      const inProgress = Number(ls.inProgressCardsFiltered ?? 0) || 0;
+      const mastered = Number(ls.memorizedOnceCardsFiltered ?? 0) || 0;
+      const ignored = Number(ls.ignoredCardsFiltered ?? 0) || 0;
+      const denom = Number(fav?.numFilteredLearningResults ?? ls.totalCardsFiltered ?? 0) || 0;
+      const explicit = ls.totalFilteredItemsNotStarted;
+      const notStarted = explicit != null && explicit !== ""
+        ? Math.max(0, Number(explicit) || 0)
+        : Math.max(0, denom - inProgress - mastered - ignored);
+      return {
+        notStarted,
+        inProgress,
+        mastered,
+        ignored,
+        total: denom || (notStarted + inProgress + mastered + ignored),
+      };
+    }
+
+    function fromFavRow(fav) {
+      const lc = fav?.learnCard && typeof fav.learnCard === "object" ? fav.learnCard : {};
+      return {
+        id: fav.id,
+        srcText: String(fav.srcText || "").trim(),
+        trgText: String(fav.trgText || "").trim(),
+        srcLang: fav.srcLang || fav.sourceLang || "",
+        trgLang: fav.trgLang || fav.targetLang || "",
+        timesSeen: Number(lc.timesSeen ?? 0),
+        srsCounter: Number(lc.srsCounter ?? 0),
+        memorized: !!(lc.memorized ?? lc.isMemorized),
+        lastStatus: lc.lastStatus,
+        lastStatusCorrect: isLastStatusCorrect(lc.lastStatus),
+        lastSeenDate: lc.lastSeenDate || "",
+      };
+    }
+
+    function splitLearningLists(rows) {
+      const almostThere = [];
+      const failedLast = [];
+      for (const row of rows) {
+        if (row.memorized) continue;
+        if (row.srsCounter >= 4 && row.lastStatusCorrect) almostThere.push(row);
+        if (row.timesSeen > 0 && !row.lastStatusCorrect) failedLast.push(row);
+      }
+      almostThere.sort((a, b) => Date.parse(b.lastSeenDate || 0) - Date.parse(a.lastSeenDate || 0));
+      failedLast.sort((a, b) => Date.parse(b.lastSeenDate || 0) - Date.parse(a.lastSeenDate || 0));
+      return { almostThere, failedLast };
+    }
+
+    async function fetchInProgressCards() {
+      const base = favStatsParams();
+      const items = [];
+      let start = 0;
+      for (let page = 0; page < LEARNING_MAX_PAGES; page += 1) {
+        const data = await apiGet("/user/favourites", {
+          ...base,
+          length: LEARNING_PAGE,
+          start,
+          learningStatus: "IN_PROGRESS",
+        });
+        const batch = Array.isArray(data.results) ? data.results : [];
+        items.push(...batch.map(fromFavRow));
+        if (batch.length < LEARNING_PAGE) break;
+        start += LEARNING_PAGE;
+      }
+      return items;
+    }
+
+    function snapshotCard(card) {
+      return {
+        id: card.id,
+        srcText: card.sourceText || card.srcText || "",
+        trgText: card.targetText || card.trgText || "",
+        timesSeen: Number(card.timesSeen ?? 0),
+        srsCounter: Number(card.srsCounter ?? 0),
+        memorized: !!(card.memorized ?? card.isMemorized),
+        lastStatus: card.lastStatus,
+        lastStatusCorrect: isLastStatusCorrect(card.lastStatus),
+        lastSeenDate: card.lastSeenDate || "",
+        firstSeenDate: card.firstSeenDate || "",
+        hasLearnCard: true,
+        ignored: false,
+        ineligible: "",
+      };
+    }
+
+    function daysOverdue(item, nowMs) {
+      if (!item.lastStatusCorrect) return Number.POSITIVE_INFINITY;
+      const interval = SRS_INTERVAL_DAYS[item.srsCounter] ?? 0;
+      if (!item.lastSeenDate) return 0;
+      const seen = Date.parse(item.lastSeenDate);
+      if (!Number.isFinite(seen)) return 0;
+      return (nowMs - (seen + interval * DAY_MS)) / DAY_MS;
+    }
+
+    function classifyBucket(item, nowMs) {
+      if (item.memorized) return "mastered";
+      if (!item.hasLearnCard || item.timesSeen === 0) return "new";
+      if (!item.lastStatusCorrect) return "mistake";
+      const overdue = daysOverdue(item, Date.now());
+      if (overdue < 0) return "not_due";
+      if (overdue <= 30) return "fresh";
+      return "old";
+    }
+
+    function extractQuizCards(quiz) {
+      const raw = Array.isArray(quiz?.results)
+        ? quiz.results
+        : Array.isArray(quiz?.entries)
+          ? quiz.entries
+          : [];
+      return raw.filter((card) => card && card.id != null).map((card) => {
+        const item = snapshotCard(card);
+        return { ...item, bucket: classifyBucket(item, Date.now()) };
+      });
+    }
+
+    function pairLabel(code) {
+      const [a, b] = String(code).split("-");
+      return a && b ? `${a.toUpperCase()} → ${b.toUpperCase()}` : code;
+    }
+
+    function populateLanguageSelects(countMap) {
+      const pairs = Object.keys(countMap || {}).sort((a, b) => (countMap[b] || 0) - (countMap[a] || 0));
+      const srcSel = el("source-lang");
+      const tgtSel = el("target-lang");
+      const prevSrc = srcSel.value;
+      const prevTgt = tgtSel.value;
+      srcSel.innerHTML = "";
+      tgtSel.innerHTML = "";
+      for (const pair of pairs) {
+        const [src, tgt] = pair.split("-");
+        if (!src || !tgt) continue;
+        const opt1 = document.createElement("option");
+        opt1.value = src;
+        opt1.textContent = `${src} (${pairLabel(pair)} · ${countMap[pair]})`;
+        srcSel.append(opt1);
+        const opt2 = document.createElement("option");
+        opt2.value = tgt;
+        opt2.textContent = `${tgt} (${pairLabel(pair)} · ${countMap[pair]})`;
+        tgtSel.append(opt2);
+      }
+      if (pairs.length) {
+        const restore = pairs.find((p) => {
+          const [s, t] = p.split("-");
+          return s === prevSrc && t === prevTgt;
+        }) || pairs[0];
+        const [s, t] = restore.split("-");
+        srcSel.value = s;
+        tgtSel.value = t;
+      }
+    }
+
+    function getSelectedList() {
+      const id = el("vocabulary-list").value;
+      if (!id) return null;
+      return state.lists.find((list) => String(list.id ?? list.listId) === String(id)) || null;
+    }
+
+    function listLangs(list) {
+      if (!list) return { sourceLang: "", targetLang: "" };
+      return {
+        sourceLang: list.srcLang || list.sourceLang || "",
+        targetLang: list.trgLang || list.targetLang || "",
+      };
+    }
+
+    function populateLists(results) {
+      const sel = el("vocabulary-list");
+      sel.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = results.length ? "— pick a list —" : "No lists";
+      sel.append(empty);
+      for (const list of results) {
+        const id = list.id ?? list.listId;
+        if (id == null) continue;
+        const { sourceLang, targetLang } = listLangs(list);
+        const opt = document.createElement("option");
+        opt.value = String(id);
+        const n = Number(list.numFavourites ?? 0);
+        const dir = sourceLang && targetLang ? ` · ${sourceLang}→${targetLang}` : "";
+        opt.textContent = `${list.listName || list.name || "List " + id} (${n} favs${dir})`;
+        sel.append(opt);
+      }
+    }
+
+    function syncSourceFieldsVisibility() {
+      const strategy = el("source-strategy").value;
+      const isList = strategy === "VOCABULARYLIST";
+      el("list-field").classList.toggle("hidden", !isList);
+    }
+
+    function scopeParams() {
+      const sourceStrategy = el("source-strategy").value;
+      if (sourceStrategy === "VOCABULARYLIST") {
+        const list = getSelectedList();
+        const langs = listLangs(list);
+        return {
+          sourceStrategy,
+          sourceLang: langs.sourceLang,
+          targetLang: langs.targetLang,
+          vocabularyListId: el("vocabulary-list").value || "",
+          learningStrategy: el("learning-strategy").value,
+        };
+      }
+      return {
+        sourceStrategy,
+        sourceLang: el("source-lang").value,
+        targetLang: el("target-lang").value,
+        vocabularyListId: "",
+        learningStrategy: el("learning-strategy").value,
+      };
+    }
+
+    function favStatsParams() {
+      const params = scopeParams();
+      const out = {
+        length: 1,
+        start: 0,
+        learningInfo: true,
+        includeDef: "YES",
+      };
+      if (params.sourceStrategy === "VOCABULARYLIST" && params.vocabularyListId) {
+        out.listId = params.vocabularyListId;
+      }
+      return out;
+    }
+
+    function quizParams() {
+      const params = scopeParams();
+      const out = {
+        sourceLang: params.sourceLang,
+        targetLang: params.targetLang,
+        sourceStrategy: params.sourceStrategy,
+        learningStrategy: params.learningStrategy,
+        nbTerms: GAME_SIZE,
+        length: GAME_SIZE,
+      };
+      if (params.sourceStrategy === "VOCABULARYLIST" && params.vocabularyListId) {
+        out.vocabularyListId = Number(params.vocabularyListId);
+      }
+      return out;
+    }
+
+    function minutesForCards(n) {
+      if (!n) return "0 min";
+      return `~${Math.max(1, Math.round(n * 0.5))} min`;
+    }
+
+    function bucketTag(bucket) {
+      return {
+        mistake: { label: "Missed", cls: "miss" },
+        fresh: { label: "Review", cls: "fresh" },
+        old: { label: "Rusting", cls: "old" },
+        new: { label: "New", cls: "new" },
+        not_due: { label: "Soon", cls: "due" },
+        mastered: { label: "Mastered", cls: "due" },
+      }[bucket] || { label: bucket, cls: "" };
+    }
+
+    function srsLabel(item) {
+      if (item.memorized) return "M";
+      if (item.bucket === "new") return "new";
+      return `${item.srsCounter || 0}/4`;
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function iconSvg(name) {
+      const icons = {
+        clock: `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="#F6C445"/><circle cx="20" cy="20" r="12.5" fill="#FFF8E1"/><circle cx="20" cy="20" r="1.6" fill="#5B4630"/><path d="M20 11v9.2l6 3.2" stroke="#5B4630" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+        star: `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6.5l3.6 9.2h9.7l-7.8 5.7 3 9.1L20 25.6l-8.5 5.9 3-9.1-7.8-5.7h9.7z" fill="#F0C14A" stroke="#E2A82A" stroke-width="1"/></svg>`,
+        seed: `<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="31" rx="12" ry="5" fill="#C4A574"/><path d="M14 31c1.2-7 4-14 6-18 2 4 4.8 11 6 18" fill="#8B5A2B"/><path d="M20 16c2-5 7-8 10-7-2 4-6 6-10 7z" fill="#6FBF4A"/><path d="M20 16c-1.5-4-5-7-8-6 1.8 3.5 5 5.5 8 6z" fill="#4E9A36"/></svg>`,
+        water: `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 18h16l3 8H13z" fill="#F4C542"/><path d="M26 18h7v3c0 2-1.5 3.5-3.5 3.5H26z" fill="#E2B03A"/><circle cx="8" cy="26" r="2" fill="#7EC8F0"/><circle cx="5" cy="30" r="1.4" fill="#7EC8F0"/><path d="M18 28c.6-4 2-8 3.2-10 1.4 2 2.8 6 3.3 10" fill="#5AA83A"/><circle cx="21.2" cy="16.5" r="2.1" fill="#6FBF4A"/></svg>`,
+        fail: `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="#E45C45"/><path d="M14 14l12 12M26 14L14 26" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>`,
+        tree: `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="24" width="4.2" height="10" rx="1" fill="#8B5A2B"/><circle cx="20" cy="16" r="10" fill="#3D9A4A"/><circle cx="13.5" cy="19" r="6.5" fill="#4EAE58"/><circle cx="26.5" cy="19" r="6.5" fill="#2F8A40"/></svg>`,
+      };
+      return icons[name] || "";
+    }
+
+    function renderPlanRows(cards) {
+      return cards.map((card) => {
+        const tag = bucketTag(card.bucket);
+        const word = card.srcText || card.trgText || `card ${card.id}`;
+        return `<div class="plan-row">
+          <span class="tag ${tag.cls}">${tag.label}</span>
+          <span class="word" title="${escapeHtml(card.srcText)} → ${escapeHtml(card.trgText)}">${escapeHtml(word)}</span>
+          <span class="meta">${srsLabel(card)}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function renderSpotRows(rows, tagLabel, tagCls) {
+      if (!rows.length) return `<p class="spot-empty">None in this scope.</p>`;
+      const extra = rows.length > SPOT_SHOW ? rows.length - SPOT_SHOW : 0;
+      return rows.slice(0, SPOT_SHOW).map((card) => {
+        const word = card.srcText || card.trgText || `card ${card.id}`;
+        return `<div class="plan-row">
+          <span class="tag ${tagCls}">${tagLabel}</span>
+          <span class="word" title="${escapeHtml(card.srcText)} → ${escapeHtml(card.trgText)}">${escapeHtml(word)}</span>
+          <span class="meta">${card.srsCounter || 0}/4</span>
+        </div>`;
+      }).join("") + (extra ? `<p class="spot-empty">+${extra} more</p>` : "");
+    }
+
+    function statsSnapshot() {
+      const L = state.learning;
+      return {
+        searches: state.searches,
+        saved: state.saved,
+        tolearn: L.notStarted,
+        learning: L.inProgress,
+        failed: state.failedLast.length,
+        mastered: L.mastered,
+      };
+    }
+
+    function renderStatGrid() {
+      const snap = statsSnapshot();
+      const cards = [
+        { key: "searches", label: "Searches", icon: "clock", value: snap.searches },
+        { key: "saved", label: "Saved", icon: "star", value: snap.saved },
+        { key: "tolearn", label: "To Learn", icon: "seed", value: snap.tolearn },
+        { key: "learning", label: "Learning", icon: "water", value: snap.learning },
+        { key: "failed", label: "Failed Last Time", icon: "fail", value: snap.failed },
+        { key: "mastered", label: "Mastered", icon: "tree", value: snap.mastered },
+      ];
+      el("stat-grid").innerHTML = cards.map((card) => `
+        <div class="stat-card${state.openStat === card.key ? " is-open" : ""}" data-stat="${card.key}" role="button" tabindex="0">
+          <span class="ico">${iconSvg(card.icon)}</span>
+          <span class="lab">${card.label} <button type="button" class="info" data-tip="${escapeHtml(STAT_TIPS[card.key])}" aria-label="About ${card.label}">i</button></span>
+          <span class="val">${state.loaded ? fmtNum(card.value) : "—"}</span>
+          <span class="chev">›</span>
+        </div>
+      `).join("");
+    }
+
+    function languagesFromData() {
+      const groups = {};
+      for (const [pair, saved] of Object.entries(state.countMap || {})) {
+        const [src, tgt] = pair.split("-");
+        if (!tgt) continue;
+        if (!groups[tgt]) {
+          groups[tgt] = {
+            code: tgt, pairs: [], saved: 0, notStarted: 0, inProgress: 0,
+            mastered: 0, searches: 0, failed: 0,
+          };
+        }
+        groups[tgt].pairs.push({ pair, src, saved: Number(saved) || 0 });
+        groups[tgt].saved += Number(saved) || 0;
+        groups[tgt].searches += Number(state.historyCountMap[pair] || 0);
+        const L = state.pairStats[pair];
+        if (L) {
+          groups[tgt].notStarted += L.notStarted;
+          groups[tgt].inProgress += L.inProgress;
+          groups[tgt].mastered += L.mastered;
+        }
+      }
+      for (const g of Object.values(groups)) {
+        g.failed = state.learningRows.filter((row) =>
+          row.trgLang === g.code && row.timesSeen > 0 && !row.lastStatusCorrect && !row.memorized
+        ).length;
+        g.pairs.sort((a, b) => b.saved - a.saved);
+      }
+      return Object.values(groups).sort((a, b) => b.saved - a.saved);
+    }
+
+    function renderLangList() {
+      const langs = languagesFromData();
+      if (!state.loaded) {
+        el("lang-list").innerHTML = `<div class="lang-item"><div style="padding:0.85rem 1rem;color:var(--muted)">Load an account to see languages</div></div>`;
+        return;
+      }
+      if (!langs.length) {
+        el("lang-list").innerHTML = `<div class="lang-item"><div style="padding:0.85rem 1rem;color:var(--muted)">No language pairs in this scope</div></div>`;
+        return;
+      }
+      const open = state.openLang || langs[0].code;
+      el("lang-list").innerHTML = langs.map((lang) => {
+        const mini = [
+          ["clock", lang.searches],
+          ["star", lang.saved],
+          ["seed", lang.notStarted],
+          ["water", lang.inProgress],
+          ["fail", lang.failed],
+          ["tree", lang.mastered],
+        ];
+        return `<details class="lang-item" data-lang="${lang.code}" ${lang.code === open ? "open" : ""}>
+          <summary>
+            <span class="lang-flag">${langFlag(lang.code)}</span>
+            <span>${escapeHtml(langName(lang.code))}</span>
+            <span class="lang-chev">▾</span>
+          </summary>
+          <div class="lang-mini">
+            ${mini.map(([ico, n]) => `<div class="mini">${iconSvg(ico)}<b>${fmtNum(n)}</b></div>`).join("")}
+          </div>
+        </details>`;
+      }).join("");
+    }
+
+    function activityDays() {
+      if (state.period === "7") return 7;
+      if (state.period === "30") return 30;
+      return 30;
+    }
+
+    function activitySeries() {
+      const days = activityDays();
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - (days - 1));
+      const buckets = [];
+      for (let i = 0; i < days; i += 1) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        buckets.push({ date: d, count: 0 });
+      }
+      const index = new Map(buckets.map((b, i) => [b.date.getTime(), i]));
+      for (const row of state.learningRows) {
+        const t = Date.parse(row.lastSeenDate);
+        if (!Number.isFinite(t)) continue;
+        const day = new Date(t);
+        day.setHours(0, 0, 0, 0);
+        const i = index.get(day.getTime());
+        if (i != null) buckets[i].count += 1;
+      }
+      return buckets;
+    }
+
+    function renderActivity() {
+      const series = activitySeries();
+      const total = series.reduce((sum, d) => sum + d.count, 0);
+      const label = state.period === "7" ? "Last 7d" : state.period === "all" ? "Last 30d" : "Last 30d";
+      el("activity-period-label").textContent = label;
+      el("activity-total").innerHTML = `${state.loaded ? fmtNum(total) : "—"} <span>terms</span>`;
+      const maxVal = Math.max(DAILY_GOAL, ...series.map((d) => d.count), 1);
+      const nice = maxVal <= 5 ? 5 : maxVal <= 10 ? 10 : maxVal <= 15 ? 15 : maxVal <= 20 ? 20 : Math.ceil(maxVal / 5) * 5;
+      const ticks = [];
+      for (let t = 0; t <= nice; t += 5) ticks.push(t);
+      const W = 640, H = 220, padL = 36, padR = 8, padT = 10, padB = 28;
+      const innerW = W - padL - padR;
+      const innerH = H - padT - padB;
+      const gap = series.length > 20 ? 2 : 4;
+      const barW = Math.max(3, (innerW / series.length) - gap);
+      const yOf = (v) => padT + innerH - (v / nice) * innerH;
+      const goalY = yOf(DAILY_GOAL);
+      const bars = series.map((d, i) => {
+        const x = padL + i * (innerW / series.length) + gap / 2;
+        const h = Math.max(d.count ? 3 : 0, (d.count / nice) * innerH);
+        const y = padT + innerH - h;
+        const today = i === series.length - 1;
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${today ? "#4a9adf" : "#b7d7f2"}"/>`;
+      }).join("");
+      const grid = ticks.map((t) => {
+        const y = yOf(t);
+        return `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="#e4edf4" stroke-dasharray="3 4"/>
+          <text x="${padL - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="#8aa0b0">${t}</text>`;
+      }).join("");
+      const labelEvery = state.period === "7" ? 1 : 7;
+      const xLabels = series.map((d, i) => {
+        if (i % labelEvery !== 0 && i !== series.length - 1) return "";
+        const x = padL + i * (innerW / series.length) + barW / 2;
+        return `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#8aa0b0">${d.date.getDate()}</text>`;
+      }).join("");
+      el("chart-wrap").innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Learning activity">
+        ${grid}
+        <line x1="${padL}" x2="${W - padR}" y1="${goalY}" y2="${goalY}" stroke="#3dbe6e" stroke-width="2"/>
+        ${bars}
+        ${xLabels}
+      </svg>`;
+    }
+
+    function renderDetail() {
+      const box = el("detail");
+      if (!state.openStat || !state.loaded) {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        return;
+      }
+      const L = state.learning;
+      const cards = state.quizCards;
+      const mix = { mistake: 0, fresh: 0, old: 0, new: 0, not_due: 0, mastered: 0 };
+      for (const card of cards) mix[card.bucket] = (mix[card.bucket] || 0) + 1;
+      let body = "";
+      if (state.openStat === "learning") {
+        const plan = state.quizError
+          ? `<p class="spot-empty">${escapeHtml(state.quizError)}</p>`
+          : cards.length
+            ? `${renderPlanRows(cards)}`
+            : `<p class="spot-empty">Quiz returned no cards for this scope.</p>`;
+        body = `
+          <p class="note">${L.inProgress} in progress · next game is a ${el("learning-strategy").value} mix</p>
+          <div class="split">
+            ${mix.mistake ? `<span class="chip miss">${mix.mistake} missed</span>` : ""}
+            ${(mix.fresh + mix.old) ? `<span class="chip fresh">${mix.fresh + mix.old} review</span>` : ""}
+            ${mix.new ? `<span class="chip new">${mix.new} new</span>` : ""}
+          </div>
+          <div class="plan-list">${plan}</div>
+          <p class="note" style="margin-top:0.7rem;">You’re almost there — SRS 4, one correct from mastered</p>
+          <div class="plan-list">${renderSpotRows(state.almostThere, "SRS 4", "due")}</div>
+          <div class="cta-row"><a class="btn success" href="/srs-game-tester.html">Review now</a></div>`;
+      } else if (state.openStat === "failed") {
+        body = `<p class="note">${state.failedLast.length} due now (last answer was wrong)</p>
+          <div class="plan-list">${renderSpotRows(state.failedLast, "Missed", "miss")}</div>
+          <div class="cta-row"><a class="btn success" href="/srs-game-tester.html">Review now</a></div>`;
+      } else if (state.openStat === "tolearn") {
+        body = `<p class="note">${fmtNum(L.notStarted)} saved cards have never been reviewed. Use the NEW mix to start them.</p>
+          <div class="cta-row"><a class="btn success" href="/srs-game-tester.html">Start learning</a></div>`;
+      } else if (state.openStat === "mastered") {
+        body = `<p class="note">${fmtNum(L.mastered)} cards are locked in. Pipeline: ${fmtNum(L.notStarted)} to learn · ${fmtNum(L.inProgress)} learning · ${fmtNum(L.mastered)} mastered${L.ignored ? ` · ${fmtNum(L.ignored)} ignored` : ""}.</p>`;
+      } else if (state.openStat === "saved") {
+        body = `<p class="note">${fmtNum(state.saved)} favourites in this scope, across ${Object.keys(state.countMap).length} language pairs.</p>`;
+      } else {
+        body = `<p class="note">${fmtNum(state.searches)} History lookups (all time). Daily search totals need USER_DAILY_STATS — not this endpoint.</p>`;
+      }
+      const titles = {
+        searches: "Searches", saved: "Saved", tolearn: "To Learn",
+        learning: "Learning", failed: "Failed last time", mastered: "Mastered",
+      };
+      box.classList.remove("hidden");
+      box.innerHTML = `<div class="detail-head"><h2>${titles[state.openStat]}</h2>
+        <button type="button" class="btn ghost" id="btn-close-detail">Close</button></div>${body}`;
+    }
+
+    function renderDashboard() {
+      renderStatGrid();
+      renderLangList();
+      renderActivity();
+      renderDetail();
+      el("dash-empty").classList.toggle("hidden", state.loaded);
+    }
+
+    function setActivePairFromLang(code) {
+      const langs = languagesFromData();
+      const lang = langs.find((g) => g.code === code);
+      if (!lang || !lang.pairs.length) return;
+      const top = lang.pairs[0];
+      const [src, tgt] = top.pair.split("-");
+      if (el("source-lang").querySelector(`option[value="${src}"]`)) el("source-lang").value = src;
+      if (el("target-lang").querySelector(`option[value="${tgt}"]`)) el("target-lang").value = tgt;
+    }
+
+    async function fetchPairStats(countMap) {
+      const pairs = Object.keys(countMap || {}).slice(0, 12);
+      const results = await Promise.all(pairs.map(async (pair) => {
+        try {
+          const data = await apiGet("/user/favourites", {
+            length: 1, start: 0, learningInfo: true, includeDef: "YES",
+            languagePairs: pair,
+          });
+          return [pair, parseLearningStatus(data)];
+        } catch {
+          return [pair, emptyLearning()];
+        }
+      }));
+      state.pairStats = Object.fromEntries(results);
+    }
+
+    async function refreshQuizOnly() {
+      const params = scopeParams();
+      if (!params.sourceLang || !params.targetLang) {
+        state.quizCards = [];
+        state.quizError = "Pick a language from By language to load a next game.";
+        renderDetail();
+        return;
+      }
+      try {
+        const quiz = await apiGet("/user/learn/cards/quiz", quizParams());
+        state.quizCards = extractQuizCards(quiz);
+        state.quizError = "";
+      } catch (err) {
+        state.quizError = err.message;
+        state.quizCards = [];
+      }
+      renderDetail();
+    }
+
+    async function refreshScope() {
+      if (!state.loaded) return;
+      const params = scopeParams();
+      if (params.sourceStrategy === "VOCABULARYLIST" && !params.vocabularyListId) {
+        state.learning = emptyLearning();
+        state.quizCards = [];
+        state.quizError = "Pick a list.";
+        state.almostThere = [];
+        state.failedLast = [];
+        state.learningRows = [];
+        el("load-status").textContent = "Pick a vocabulary list.";
+        renderDashboard();
+        return;
+      }
+      el("load-status").textContent = "Refreshing counts, next quiz, learning cards…";
+      try {
+        const histP = apiGet("/user/history", { length: 1, start: 0 }).catch(() => null);
+        const [favs, quiz, learningRows, hist] = await Promise.all([
+          apiGet("/user/favourites", favStatsParams()),
+          params.sourceLang && params.targetLang
+            ? apiGet("/user/learn/cards/quiz", quizParams())
+            : Promise.resolve({ results: [] }),
+          fetchInProgressCards(),
+          histP,
+        ]);
+        if (favs.count && typeof favs.count === "object") state.countMap = favs.count;
+        state.learning = parseLearningStatus(favs);
+        state.saved = Number(favs.numTotalResults ?? favs.numFilteredResults ?? 0) ||
+          Object.values(state.countMap).reduce((s, n) => s + (Number(n) || 0), 0);
+        state.quizCards = params.sourceLang && params.targetLang ? extractQuizCards(quiz) : [];
+        state.quizError = params.sourceLang && params.targetLang ? "" : "Pick a language from By language to load a next game.";
+        state.learningRows = learningRows;
+        state.learningFetched = learningRows.length;
+        const lists = splitLearningLists(learningRows);
+        state.almostThere = lists.almostThere;
+        state.failedLast = lists.failedLast;
+        if (hist) {
+          state.searches = Number(hist.numTotalResults ?? hist.numFilteredResults ?? 0) || 0;
+          if (hist.count && typeof hist.count === "object") state.historyCountMap = hist.count;
+        }
+        await fetchPairStats(state.countMap);
+        el("load-status").textContent =
+          `${fmtNum(state.saved)} saved · ${learningRows.length} learning cards · ${state.almostThere.length} almost there · ${state.failedLast.length} missed`;
+        renderDashboard();
+      } catch (err) {
+        state.quizError = err.message;
+        el("load-status").textContent = err.message;
+        renderDashboard();
+      }
+    }
+
+    function scheduleScopeRefresh() {
+      if (!state.loaded) return;
+      clearTimeout(scopeTimer);
+      scopeTimer = setTimeout(() => refreshScope(), 120);
+    }
+
+    async function loadAccount() {
+      FavAuth.saveAuth();
+      if (!FavAuth.authReadyForLiveApi()) {
+        setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
+        el("auth-panel").open = true;
+        return;
+      }
+      setStatus(null, "Loading…", "");
+      el("btn-load-account").disabled = true;
+      try {
+        await FavAuth.ensureAccessToken();
+        FavAuth.updateJwtUi();
+        const [listsData, favs] = await Promise.all([
+          apiGet("/user/favouritesLists", { length: 100, start: 0, learningInfo: true, includeDef: "YES" }),
+          apiGet("/user/favourites", { length: 1, start: 0, learningInfo: true, includeDef: "YES" }),
+        ]);
+        state.lists = listsData.results || [];
+        state.countMap = favs.count || favs.countByPair || {};
+        state.learning = parseLearningStatus(favs);
+        state.saved = Number(favs.numTotalResults ?? favs.numFilteredResults ?? 0) || 0;
+        state.loaded = true;
+        populateLanguageSelects(state.countMap);
+        populateLists(state.lists);
+        syncSourceFieldsVisibility();
+        const langs = languagesFromData();
+        if (langs[0]) {
+          state.openLang = langs[0].code;
+          setActivePairFromLang(langs[0].code);
+        }
+        await refreshScope();
+        setStatus(true, "OK", `${state.lists.length} lists · ${Object.keys(state.countMap).length} pairs`);
+        el("auth-panel").open = false;
+      } catch (err) {
+        setStatus(false, "Error", err.message);
+        el("load-status").textContent = err.message;
+      } finally {
+        el("btn-load-account").disabled = false;
+      }
+    }
+
+    function showTip(anchor, text) {
+      const tip = el("tip");
+      tip.textContent = text;
+      tip.classList.remove("hidden");
+      const r = anchor.getBoundingClientRect();
+      let left = r.left;
+      let top = r.bottom + 8;
+      requestAnimationFrame(() => {
+        const w = tip.offsetWidth;
+        const h = tip.offsetHeight;
+        if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
+        if (top + h > window.innerHeight - 12) top = r.top - h - 8;
+        tip.style.left = `${Math.max(8, left)}px`;
+        tip.style.top = `${Math.max(8, top)}px`;
+      });
+    }
+
+    el("btn-load-account").addEventListener("click", () => loadAccount());
+    el("source-strategy").addEventListener("change", () => {
+      syncSourceFieldsVisibility();
+      scheduleScopeRefresh();
+    });
+    el("vocabulary-list").addEventListener("change", scheduleScopeRefresh);
+    el("learning-strategy").addEventListener("change", scheduleScopeRefresh);
+
+    document.querySelector(".period").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button[data-period]");
+      if (!btn) return;
+      state.period = btn.dataset.period;
+      document.querySelectorAll(".period button").forEach((b) => {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      renderActivity();
+    });
+
+    el("stat-grid").addEventListener("click", (ev) => {
+      const info = ev.target.closest(".info");
+      if (info) {
+        ev.stopPropagation();
+        showTip(info, info.dataset.tip || "");
+        return;
+      }
+      const card = ev.target.closest(".stat-card");
+      if (!card) return;
+      if (!state.loaded) return;
+      const key = card.dataset.stat;
+      state.openStat = state.openStat === key ? "" : key;
+      renderStatGrid();
+      renderDetail();
+      if (state.openStat) el("detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    el("stat-grid").addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      const card = ev.target.closest(".stat-card");
+      if (!card || ev.target.closest(".info")) return;
+      ev.preventDefault();
+      card.click();
+    });
+
+    el("detail").addEventListener("click", (ev) => {
+      if (ev.target.id === "btn-close-detail") {
+        state.openStat = "";
+        renderStatGrid();
+        renderDetail();
+      }
+    });
+
+    el("lang-list").addEventListener("toggle", (ev) => {
+      const item = ev.target.closest(".lang-item[data-lang]");
+      if (!item || !item.open) return;
+      if (state.openLang === item.dataset.lang) return;
+      state.openLang = item.dataset.lang;
+      document.querySelectorAll(".lang-item[data-lang]").forEach((node) => {
+        if (node !== item) node.open = false;
+      });
+      setActivePairFromLang(state.openLang);
+      refreshQuizOnly();
+    }, true);
+
+    el("lang-list").addEventListener("click", (ev) => {
+      const info = ev.target.closest(".info");
+      if (info) showTip(info, info.dataset.tip || "");
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (ev.target.closest(".info")) return;
+      el("tip").classList.add("hidden");
+    });
+
+    FavAuth.initAuthUi();
+    syncSourceFieldsVisibility();
+    renderDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reverso onboarding — Step 1: video subtitle-translate demo (faithful recreation)</title>
+<style>
+  :root {
+    --reverso-blue: #2A8BDF;
+    --reverso-blue-dark: #1968b3;
+  }
+  body {
+    margin: 0;
+    padding: 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f6f8;
+    color: #1a1a2e;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  p.note { color: #555; max-width: 640px; line-height: 1.5; margin-bottom: 20px; }
+  p.note b { color: #1a1a2e; }
+
+  .player {
+    width: 640px;
+    max-width: 100%;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    background: #000;
+    user-select: none;
+  }
+  .player iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+    pointer-events: none; /* the skin owns all interaction, like a real embedded player overlay */
+  }
+
+  .click-catcher {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: pointer;
+  }
+  .play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 26px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .play-overlay.hidden { display: none; }
+
+  .reset-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 4;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .reset-btn:hover { background: #fff; }
+
+  /* hover translation panel */
+  .word-panel {
+    position: absolute;
+    bottom: 84px;
+    left: 24px;
+    max-width: 380px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    padding: 16px 18px;
+    display: none;
+    z-index: 5;
+  }
+  .word-panel.visible { display: block; }
+  .word-panel .headword {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .word-panel .synonyms {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  .word-panel .phrase-row {
+    font-weight: 700;
+    color: var(--reverso-blue);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .word-panel .phrase-translation {
+    color: #1a1a2e;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .word-panel .hint {
+    font-style: italic;
+    color: #9aa0a6;
+    font-size: 12px;
+  }
+
+  /* caption bar */
+  .caption-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.82);
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    gap: 10px;
+    z-index: 3;
+  }
+  .caption-nav {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0.75;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+  .caption-nav:hover { opacity: 1; }
+  .caption-lines { flex: 1; min-width: 0; }
+  .caption-current {
+    color: #fff;
+    font-size: 17px;
+    line-height: 1.35;
+  }
+  .caption-current .word {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0 1px;
+  }
+  .caption-current .word:hover {
+    background: rgba(42, 139, 223, 0.35);
+  }
+  .caption-current .word.plain { cursor: default; }
+  .caption-current .word.plain:hover { background: none; }
+  .caption-translated {
+    color: var(--reverso-blue);
+    font-size: 14px;
+    margin-top: 4px;
+    line-height: 1.3;
+    display: none;
+  }
+  .caption-translated.visible { display: block; }
+  .caption-icons {
+    display: flex;
+    gap: 10px;
+    color: #fff;
+    opacity: 0.85;
+    font-size: 16px;
+  }
+  .caption-icons span { cursor: pointer; }
+  .caption-icons span:hover { opacity: 1; color: var(--reverso-blue); }
+
+  .checklist {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 8px;
+    max-width: 640px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+</style>
+</head>
+<body>
+  <h1>Onboarding Step 1 — faithful recreation (v3)</h1>
+  <p class="note">
+    This is a self-built player skin, not the extension's real subtitle-mode code (that code only
+    activates on the literal youtube.com/netflix.com/etc. domains, which our own page can never be).
+    Hover a highlighted word in the caption bar: a translation panel appears immediately, the video
+    pauses, and a full translated line shows below the caption — matching the real product's feel,
+    with real hand-curated translations for this demo script. <b>Nothing here touches the extension's
+    files or behavior.</b>
+  </p>
+
+  <div class="player" id="player">
+    <div id="ytFrame"></div>
+
+    <div class="click-catcher" id="clickCatcher"></div>
+    <div class="play-overlay" id="playOverlay">&#9658;</div>
+
+    <button class="reset-btn" id="resetBtn" title="Restart demo">&#8635;</button>
+
+    <div class="word-panel" id="wordPanel">
+      <div class="headword" id="wpHeadword"></div>
+      <div class="synonyms" id="wpSynonyms"></div>
+      <div class="phrase-row" id="wpPhrase"></div>
+      <div class="phrase-translation" id="wpPhraseTranslation"></div>
+      <div class="hint">Click to see more or change language</div>
+    </div>
+
+    <div class="caption-bar">
+      <button class="caption-nav" id="prevBtn">&#8249;</button>
+      <div class="caption-lines">
+        <div class="caption-current" id="captionCurrent"></div>
+        <div class="caption-translated" id="captionTranslated"></div>
+      </div>
+      <button class="caption-nav" id="nextBtn">&#8250;</button>
+      <div class="caption-icons">
+        <span id="muteBtn">&#128266;</span>
+        <span>&#9881;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="checklist">
+    <strong>Try it:</strong> hover any highlighted word in the caption bar. The video pauses and a
+    translation panel opens above, just like the real subtitle feature — this version is our own
+    code end to end, so it works on any page, any domain, with zero dependency on the extension.
+  </div>
+
+  <script>
+    // Real transcript from the actual video (fetched via yt-dlp auto-captions),
+    // lightly cleaned up for caption-bar length. Translations are hand-curated French.
+    const lines = [
+      {
+        start: 0,
+        text: "Hi everyone, today we're talking about American slang.",
+        translation: "Salut tout le monde, aujourd'hui nous parlons de l'argot américain.",
+        words: {
+          "everyone": { syn: "tout le monde · tous · chacun", phrase: "hi everyone", phraseTr: "salut tout le monde" },
+          "American": { syn: "américain · américaine", phrase: "American slang", phraseTr: "l'argot américain" },
+          "slang": { syn: "argot · jargon", phrase: "American slang", phraseTr: "l'argot américain" }
+        }
+      },
+      {
+        start: 4.14,
+        text: "For example, do you know what a couch potato means?",
+        translation: "Par exemple, savez-vous ce que signifie « couch potato » ?",
+        words: {
+          "example": { syn: "exemple", phrase: "for example", phraseTr: "par exemple" },
+          "couch": { syn: "canapé · sofa", phrase: "couch potato", phraseTr: "expression pour \"personne paresseuse\"" },
+          "potato": { syn: "pomme de terre · patate", phrase: "couch potato", phraseTr: "expression pour \"personne paresseuse\"" }
+        }
+      },
+      {
+        start: 9.36,
+        text: "A lazy person, we can call him or her a couch potato.",
+        translation: "Une personne paresseuse : on peut l'appeler un(e) couch potato.",
+        words: {
+          "lazy": { syn: "paresseux · paresseuse · fainéant", phrase: "a lazy person", phraseTr: "une personne paresseuse" },
+          "person": { syn: "personne · individu", phrase: "a lazy person", phraseTr: "une personne paresseuse" }
+        }
+      },
+      {
+        start: 37.95,
+        text: "\"Drive someone up the wall\" means to be very irritated by someone.",
+        translation: "« Drive someone up the wall » signifie être très irrité(e) par quelqu'un.",
+        words: {
+          "wall": { syn: "mur", phrase: "drive someone up the wall", phraseTr: "expression pour \"rendre quelqu'un fou / dingue\"" },
+          "irritated": { syn: "irrité · agacé", phrase: "very irritated by someone", phraseTr: "très irrité par quelqu'un" }
+        }
+      }
+    ];
+
+    let current = 0;
+    let isPlaying = false;
+    let player = null;
+    const el = id => document.getElementById(id);
+    const wordPanel = el('wordPanel');
+    const playOverlay = el('playOverlay');
+
+    // isPlaying is only ever set from the real player's onStateChange event below —
+    // never optimistically by our own click handlers — so it can't drift out of sync
+    // with what the video is actually doing.
+
+    el('clickCatcher').addEventListener('click', () => {
+      if (!player) return;
+      isPlaying ? player.pauseVideo() : player.playVideo();
+    });
+
+    // Load the real YouTube IFrame API so we can read live playback position
+    // and auto-advance captions in sync with the real video, instead of only
+    // reacting to manual prev/next clicks.
+    const ytApiScript = document.createElement('script');
+    ytApiScript.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(ytApiScript);
+
+    window.onYouTubeIframeAPIReady = function () {
+      player = new YT.Player('ytFrame', {
+        videoId: 'cWK7OBvjvxA',
+        playerVars: { controls: 0, modestbranding: 1, rel: 0 },
+        events: {
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.PLAYING) {
+              isPlaying = true;
+              playOverlay.classList.add('hidden');
+            } else if (e.data === YT.PlayerState.PAUSED) {
+              isPlaying = false;
+              // Only show the big play button for a pause the visitor caused directly
+              // (clicking the video). A pause triggered by hovering a caption word should
+              // stay visually quiet, since it auto-resumes on mouseleave.
+              if (!hoverPauseActive) playOverlay.classList.remove('hidden');
+            }
+          }
+        }
+      });
+    };
+
+    // Poll playback position and switch to whichever caption line's start
+    // time we've reached — this is what makes captions follow the video
+    // instead of staying frozen until a manual arrow click.
+    setInterval(() => {
+      if (!player || !isPlaying || typeof player.getCurrentTime !== 'function') return;
+      const t = player.getCurrentTime();
+      let target = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (t >= lines[i].start) target = i;
+      }
+      if (target !== current) {
+        current = target;
+        renderLine();
+      }
+    }, 300);
+
+    function renderLine() {
+      const line = lines[current];
+      const container = el('captionCurrent');
+      container.innerHTML = '';
+      line.text.split(' ').forEach((raw, idx) => {
+        const clean = raw.replace(/[.,!?:;"“”]/g, '');
+        const span = document.createElement('span');
+        span.textContent = raw + (idx < line.text.split(' ').length - 1 ? ' ' : '');
+        const data = line.words[clean];
+        if (data) {
+          span.className = 'word';
+          span.addEventListener('mouseenter', () => showWordPanel(clean, data));
+          span.addEventListener('mouseleave', hideWordPanelSoon);
+        } else {
+          span.className = 'word plain';
+        }
+        container.appendChild(span);
+      });
+      el('captionTranslated').textContent = line.translation;
+    }
+
+    let hideTimer = null;
+    let wasPlayingBeforeHover = false;
+    let hoverPauseActive = false;
+    function showWordPanel(word, data) {
+      clearTimeout(hideTimer);
+      el('wpHeadword').textContent = word;
+      el('wpSynonyms').textContent = data.syn;
+      el('wpPhrase').innerHTML = '&#10024; ' + data.phrase;
+      el('wpPhraseTranslation').textContent = data.phraseTr;
+      wordPanel.classList.add('visible');
+      el('captionTranslated').classList.add('visible');
+      wasPlayingBeforeHover = isPlaying;
+      if (isPlaying && player) {
+        hoverPauseActive = true;
+        player.pauseVideo();
+      }
+    }
+    function hideWordPanelSoon() {
+      hideTimer = setTimeout(() => {
+        wordPanel.classList.remove('visible');
+        el('captionTranslated').classList.remove('visible');
+        if (wasPlayingBeforeHover && player) player.playVideo();
+        hoverPauseActive = false;
+      }, 150);
+    }
+    wordPanel.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+    wordPanel.addEventListener('mouseleave', hideWordPanelSoon);
+
+    el('prevBtn').addEventListener('click', () => {
+      current = (current - 1 + lines.length) % lines.length;
+      renderLine();
+    });
+    el('nextBtn').addEventListener('click', () => {
+      current = (current + 1) % lines.length;
+      renderLine();
+    });
+    el('resetBtn').addEventListener('click', () => {
+      current = 0;
+      renderLine();
+      if (player) {
+        player.seekTo(0, true);
+        player.playVideo();
+      }
+    });
+
+    let muted = false;
+    el('muteBtn').addEventListener('click', () => {
+      muted = !muted;
+      if (player) muted ? player.mute() : player.unMute();
+      el('muteBtn').innerHTML = muted ? '&#128263;' : '&#128266;';
+    });
+
+    renderLine();
+  </script>
+</body>
+</html>

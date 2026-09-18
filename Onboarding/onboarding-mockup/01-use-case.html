@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>How will you use Reverso? | Reverso</title>
+  <link rel="icon" type="image/x-icon" href="https://www.reverso.net/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <script src="demo-switcher.js" defer></script>
+</head>
+
+<body>
+  <div class="page">
+    <header class="page__header">
+      <h1 aria-label="Reverso">
+        <img class="page__logo" src="../welcome_original_files/logo.svg" width="156" height="36" alt="Reverso logo">
+      </h1>
+      <h2 class="page__subtitle">How will you use Reverso?</h2>
+    </header>
+
+    <main class="page__main">
+      <div class="usecase-grid" role="radiogroup" aria-label="Use case">
+        <button type="button" class="usecase-card" role="radio" aria-checked="false" data-usecase="work">
+          <span class="usecase-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+            </svg>
+          </span>
+          <span class="usecase-card__label">Work</span>
+          <span class="usecase-card__desc">Language productivity tools, always 1-click away</span>
+        </button>
+
+        <button type="button" class="usecase-card" role="radio" aria-checked="false" data-usecase="teach">
+          <span class="usecase-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+              <path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5"></path>
+            </svg>
+          </span>
+          <span class="usecase-card__label">Teach</span>
+          <span class="usecase-card__desc">Ready to use vocabulary and tools for your students</span>
+        </button>
+
+        <button type="button" class="usecase-card" role="radio" aria-checked="false" data-usecase="study">
+          <span class="usecase-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </span>
+          <span class="usecase-card__label">Study</span>
+          <span class="usecase-card__desc">Discover and memorize terms to progress efficiently</span>
+        </button>
+
+        <button type="button" class="usecase-card" role="radio" aria-checked="false" data-usecase="discover">
+          <span class="usecase-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </span>
+          <span class="usecase-card__label">Discover</span>
+          <span class="usecase-card__desc">Search, translate and learn, all in one app.</span>
+        </button>
+      </div>
+
+      <div class="page__footer">
+        <div class="progress" role="list" aria-label="Onboarding steps">
+          <span class="progress__dot is-active" role="listitem" aria-current="step"></span>
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot" role="listitem"></span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      document.querySelectorAll(".usecase-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+          var usecase = card.getAttribute("data-usecase");
+          card.classList.add("is-selected");
+          card.setAttribute("aria-checked", "true");
+          window.location.href = "02-download.html?usecase=" + encodeURIComponent(usecase);
+        });
+      });
+    })();
+  </script>
+</body>
+
+</html>

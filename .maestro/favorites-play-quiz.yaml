@@ -1,0 +1,132 @@
+appId: com.softissimo.reverso.context
+name: Favorites — play a quiz
+tags:
+  - android
+  - favorites
+  - quiz
+# Records each quiz term to .maestro/quiz-runs/
+# Start logger: node .maestro/scripts/term-logger.js
+# Turns: maestro test -e TURNS=5 .maestro/favorites-play-quiz.yaml
+env:
+  TERM_LOGGER_URL: http://127.0.0.1:18765/terms
+  TURNS: ${TURNS || 1}
+onFlowStart:
+  - evalScript: ${output.quizRunId = new Date().toISOString()}
+  - evalScript: ${output.presentedTermsJson = "[]"}
+  - evalScript: ${output.currentTerm = ""}
+  - evalScript: ${output.currentExample = ""}
+  - runScript:
+      file: scripts/init-turns.js
+      label: Resolve quiz turn count
+---
+# Keep login and saved terms; restart so leftover screens can be recovered.
+- launchApp:
+    appId: com.softissimo.reverso.context
+    clearState: false
+    stopApp: true
+    label: Launch Reverso without clearing account state
+
+# Recover if a fullscreen ad is covering the app.
+- runFlow:
+    file: dismiss-ad.yaml
+- runFlow:
+    when:
+      visible:
+        id: "com.softissimo.reverso.context:id/ic_close_flashcard"
+    commands:
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/ic_close_flashcard"
+          label: Close in-progress quiz
+      - waitForAnimationToEnd
+
+# Recover if the last session left the quiz results screen.
+- runFlow:
+    when:
+      visible:
+        id: "com.softissimo.reverso.context:id/flashcard_endgame_quizLearn_closeImageButton"
+    commands:
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/flashcard_endgame_quizLearn_closeImageButton"
+          label: Close quiz results
+      - waitForAnimationToEnd
+
+# From Translate home, open Vocabulary.
+- runFlow:
+    when:
+      visible: "Open menu"
+    commands:
+      - tapOn:
+          text: "Open menu"
+          label: Open the side menu
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/hamburgerVocabularyLayout"
+          label: Open Vocabulary
+      - waitForAnimationToEnd
+
+# From the Vocabulary lists screen, open Favorites.
+# (title id renamed multiList_main_titleText → multiList_main_topBarTitle;
+#  Favorites is now a card: multiList_main_favoritesCard)
+- runFlow:
+    when:
+      visible:
+        id: "com.softissimo.reverso.context:id/multiList_main_favoritesCard"
+    commands:
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/multiList_main_favoritesCard"
+          label: Open the Favorites list
+      - waitForAnimationToEnd
+
+# Favorites CTA renamed Quiz → Practice (id: multiList_sharedList_practiceButton).
+- extendedWaitUntil:
+    visible:
+      id: "com.softissimo.reverso.context:id/multiList_sharedList_practiceButton"
+    timeout: 10000
+    label: Wait for the Favorites Practice button
+
+- tapOn:
+    id: "com.softissimo.reverso.context:id/multiList_sharedList_practiceButton"
+    label: Tap Practice on Favorites
+
+- waitForAnimationToEnd
+
+# Mode picker is shown when Practice does not start Quiz directly.
+- runFlow:
+    when:
+      visible:
+        id: "com.softissimo.reverso.context:id/selectorQuizMode"
+    commands:
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/selectorQuizMode"
+          label: Choose Quiz in Learn with
+      - waitForAnimationToEnd
+
+- runFlow:
+    file: play-quiz-set.yaml
+    label: Play quiz set 1
+
+# Extra turns start from the results screen via "New set".
+# Skipped when TURNS is 1 (default). Pass -e TURNS=5 to play more sets.
+- repeat:
+    while:
+      true: ${Number(output.turn) < Number(output.turns)}
+    commands:
+      - tapOn:
+          text: "New set"
+          label: Start the next quiz set
+      - waitForAnimationToEnd
+      - runFlow:
+          file: dismiss-ad.yaml
+      - runFlow:
+          when:
+            visible:
+              id: "com.softissimo.reverso.context:id/selectorQuizMode"
+          commands:
+            - tapOn:
+                id: "com.softissimo.reverso.context:id/selectorQuizMode"
+                label: Choose Quiz in Learn with
+            - waitForAnimationToEnd
+      - evalScript: ${output.turn = Number(output.turn) + 1}
+      - runFlow:
+          file: play-quiz-set.yaml
+          label: Play the next quiz set

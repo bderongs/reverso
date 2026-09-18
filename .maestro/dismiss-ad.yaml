@@ -1,0 +1,20 @@
+appId: com.softissimo.reverso.context
+---
+- runFlow:
+    when:
+      visible: "Dismiss"
+    commands:
+      - tapOn:
+          text: "Dismiss"
+          label: Dismiss AdMob validator
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible:
+        id: "com.softissimo.reverso.context:id/iconHideAd"
+    commands:
+      - tapOn:
+          id: "com.softissimo.reverso.context:id/iconHideAd"
+          label: Close advertisement
+      - waitForAnimationToEnd

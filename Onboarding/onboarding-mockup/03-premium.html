@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Full access | Reverso Premium</title>
+  <link rel="icon" type="image/x-icon" href="https://www.reverso.net/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <script src="demo-switcher.js" defer></script>
+</head>
+
+<body>
+  <div class="page page--premium-full">
+    <main class="page__main">
+      <div class="premium-panel">
+        <div class="premium-panel__intro">
+          <div class="discount-banner" id="discountBanner" hidden></div>
+          <p class="premium-panel__hook" id="premiumHook">Get more from Reverso with Premium</p>
+          <p class="premium-panel__eyebrow">Reverso Premium</p>
+          <h2 class="premium-panel__title" id="premiumTitle">Full access</h2>
+        </div>
+
+        <ul class="feature-list" id="featureList"></ul>
+
+        <div class="premium-panel__actions">
+          <a class="btn btn--premium" href="#" id="premiumBtn">Become Premium</a>
+          <a class="link-secondary" href="04-account.html" id="freeLink">Continue for free</a>
+        </div>
+      </div>
+
+      <aside class="team-card" id="teamCard" hidden>
+        <div class="team-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 56 56" fill="none">
+            <circle cx="28" cy="28" r="28" fill="#E8F3FC" />
+            <circle cx="18" cy="22" r="7" fill="#A6D1F7" />
+            <path d="M6 40c0-6.6 5.4-10 12-10s12 3.4 12 10" fill="#BDDEF9" />
+            <circle cx="38" cy="22" r="7" fill="#7CBCF4" />
+            <path d="M26 40c0-6.6 5.4-10 12-10s12 3.4 12 10" fill="#A6D1F7" />
+            <circle cx="28" cy="20" r="8" fill="#157CD5" />
+            <path d="M14 42c0-7.7 6.3-12 14-12s14 4.3 14 12" fill="#2A8BDF" />
+          </svg>
+        </div>
+        <div class="team-card__text">
+          <h3 class="team-card__title">Have a team or organization?</h3>
+          <p class="team-card__body">Contact sales for team pricing (3 to 1000+ members), API for large volumes, and
+            more.</p>
+        </div>
+        <a class="btn btn--primary-outline team-card__cta" href="https://www.reverso.net/business" target="_blank"
+          rel="noopener noreferrer">Contact Sales</a>
+      </aside>
+
+      <div class="page__footer" style="margin-top: 40px;">
+        <div class="progress" role="list" aria-label="Onboarding steps">
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot is-active" role="listitem" aria-current="step"></span>
+          <span class="progress__dot" role="listitem"></span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status">Mock only — Premium checkout TBD</div>
+
+  <script>
+    (function () {
+      var ICONS = {
+        translate:
+          '<svg viewBox="0 0 48 48" fill="none"><rect x="4" y="12" width="28" height="22" rx="4" fill="#E8B923"/><circle cx="18" cy="23" r="7" fill="#C9A227"/><circle cx="18" cy="23" r="3.5" fill="#F5E6A3"/><rect x="10" y="8" width="8" height="5" rx="1.5" fill="#C9A227"/><rect x="22" y="18" width="20" height="20" rx="5" fill="#F0C93A"/><rect x="28" y="23" width="8" height="10" rx="4" fill="#C9A227"/><path d="M36 28h4a2 2 0 0 1 2 2v0a4 4 0 0 1-4 4h-2" stroke="#C9A227" stroke-width="2.5" stroke-linecap="round"/></svg>',
+        writing:
+          '<svg viewBox="0 0 48 48" fill="none"><path d="M14 40c8-2 18-14 24-28-8 2-16 8-22 16l-4 8 2 4z" fill="#C9A227"/><path d="M16 28c4-2 10-6 14-10" stroke="#F5E6A3" stroke-width="2" stroke-linecap="round"/><path d="M34 8l1.2 3.2L38.4 12.4l-3.2 1.2L34 16.8l-1.2-3.2L29.6 12.4l3.2-1.2L34 8z" fill="#F0C93A"/><path d="M40 16l0.8 2.1L43 19l-2.2.8L40 22l-.8-2.2L37 19l2.2-.9L40 16z" fill="#F0C93A"/><path d="M38 24l0.7 1.8L40.5 27l-1.8.7L38 29.5l-.7-1.8L35.5 27l1.8-.7L38 24z" fill="#E8B923"/></svg>',
+        learning:
+          '<svg viewBox="0 0 48 48" fill="none"><path d="M10 16V12a4 4 0 0 1 4-4h4" stroke="#C9A227" stroke-width="3" stroke-linecap="round"/><path d="M34 8h4a4 4 0 0 1 4 4v4" stroke="#C9A227" stroke-width="3" stroke-linecap="round"/><path d="M38 32v4a4 4 0 0 1-4 4h-4" stroke="#C9A227" stroke-width="3" stroke-linecap="round"/><path d="M14 40h-4a4 4 0 0 1-4-4v-4" stroke="#C9A227" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="20" r="6" fill="#F0C93A"/><path d="M14 36c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#C9A227"/></svg>',
+        dictionary:
+          '<svg viewBox="0 0 48 48" fill="none"><path d="M8 14a8 8 0 0 1 8-8h8a8 8 0 0 1 8 8v6a8 8 0 0 1-8 8h-3l-5 5v-5a8 8 0 0 1-8-8v-6z" fill="#C9A227"/><ellipse cx="34" cy="28" rx="10" ry="8" fill="#E8B923"/><path d="M28 28c2-2.5 5-2.5 7 0s5 2.5 7 0" stroke="#C9A227" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>',
+        noAds:
+          '<svg viewBox="0 0 48 48" fill="none"><rect x="10" y="8" width="28" height="32" rx="4" fill="#F0C93A"/><rect x="16" y="14" width="16" height="3" rx="1.5" fill="#C9A227"/><rect x="16" y="21" width="12" height="3" rx="1.5" fill="#C9A227"/><circle cx="28" cy="32" r="11" fill="#C9A227"/><circle cx="28" cy="32" r="8" stroke="#F5E6A3" stroke-width="2.5" fill="none"/><path d="M22.5 37.5L33.5 26.5" stroke="#F5E6A3" stroke-width="2.5" stroke-linecap="round"/></svg>',
+        lists:
+          '<svg viewBox="0 0 48 48" fill="none"><rect x="10" y="8" width="22" height="30" rx="3" fill="#C9A227"/><rect x="16" y="14" width="22" height="30" rx="3" fill="#F0C93A"/><rect x="22" y="20" width="10" height="2.5" rx="1" fill="#C9A227"/><rect x="22" y="26" width="14" height="2.5" rx="1" fill="#C9A227"/><rect x="22" y="32" width="8" height="2.5" rx="1" fill="#C9A227"/><circle cx="36" cy="36" r="9" fill="#C9A227"/><path d="M32 36l2.5 2.5L41 32" stroke="#F5E6A3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        favorites:
+          '<svg viewBox="0 0 48 48" fill="none"><rect x="4" y="10" width="26" height="20" rx="2" fill="#C9A227"/><rect x="8" y="14" width="18" height="12" rx="1" fill="#F0C93A"/><rect x="12" y="30" width="10" height="3" rx="1" fill="#C9A227"/><rect x="28" y="16" width="14" height="24" rx="3" fill="#E8B923"/><rect x="31" y="20" width="8" height="14" rx="1" fill="#F5E6A3"/><path d="M14 18l1.2 2.4 2.6.4-1.9 1.8.4 2.6L14 24.1l-2.3 1.1.4-2.6-1.9-1.8 2.6-.4L14 18z" fill="#C9A227"/><path d="M35 24l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3L35 24z" fill="#C9A227"/></svg>'
+      };
+
+      // Shared copy so the same feature keeps the same subtitle everywhere
+      var FEATURES = {
+        translate: {
+          icon: "translate",
+          title: "Translate anything",
+          body: "Longer texts, voice and camera — no limits on what you can translate"
+        },
+        writing: {
+          icon: "writing",
+          title: "Writing assistant",
+          body: "Correct and rephrase with AI so every email and message sounds right"
+        },
+        learning: {
+          icon: "learning",
+          title: "Learning activities & content",
+          body: "Flashcards, quizzes and curated lists based on what you look up"
+        },
+        learningShort: {
+          icon: "learning",
+          title: "Learning activities",
+          body: "Flashcards & quizzes based on what you look up"
+        },
+        dictionary: {
+          icon: "dictionary",
+          title: "Expanded dictionary",
+          body: "More results, examples and synonyms to pick the right word every time"
+        },
+        noAds: {
+          icon: "noAds",
+          title: "No ads",
+          body: "An uninterrupted experience across translation and learning"
+        },
+        removeAds: {
+          icon: "noAds",
+          title: "Remove ads",
+          body: "An uninterrupted experience across translation and learning"
+        },
+        lists: {
+          icon: "lists",
+          title: "Vocabulary lists for every topic",
+          body: "Ready-made collections by theme and level for your classroom"
+        },
+        favorites: {
+          icon: "favorites",
+          title: "Save unlimited favorites",
+          body: "Build and share your custom lists."
+        },
+        translateContext: {
+          icon: "translate",
+          title: "Translations with context",
+          body: "From text, voice or camera, get multiple translations and examples"
+        }
+      };
+
+      var variants = {
+        default: {
+          title: "Full access",
+          features: ["translate", "writing", "learning", "dictionary", "noAds"]
+        },
+        work: {
+          title: "Full access",
+          features: ["translate", "writing", "dictionary", "noAds"]
+        },
+        teach: {
+          title: "Access all features and content",
+          features: ["learningShort", "lists", "favorites", "translateContext", "removeAds"]
+        }
+      };
+
+      var hooks = {
+        work: "Get more productivity with Premium",
+        study: "Get more from your learning with Premium",
+        teach: "Get more teaching power with Premium",
+        discover: "Get more from every search with Premium"
+      };
+
+      var discounts = {
+        study: { label: "For students", offer: "75% off Premium" },
+        teach: { label: "For teachers", offer: "75% off Premium" }
+      };
+
+      var params = new URLSearchParams(window.location.search);
+      var usecase = (params.get("usecase") || "").toLowerCase();
+      var variant = variants[usecase] || variants.default;
+      var freeLink = document.getElementById("freeLink");
+      var premiumBtn = document.getElementById("premiumBtn");
+      var hook = document.getElementById("premiumHook");
+      var title = document.getElementById("premiumTitle");
+      var featureList = document.getElementById("featureList");
+      var discountBanner = document.getElementById("discountBanner");
+      var toast = document.getElementById("toast");
+
+      hook.textContent = hooks[usecase] || hooks.discover;
+      title.textContent = variant.title;
+      document.title = variant.title + " | Reverso Premium";
+
+      featureList.innerHTML = variant.features
+        .map(function (key) {
+          var f = FEATURES[key];
+          return (
+            '<li class="feature">' +
+            '<span class="feature__icon" aria-hidden="true">' +
+            ICONS[f.icon] +
+            "</span>" +
+            "<div>" +
+            '<h3 class="feature__title">' +
+            f.title +
+            "</h3>" +
+            '<p class="feature__body">' +
+            f.body +
+            "</p>" +
+            "</div>" +
+            "</li>"
+          );
+        })
+        .join("");
+
+      if (discounts[usecase]) {
+        discountBanner.hidden = false;
+        discountBanner.innerHTML =
+          '<span class="discount-banner__offer">' +
+          discounts[usecase].offer +
+          "</span>" +
+          '<span class="discount-banner__label">' +
+          discounts[usecase].label +
+          "</span>";
+      }
+
+      if (usecase === "work") {
+        document.getElementById("teamCard").hidden = false;
+      }
+
+      if (usecase) {
+        freeLink.href = "04-account.html?usecase=" + encodeURIComponent(usecase);
+      }
+
+      premiumBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        toast.classList.add("is-visible");
+        clearTimeout(premiumBtn._toastTimer);
+        premiumBtn._toastTimer = setTimeout(function () {
+          toast.classList.remove("is-visible");
+        }, 2200);
+      });
+    })();
+  </script>
+</body>
+
+</html>

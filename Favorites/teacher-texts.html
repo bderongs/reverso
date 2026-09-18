@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0970ac">
+  <title>Teacher texts | Reverso</title>
+  <link rel="icon" type="image/x-icon" href="https://www.reverso.net/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --new-blue-1100: #064c88;
+      --new-blue-1000: #07579c;
+      --new-blue-900: #0a6cc2;
+      --new-blue-800: #157cd5;
+      --new-blue-700: #2a8bdf;
+      --new-blue-200: #d9ecfc;
+      --new-blue-150: #e8f3fc;
+      --new-blue-100: #f6fafe;
+      --new-blue-50: #f8fcfe;
+      --blue-reverso-700: #0970ac;
+      --grey-1200: #222c31;
+      --grey-1100: #2e3c43;
+      --grey-1000: #3b4c55;
+      --grey-800: #546d79;
+      --grey-700: #607d8b;
+      --grey-200: #dee4e7;
+      --grey-150: #eaeef1;
+      --grey-100: #f7f9f9;
+      --accent-700: #4396df;
+      --black-0: #ffffff;
+      --green-700: #36ba69;
+      --green-100: #f3fbf6;
+      --red-600: #e45c45;
+      --red-100: #fdf5f4;
+      --warn-bg: #fff8e5;
+      --warn-ink: #95581a;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--grey-1000);
+      background: linear-gradient(180deg, var(--new-blue-100) 0.78%, var(--new-blue-50) 51.34%);
+      background-attachment: fixed;
+    }
+
+    .page {
+      width: min(960px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 28px 0 72px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    @media (max-width: 567px) {
+      .page { width: calc(100% - 32px); padding-top: 20px; }
+    }
+
+    /* —— Compact auth (utility) —— */
+    details.auth-panel {
+      background: var(--black-0);
+      border: 1px solid var(--grey-200);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 0 rgba(5, 54, 97, 0.04);
+    }
+    details.auth-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      padding: 0.85rem 1.1rem;
+      user-select: none;
+    }
+    details.auth-panel > summary::-webkit-details-marker { display: none; }
+    details.auth-panel > summary .sum-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--blue-reverso-700);
+      font-weight: 700;
+    }
+    details.auth-panel > summary .sum-chev { margin-left: auto; color: var(--grey-700); }
+    details.auth-panel[open] > summary .sum-chev { transform: rotate(180deg); }
+    details.auth-panel .auth-body {
+      padding: 0 1.1rem 1rem;
+      border-top: 1px solid var(--grey-150);
+      padding-top: 0.85rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.2rem; flex: 1 1 140px; min-width: 0; }
+    .field.full { flex: 1 1 100%; }
+    label { font-size: 0.75rem; font-weight: 500; color: var(--grey-700); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--grey-200);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font: inherit;
+      background: var(--black-0);
+      color: var(--grey-1200);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--new-blue-800);
+      box-shadow: 0 0 0 3px rgba(21, 124, 213, 0.16);
+    }
+    textarea.auth { min-height: 2.6rem; font-family: var(--mono); font-size: 0.72rem; }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--new-blue-800);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--new-blue-800);
+      color: #fff;
+      height: 40px;
+    }
+    .btn:hover:not(:disabled) { background: var(--new-blue-900); border-color: var(--new-blue-900); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.ghost {
+      background: #fff;
+      color: var(--grey-800);
+      border-color: var(--grey-200);
+    }
+    .btn.ghost:hover:not(:disabled) {
+      background: var(--grey-100);
+      color: var(--grey-1100);
+    }
+    .pill {
+      display: inline-flex; align-items: center;
+      font-size: 0.74rem; padding: 0.18rem 0.55rem; border-radius: 999px;
+      background: var(--new-blue-150); color: var(--blue-reverso-700); font-weight: 500;
+    }
+    .pill.ok { background: var(--green-100); color: var(--green-700); }
+    .pill.err { background: var(--red-100); color: var(--red-600); }
+    .pill.run { background: var(--new-blue-200); color: var(--new-blue-900); }
+    .note { font-size: 0.8rem; color: var(--grey-700); }
+    .note code {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: var(--new-blue-150);
+      color: var(--blue-reverso-700);
+      padding: 0.05rem 0.3rem;
+      border-radius: 4px;
+    }
+    .jwt-badge {
+      display: inline-flex; font-size: 0.74rem; padding: 0.18rem 0.55rem;
+      border-radius: 999px; background: var(--grey-150); color: var(--grey-700); font-weight: 500;
+    }
+    .jwt-badge.ok { background: var(--green-100); color: var(--green-700); }
+    .jwt-badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .jwt-badge.err { background: var(--red-100); color: var(--red-600); }
+    .jwt-warn-inline {
+      margin-top: 0.45rem; font-size: 0.78rem; padding: 0.45rem 0.6rem;
+      border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink);
+      border: 1px solid #ffecb4; display: none;
+    }
+    .jwt-warn-inline.show { display: block; }
+    .jwt-warn-inline.err { background: var(--red-100); color: var(--red-600); border-color: #f8d7d1; }
+    .hidden { display: none !important; }
+
+    /* —— Welcome-style product area —— */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+    .welcome__header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+      width: 100%;
+    }
+    .welcome__logo {
+      display: block;
+      width: 156px;
+      height: auto;
+    }
+    .welcome__subtitle {
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 32px;
+      color: var(--grey-1000);
+      max-width: 28rem;
+    }
+    .welcome__lead {
+      font-size: 16px;
+      line-height: 24px;
+      color: var(--grey-800);
+      max-width: 34rem;
+    }
+
+    .feature-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px 28px;
+      width: 100%;
+    }
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--grey-800);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .feature-pill img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .studio {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    @media (max-width: 860px) {
+      .studio { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--black-0);
+      border: 1px solid var(--grey-200);
+      border-radius: 16px;
+      padding: 22px 24px;
+      box-shadow: 0 8px 28px rgba(5, 54, 97, 0.06);
+    }
+    .panel__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--new-blue-800);
+      margin-bottom: 6px;
+    }
+    .panel__eyebrow img { width: 18px; height: 18px; }
+    .panel__title {
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.25;
+      color: var(--grey-1200);
+      margin-bottom: 4px;
+    }
+    .panel__text {
+      font-size: 15px;
+      line-height: 1.35;
+      color: var(--grey-800);
+      margin-bottom: 14px;
+      max-width: 36rem;
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .controls-row { grid-template-columns: 1fr; }
+    }
+
+    .choice-field label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 0;
+    }
+    .choice-field label img {
+      width: 16px;
+      height: 16px;
+    }
+
+    textarea.prompt {
+      min-height: 72px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+    .stack + .stack, .controls-row + .stack { margin-top: 10px; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 48px;
+      margin-top: 14px;
+      border: 1px solid var(--new-blue-800);
+      border-radius: 8px;
+      background: var(--new-blue-800);
+      color: #fff;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--new-blue-900);
+      border-color: var(--new-blue-900);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary img { width: 20px; height: 20px; filter: brightness(0) invert(1); }
+
+    .status-line {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      color: var(--grey-800);
+      min-height: 1.25em;
+    }
+    .status-line.err { color: var(--red-600); }
+    .status-line.run { color: var(--new-blue-900); }
+    .status-line.ok { color: var(--green-700); }
+
+    .aside {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      background:
+        linear-gradient(160deg, rgba(232, 243, 252, 0.95) 0%, rgba(248, 252, 254, 0.9) 45%, #fff 100%);
+      border: 1px solid var(--new-blue-200);
+      border-radius: 16px;
+      padding: 28px;
+      overflow: hidden;
+      position: relative;
+    }
+    .aside::before {
+      content: "";
+      position: absolute;
+      right: -40px;
+      top: -40px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(42, 139, 223, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+    .aside__art {
+      width: min(100%, 280px);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border-radius: 12px;
+      object-fit: contain;
+    }
+    .aside__copy { position: relative; z-index: 1; }
+    .aside__title {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 28px;
+      color: var(--grey-1200);
+      margin-bottom: 8px;
+    }
+    .aside__text {
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--grey-800);
+    }
+    .aside__logos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .aside__logos span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--new-blue-200);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--grey-800);
+    }
+    .aside__logos img { width: 16px; height: 16px; }
+
+    .results {
+      width: 100%;
+    }
+    .results__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      margin-bottom: 18px;
+    }
+    .results__head h2 {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--grey-1200);
+      line-height: 28px;
+    }
+    .results__meta {
+      flex: 1;
+      font-size: 14px;
+      color: var(--grey-700);
+    }
+
+    .title-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .title-card {
+      position: relative;
+      border: 1px solid var(--grey-200);
+      border-radius: 14px;
+      background: var(--black-0);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 96px;
+      box-shadow: 0 4px 16px rgba(5, 54, 97, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .title-card:hover {
+      border-color: var(--new-blue-700);
+      box-shadow: 0 10px 24px rgba(5, 54, 97, 0.08);
+      transform: translateY(-1px);
+    }
+    .title-card .tc-num {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--new-blue-800);
+    }
+    .title-card .tc-num img { width: 14px; height: 14px; }
+    .title-card .tc-title {
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.35;
+      color: var(--grey-1200);
+    }
+
+    .page-footer {
+      margin-top: 8px;
+      text-align: center;
+      color: var(--grey-700);
+      font-size: 12px;
+    }
+    .page-footer a {
+      color: var(--new-blue-800);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .page-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <details class="auth-panel" id="auth-panel" open>
+      <summary>
+        <span class="sum-title">Auth &amp; load</span>
+        <span id="jwt-badge" class="jwt-badge">No token</span>
+        <span id="status-pill" class="pill">Idle</span>
+        <span id="status-meta" class="note"></span>
+        <span class="sum-chev">▾</span>
+      </summary>
+      <div class="auth-body">
+        <div class="row">
+          <div class="field full">
+            <label for="refresh-token">Refresh token</label>
+            <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field full">
+            <label for="auth-token">Access token (auto)</label>
+            <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
+          </div>
+        </div>
+        <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
+        <div class="row" style="margin-top:0.55rem;">
+          <div class="field">
+            <label for="origin-header">X-Reverso-Origin</label>
+            <input id="origin-header" type="text" value="mainweb">
+          </div>
+          <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
+          <button type="button" class="btn" id="btn-load-account">Load account</button>
+        </div>
+        <p class="note" style="margin-top:0.55rem;">
+          Local server only: lists go through <code>/proxy</code>. Paste your refresh token once;
+          the page refreshes the JWT via <code>POST /api/v1/account/accessToken</code>.
+        </p>
+      </div>
+    </details>
+
+    <section class="welcome">
+      <header class="welcome__header">
+        <img
+          class="welcome__logo"
+          src="/Onboarding/welcome_original_files/logo.svg"
+          width="156"
+          height="36"
+          alt="Reverso logo"
+        >
+        <h1 class="welcome__subtitle" id="hero-title">Create texts for your students</h1>
+        <p class="welcome__lead" id="hero-meta">
+          Turn any vocabulary list into classroom-ready reading ideas — stories, news, or dialogues matched to level and audience.
+        </p>
+        <div class="feature-strip" aria-hidden="true">
+          <span class="feature-pill">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/dictionary.svg" alt="">
+            Vocabulary lists
+          </span>
+          <span class="feature-pill">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/target.svg" alt="">
+            CEFR levels
+          </span>
+          <span class="feature-pill">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/add-to-reading-list.svg" alt="">
+            Reading texts
+          </span>
+          <span class="feature-pill">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/flashcards.svg" alt="">
+            Classroom ready
+          </span>
+        </div>
+      </header>
+
+      <div class="studio" id="setup-panel">
+        <div class="panel">
+          <div class="panel__eyebrow">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/tutorial.svg" alt="">
+            Teacher studio
+          </div>
+          <h2 class="panel__title">Generate 5 texts</h2>
+          <p class="panel__text">
+            Pick a list, choose who you’re teaching, then create texts grounded in your vocabulary theme.
+          </p>
+
+          <div class="stack">
+            <div class="field">
+              <label for="vocabulary-list">Vocabulary list</label>
+              <select id="vocabulary-list">
+                <option value="">— load account first —</option>
+              </select>
+              <p class="note hidden" id="list-lang-hint" style="margin-top:0.35rem;"></p>
+            </div>
+          </div>
+
+          <div class="controls-row stack">
+            <div class="field choice-field">
+              <label for="target-audience">
+                <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/target.svg" alt="">
+                Target
+              </label>
+              <select id="target-audience">
+                <option value="Child">Child</option>
+                <option value="Teens" selected>Teens</option>
+                <option value="Adults">Adults</option>
+              </select>
+            </div>
+            <div class="field choice-field">
+              <label for="cefr-level">
+                <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/dictionary.svg" alt="">
+                Level
+              </label>
+              <select id="cefr-level">
+                <option value="A1">A1</option>
+                <option value="A2" selected>A2</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+              </select>
+            </div>
+            <div class="field choice-field">
+              <label for="text-type">
+                <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/add-to-reading-list.svg" alt="">
+                Type
+              </label>
+              <select id="text-type">
+                <option value="Story" selected>Story</option>
+                <option value="News">News</option>
+                <option value="Dialogue">Dialogue</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="field full">
+              <label for="teacher-prompt">Additional prompt</label>
+              <textarea id="teacher-prompt" class="prompt" spellcheck="true" placeholder="Optional extras, e.g. set at a café, include humour, avoid politics…"></textarea>
+            </div>
+          </div>
+
+          <button type="button" class="btn-primary" id="btn-create">
+            <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/flashcards.svg" alt="">
+            Create 5 texts
+          </button>
+          <p class="status-line" id="gen-status" role="status"></p>
+        </div>
+
+        <aside class="aside" aria-label="About this tool">
+          <img
+            class="aside__art"
+            src="/Onboarding/welcome_original_files/en.webp"
+            width="280"
+            height="275"
+            alt="Reverso flashcards illustration"
+          >
+          <div class="aside__copy">
+            <h3 class="aside__title">Built for language teachers</h3>
+            <p class="aside__text">
+              Texts are generated from your list’s theme and terms — so every idea stays relevant to what students are learning.
+            </p>
+            <div class="aside__logos">
+              <span>
+                <img src="/Onboarding/welcome_original_files/logo.svg" width="16" height="16" alt="">
+                Reverso Vocabulary
+              </span>
+              <span>
+                <img src="/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/flashcards.svg" alt="">
+                Practice ready
+              </span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="results hidden" id="results-panel">
+        <div class="results__head">
+          <h2>Your texts</h2>
+          <span class="results__meta" id="results-meta">5 texts for your students</span>
+          <span id="run-pill" class="pill">Ready</span>
+        </div>
+        <div class="title-grid" id="title-grid"></div>
+      </section>
+    </section>
+
+    <p class="page-footer">
+      <a href="/practice-talking.html">Practice talking</a>
+      · Teacher tools prototype
+    </p>
+  </div>
+
+  <script src="/fav-auth.js"></script>
+  <script>
+    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const MAX_VOCAB = 80;
+    const ICON_READING = "/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/add-to-reading-list.svg";
+
+    const state = {
+      lists: [],
+      vocabulary: [],
+      titles: [],
+      busy: false,
+      practiceLang: "",
+      hintLang: "",
+      listId: "",
+      listName: "",
+    };
+
+    function el(id) {
+      return document.getElementById(id);
+    }
+
+    function setStatus(ok, badge, meta) {
+      const pill = el("status-pill");
+      pill.textContent = badge;
+      pill.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      el("status-meta").textContent = meta || "";
+    }
+
+    function setGenStatus(text, cls) {
+      const line = el("gen-status");
+      line.textContent = text || "";
+      line.className = "status-line " + (cls || "");
+    }
+
+    function setRunStatus(text, cls) {
+      const pill = el("run-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (cls || "");
+    }
+
+    function qs(params) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v === undefined || v === null || v === "") continue;
+        sp.set(k, String(v));
+      }
+      return sp.toString();
+    }
+
+    async function apiGet(path, params) {
+      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
+      const url = "/proxy" + path + "?" + qs(params);
+      const res = await FavAuth.fetchWithAuth(url);
+      const data = await FavAuth.readJsonResponse(res, path);
+      return { url, data };
+    }
+
+    function saveAuth() {
+      FavAuth.saveAuth();
+    }
+
+    function getSelectedList() {
+      const id = el("vocabulary-list").value;
+      if (!id) return null;
+      return state.lists.find((list) => String(list.id ?? list.listId) === String(id)) || null;
+    }
+
+    function listLangs(list) {
+      if (!list) return { sourceLang: "", targetLang: "" };
+      return {
+        sourceLang: list.srcLang || list.sourceLang || "",
+        targetLang: list.trgLang || list.targetLang || "",
+      };
+    }
+
+    function listDisplayName(list) {
+      return (list && (list.listName || list.name)) || "List";
+    }
+
+    function populateLists(results) {
+      const sel = el("vocabulary-list");
+      sel.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = results.length ? "— pick a list —" : "No lists";
+      sel.append(empty);
+      for (const list of results) {
+        const id = list.id ?? list.listId;
+        if (id == null) continue;
+        const { sourceLang, targetLang } = listLangs(list);
+        const opt = document.createElement("option");
+        opt.value = String(id);
+        const n = Number(list.numFavourites ?? 0);
+        const dir = sourceLang && targetLang ? ` · ${sourceLang}→${targetLang}` : "";
+        opt.textContent = `${list.listName || list.name || "List " + id} (${n} favs${dir})`;
+        sel.append(opt);
+      }
+      updateListLangHint();
+    }
+
+    function updateListLangHint() {
+      const hint = el("list-lang-hint");
+      const meta = el("hero-meta");
+      const list = getSelectedList();
+      const { sourceLang, targetLang } = listLangs(list);
+      const defaultLead =
+        "Turn any vocabulary list into classroom-ready reading ideas — stories, news, or dialogues matched to level and audience.";
+      if (list && sourceLang && targetLang) {
+        const n = Number(list.numFavourites ?? 0);
+        const name = listDisplayName(list);
+        hint.textContent = `Source: ${sourceLang.toUpperCase()} · translation: ${targetLang.toUpperCase()}`;
+        hint.classList.remove("hidden");
+        if (meta) {
+          meta.textContent = `${name} · ${n} entries · ${sourceLang.toUpperCase()} → ${targetLang.toUpperCase()}`;
+        }
+      } else if (list && sourceLang) {
+        hint.textContent = `Source: ${sourceLang.toUpperCase()}`;
+        hint.classList.remove("hidden");
+      } else {
+        hint.classList.add("hidden");
+        hint.textContent = "";
+        if (meta) meta.textContent = defaultLead;
+      }
+    }
+
+    async function fetchListVocabulary(listId) {
+      const items = [];
+      let start = 0;
+      const pageSize = 100;
+      while (items.length < MAX_VOCAB) {
+        const { data } = await apiGet("/user/favourites", {
+          listId,
+          length: pageSize,
+          start,
+          learningInfo: true,
+          includeDef: "YES",
+        });
+        const batch = Array.isArray(data.results) ? data.results : [];
+        for (const fav of batch) {
+          const srcText = String(fav.srcText || "").trim();
+          const trgText = String(fav.trgText || "").trim();
+          if (!srcText && !trgText) continue;
+          items.push({
+            srcText,
+            trgText,
+            srcContext: String(fav.srcContext || "").trim(),
+            srcLang: fav.srcLang || "",
+            trgLang: fav.trgLang || "",
+          });
+          if (items.length >= MAX_VOCAB) break;
+        }
+        if (batch.length < pageSize) break;
+        start += pageSize;
+      }
+      return items;
+    }
+
+    async function loadAccount() {
+      saveAuth();
+      if (!FavAuth.authReadyForLiveApi()) {
+        setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
+        el("auth-panel").open = true;
+        return;
+      }
+      setStatus(null, "Loading…", "");
+      try {
+        await FavAuth.ensureAccessToken();
+        FavAuth.updateJwtUi();
+        const listsRes = await apiGet("/user/favouritesLists", {
+          length: 100,
+          start: 0,
+          learningInfo: true,
+          includeDef: "YES",
+        });
+        state.lists = listsRes.data.results || [];
+        populateLists(state.lists);
+        setStatus(true, "OK", `${state.lists.length} lists`);
+        el("auth-panel").open = false;
+        setGenStatus("Pick a list, set Target / Level / Type, then create texts.", "");
+      } catch (err) {
+        setStatus(false, "Error", "");
+        setGenStatus(err.message, "err");
+      }
+    }
+
+    function renderTitles(titles) {
+      const grid = el("title-grid");
+      grid.innerHTML = "";
+      if (!titles.length) {
+        grid.innerHTML = '<span class="note">No texts yet.</span>';
+        return;
+      }
+      titles.forEach((item, i) => {
+        const card = document.createElement("div");
+        card.className = "title-card";
+        card.innerHTML =
+          `<span class="tc-num"><img src="${ICON_READING}" alt="">Text ${i + 1}</span>` +
+          `<span class="tc-title"></span>`;
+        card.querySelector(".tc-title").textContent = item.title || "Text";
+        grid.append(card);
+      });
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      el("btn-create").disabled = busy;
+      el("vocabulary-list").disabled = busy;
+      el("target-audience").disabled = busy;
+      el("cefr-level").disabled = busy;
+      el("text-type").disabled = busy;
+      el("teacher-prompt").disabled = busy;
+    }
+
+    async function createTitles() {
+      const list = getSelectedList();
+      if (!list) {
+        setGenStatus("Pick a vocabulary list first.", "err");
+        return;
+      }
+      if (!LIVE_API_ENABLED) {
+        setGenStatus("Run locally (npm start) to load lists and generate texts.", "err");
+        return;
+      }
+
+      const listId = String(list.id ?? list.listId);
+      const { sourceLang, targetLang } = listLangs(list);
+      const target = el("target-audience").value || "Teens";
+      const level = el("cefr-level").value || "A2";
+      const textType = el("text-type").value || "Story";
+      const teacherPrompt = String(el("teacher-prompt").value || "").trim();
+
+      setBusy(true);
+      setRunStatus("Generating…", "run");
+      setGenStatus("Loading list vocabulary…", "run");
+      el("results-panel").classList.remove("hidden");
+
+      try {
+        const vocabulary = await fetchListVocabulary(listId);
+        if (!vocabulary.length) {
+          throw new Error("This list has no favourites to ground the texts.");
+        }
+        state.vocabulary = vocabulary;
+        state.listId = listId;
+        state.listName = listDisplayName(list);
+        state.practiceLang = sourceLang;
+        state.hintLang = targetLang;
+
+        setGenStatus("Generating 5 texts…", "run");
+        const res = await fetch("/teacher/text-titles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vocabulary,
+            practiceLang: sourceLang,
+            hintLang: targetLang,
+            listName: state.listName,
+            target,
+            level,
+            textType,
+            teacherPrompt,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Text generation failed (${res.status}).`);
+        }
+        const titles = Array.isArray(data.titles) ? data.titles : [];
+        if (titles.length < 5) {
+          throw new Error(`Expected 5 texts, got ${titles.length}.`);
+        }
+        state.titles = titles.slice(0, 5);
+        renderTitles(state.titles);
+        el("results-meta").textContent =
+          `${state.titles.length} texts · ${textType} · ${level} · ${target} · ${state.listName}`;
+        setRunStatus("Done", "ok");
+        setGenStatus("Texts ready. Change options and create again anytime.", "ok");
+      } catch (err) {
+        setRunStatus("Error", "err");
+        setGenStatus(err.message, "err");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function init() {
+      FavAuth.initAuthUi();
+      el("btn-load-account").onclick = () => void loadAccount();
+      el("btn-create").onclick = () => void createTitles();
+      el("vocabulary-list").addEventListener("change", () => {
+        updateListLangHint();
+        state.titles = [];
+        state.vocabulary = [];
+        el("results-panel").classList.add("hidden");
+        el("title-grid").innerHTML = "";
+        setRunStatus("Ready", "");
+      });
+
+      if (!LIVE_API_ENABLED) {
+        setGenStatus("Deployed build: run locally (npm start) to use lists + generation.", "err");
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

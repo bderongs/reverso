@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Download Reverso | Reverso</title>
+  <link rel="icon" type="image/x-icon" href="https://www.reverso.net/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <script src="demo-switcher.js" defer></script>
+</head>
+
+<body>
+  <div class="page">
+    <header class="page__header">
+      <h1 aria-label="Reverso">
+        <img class="page__logo" src="../welcome_original_files/logo.svg" width="156" height="36" alt="Reverso logo">
+      </h1>
+      <h2 class="page__subtitle" id="pageSubtitle">Get the right app for you</h2>
+    </header>
+
+    <main class="page__main">
+      <div class="split">
+        <div class="split__content">
+          <h2 class="split__title" id="contentTitle">Why this app fits your goals</h2>
+          <p class="split__lead" id="contentLead"></p>
+
+          <div class="arg-list" id="argList"></div>
+
+          <div class="split__actions" id="actions"></div>
+        </div>
+
+        <aside class="preview" aria-label="App preview">
+          <div class="preview__frame" id="previewFrame">App</div>
+          <p class="preview__label" id="previewLabel"></p>
+        </aside>
+      </div>
+
+      <div class="page__footer" style="margin-top: 40px;">
+        <div class="progress" role="list" aria-label="Onboarding steps">
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot is-active" role="listitem" aria-current="step"></span>
+          <span class="progress__dot" role="listitem"></span>
+          <span class="progress__dot" role="listitem"></span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var CHECK =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      var CHEVRON =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+      var ANDROID_URL =
+        "https://play.google.com/store/apps/details?id=com.softissimo.reverso.context&hl=en&referrer=?utm_source=context&utm_medium=cta-mobile-landing-page-top";
+      var IOS_URL =
+        "https://apps.apple.com/us/app/reverso-translation-dictionary/id919979642?mt=8&pt=389624";
+      var MAC_URL = "https://cdn.reverso.net/download/reverso/desktop/macos/Reverso.dmg";
+      var WINDOWS_URL = "https://cdn.reverso.net/download/reverso/desktop/windows/ReversoSetup.exe";
+      var EXTENSION_URL =
+        "https://chrome.google.com/webstore/detail/reverso-%E2%80%93-translation-dic/onhiacboedfinnofagfgoaanfedhmfab?hl=en";
+
+      var content = {
+        work: {
+          subtitle: "Reverso for Work",
+          title: "Level up your productivity",
+          lead: "Effortlessly translate, write and learn anywhere on your computer.",
+          preview: "Desktop app",
+          previewHint: "Mac & Windows",
+          args: [
+            {
+              title: "Translate anywhere in one click",
+              body: "No more copy-pasting or switching tabs. Select any text and use Ctrl+C+C — your translation appears instantly where you’re working."
+            },
+            {
+              title: "Perfect your writing with AI",
+              body: "Select a sentence, email or post and click the floating quill. Reverso corrects errors and suggests AI-powered rephrases."
+            },
+            {
+              title: "Look up words while you read",
+              body: "Double-click any word in your browser, emails, messengers or documents. Save favorites and practice with flashcards."
+            }
+          ],
+          ctas: [{ type: "desktop", label: "Get our productivity app", primary: true }]
+        },
+        study: {
+          subtitle: "Reverso mobile app",
+          title: "Reverso for learning",
+          lead: "The free Reverso app brings translation in context and learning tools together in one place.",
+          preview: "Mobile app",
+          previewHint: "iOS & Android",
+          args: [
+            {
+              title: "Translations in real-life context",
+              body: "Search words, expressions and idioms with billions of authentic examples from movies, news, books and documents."
+            },
+            {
+              title: "Build your vocabulary as you go",
+              body: "Save favorites with definitions, examples and pronunciation. Review them as lists or flashcards — including offline."
+            },
+            {
+              title: "Practice with quizzes and audio",
+              body: "Turn what you search and save into interactive exercises with high-quality audio, quizzes and speaking practice."
+            }
+          ],
+          ctas: [{ type: "mobile", label: "Get your learning app", primary: true }]
+        },
+        teach: {
+          subtitle: "Reverso for teachers",
+          title: "Ready-to-use tools for your students",
+          lead: "Give learners contextual translations, vocabulary practice, and apps they can use in class or at home.",
+          preview: "Mobile + Extension",
+          previewHint: "Multiple apps",
+          args: [
+            {
+              title: "Authentic examples for the classroom",
+              body: "Show how language is really used — from everyday conversation to academic and professional registers — with real-life examples."
+            },
+            {
+              title: "Vocabulary lists your students can practice",
+              body: "Save words and expressions with examples and audio. Students review with flashcards and quizzes based on what they study."
+            },
+            {
+              title: "Available where they learn",
+              body: "Use Reverso on mobile for on-the-go practice, and the browser extension to translate and save vocabulary while browsing online."
+            }
+          ],
+          ctas: [
+            { type: "mobile", label: "Get the learning app", primary: true },
+            { type: "link", label: "Get the browser extension", href: EXTENSION_URL, primary: false }
+          ]
+        },
+        discover: {
+          subtitle: "Reverso mobile app",
+          title: "One Reverso for everything",
+          lead: "Explore languages with contextual translations, learning tools, and mobile features that go with you.",
+          preview: "Mobile app",
+          previewHint: "iOS & Android",
+          args: [
+            {
+              title: "Translate with context",
+              body: "Look up words and expressions with real-life examples so you understand meaning and usage, not just a single definition."
+            },
+            {
+              title: "Learn as you explore",
+              body: "Save favorites, listen to pronunciation, and practice with flashcards and quizzes based on what you discover."
+            },
+            {
+              title: "Voice and camera on the go",
+              body: "Speak to search, scan text with your camera, and keep dictionaries offline — everything in one free mobile app."
+            }
+          ],
+          ctas: [{ type: "mobile", label: "Get the all-in-one app", primary: true }]
+        }
+      };
+
+      var params = new URLSearchParams(window.location.search);
+      var usecase = (params.get("usecase") || "").toLowerCase();
+      var data = content[usecase] || content.discover;
+      if (!content[usecase]) usecase = "discover";
+
+      document.getElementById("pageSubtitle").textContent = data.subtitle;
+      document.getElementById("contentTitle").textContent = data.title;
+      document.getElementById("contentLead").textContent = data.lead;
+      document.getElementById("previewFrame").innerHTML = data.preview.replace(" ", "<br>");
+      document.getElementById("previewLabel").textContent = data.previewHint;
+      document.title = data.title + " | Reverso";
+
+      var argList = document.getElementById("argList");
+      argList.innerHTML = data.args
+        .map(function (arg) {
+          return (
+            '<div class="arg">' +
+            '<span class="arg__icon" aria-hidden="true">' +
+            CHECK +
+            "</span>" +
+            "<div>" +
+            '<h3 class="arg__title">' +
+            arg.title +
+            "</h3>" +
+            '<p class="arg__body">' +
+            arg.body +
+            "</p>" +
+            "</div>" +
+            "</div>"
+          );
+        })
+        .join("");
+
+      var actions = document.getElementById("actions");
+      var nextHref = "03-premium.html?usecase=" + encodeURIComponent(usecase);
+
+      function goDownload(url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.location.href = nextHref;
+      }
+
+      function renderCta(cta) {
+        if (cta.type === "desktop") {
+          return (
+            '<div class="dl-cta dl-cta--desktop' +
+            (cta.primary ? " dl-cta--primary" : "") +
+            '">' +
+            '<a class="dl-cta__face js-download-cta" href="' +
+            MAC_URL +
+            '" data-download-url="' +
+            MAC_URL +
+            '">' +
+            '<span class="dl-cta__label dl-cta__label--default">' +
+            cta.label +
+            "</span>" +
+            '<span class="dl-cta__label dl-cta__label--hover">Get the Mac OS App</span>' +
+            "</a>" +
+            '<button type="button" class="dl-cta__chevron" aria-label="More download options" aria-expanded="false">' +
+            CHEVRON +
+            "</button>" +
+            '<div class="dl-cta__menu" hidden>' +
+            '<a class="dl-cta__menu-item js-download-cta" href="' +
+            WINDOWS_URL +
+            '" data-download-url="' +
+            WINDOWS_URL +
+            '">Download the Windows app</a>' +
+            "</div>" +
+            "</div>"
+          );
+        }
+
+        if (cta.type === "mobile") {
+          return (
+            '<div class="dl-cta dl-cta--mobile' +
+            (cta.primary ? " dl-cta--primary" : "") +
+            '">' +
+            '<span class="dl-cta__label dl-cta__label--default">' +
+            cta.label +
+            "</span>" +
+            '<div class="dl-cta__split">' +
+            '<a class="dl-cta__half js-download-cta" href="' +
+            ANDROID_URL +
+            '" data-download-url="' +
+            ANDROID_URL +
+            '">Android</a>' +
+            '<a class="dl-cta__half js-download-cta" href="' +
+            IOS_URL +
+            '" data-download-url="' +
+            IOS_URL +
+            '">iOS</a>' +
+            "</div>" +
+            "</div>"
+          );
+        }
+
+        var cls = cta.primary ? "btn btn--primary btn--block" : "btn btn--outline btn--block";
+        return (
+          '<a class="' +
+          cls +
+          ' js-download-cta" href="' +
+          cta.href +
+          '" data-download-url="' +
+          cta.href +
+          '">' +
+          cta.label +
+          "</a>"
+        );
+      }
+
+      if (data.ctas.length > 1) {
+        actions.classList.add("split__actions--stacked");
+      }
+
+      actions.innerHTML =
+        '<div class="cta-bar">' +
+        '<div class="cta-bar__main">' +
+        data.ctas.map(renderCta).join("") +
+        "</div>" +
+        '<a class="btn btn--ghost cta-later" href="' +
+        nextHref +
+        '">Later</a>' +
+        "</div>";
+
+      actions.querySelectorAll(".js-download-cta").forEach(function (link) {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          goDownload(link.getAttribute("data-download-url"));
+        });
+      });
+
+      actions.querySelectorAll(".dl-cta--desktop").forEach(function (wrap) {
+        var chevron = wrap.querySelector(".dl-cta__chevron");
+        var menu = wrap.querySelector(".dl-cta__menu");
+
+        chevron.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = wrap.classList.toggle("is-open");
+          chevron.setAttribute("aria-expanded", open ? "true" : "false");
+          menu.hidden = !open;
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!wrap.contains(e.target)) {
+            wrap.classList.remove("is-open");
+            chevron.setAttribute("aria-expanded", "false");
+            menu.hidden = true;
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+
+</html>

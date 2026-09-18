@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(brew install *)",
+      "Bash(yt-dlp --skip-download --write-auto-sub --sub-lang en --sub-format vtt -o \"ytcap_%\\(id\\)s.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=cWK7OBvjvxA\")",
+      "Bash(yt-dlp --cookies-from-browser chrome --skip-download --write-auto-sub --sub-lang en --sub-format vtt -o \"ytcap_%\\(id\\)s.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=cWK7OBvjvxA\")"
+    ]
+  }
+}

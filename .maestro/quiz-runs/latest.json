@@ -1,0 +1,62 @@
+{
+  "runId": "2026-09-15T14:51:42.495Z",
+  "count": 7,
+  "terms": [
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 1,
+      "term": "struggle",
+      "example": "His struggle to finish school inspired everyone.",
+      "capturedAt": "2026-09-15T14:52:34.241Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 2,
+      "term": "astonish",
+      "example": "The magician will astonish the audience with his tricks.",
+      "capturedAt": "2026-09-15T14:52:45.727Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 3,
+      "term": "burden",
+      "example": "The burden of leadership weighed heavily on her shoulders.",
+      "capturedAt": "2026-09-15T14:52:58.563Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 4,
+      "term": "milk",
+      "example": "The cat lapped up the bowl of milk quickly.",
+      "capturedAt": "2026-09-15T14:53:10.798Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 5,
+      "term": "push back",
+      "example": "The meeting was pushed back by an hour.",
+      "capturedAt": "2026-09-15T14:53:22.504Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 6,
+      "term": "whether",
+      "example": "She asked whether it would rain tomorrow.",
+      "capturedAt": "2026-09-15T14:53:33.980Z"
+    },
+    {
+      "runId": "2026-09-15T14:51:42.495Z",
+      "turn": 1,
+      "index": 7,
+      "term": "back down",
+      "example": "She had to back down from the project.",
+      "capturedAt": "2026-09-15T14:53:45.638Z"
+    }
+  ]
+}

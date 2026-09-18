@@ -196,12 +196,19 @@
     .log {
       font-family: var(--mono); font-size: 0.72rem;
       background: #0f1724; color: #d7e0ef; border-radius: 8px;
-      padding: 0.75rem; max-height: 320px; overflow: auto;
+      padding: 0.75rem; max-height: 420px; overflow: auto;
       white-space: pre-wrap; word-break: break-word;
     }
     .log .ok { color: #86efac; }
     .log .err { color: #fca5a5; }
     .log .warn { color: #fcd34d; }
+    .log .dim { color: #94a3b8; }
+    .log .issue { color: #fca5a5; }
+    .log-wrap { display: flex; flex-direction: column; gap: 0.45rem; }
+    .log-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem;
+    }
+    .log-toolbar .note { flex: 1 1 200px; }
     pre.raw {
       background: #0f1724; color: #d7e0ef; border-radius: 8px;
       padding: 0.75rem; font-family: var(--mono); font-size: 0.7rem;
@@ -281,6 +288,51 @@
     .word-cell-sub { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
     table.srs-table td.num.ok { color: var(--green); font-weight: 700; }
     table.srs-table td.num.srs-changed { color: #1d4ed8; font-weight: 700; }
+    .expert-toggle {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      padding: 0.7rem 0.8rem;
+      border: 1px dashed var(--config-border);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .expert-toggle input { width: auto; margin-top: 0.2rem; accent-color: var(--blue); }
+    .expert-toggle .expert-copy { display: flex; flex-direction: column; gap: 0.2rem; }
+    .expert-toggle strong { font-size: 0.84rem; }
+    .progress-line {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .issue-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 650;
+      background: var(--err-bg);
+      color: var(--err);
+      padding: 0.08rem 0.35rem;
+      border-radius: 4px;
+      margin: 0.08rem 0.15rem 0.08rem 0;
+    }
+    .issue-tag.ok { background: var(--green-bg); color: var(--green); }
+    .issue-tag.warn { background: var(--warn-bg); color: #c2410c; }
+    .bucket-dot {
+      display: inline-block;
+      width: 0.5rem; height: 0.5rem;
+      border-radius: 999px;
+      margin-right: 0.3rem;
+      vertical-align: middle;
+    }
+    .cache-list { margin-top: 0.55rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .cache-user {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.65rem;
+      padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+      font-size: 0.78rem;
+    }
+    .cache-user .name { font-weight: 650; }
+    .cache-user .meta { color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+    .cache-user.current { border-color: var(--config-border); background: #eef2ff; }
   </style>
 </head>
 <body>
@@ -293,6 +345,8 @@
       <a href="/">Home</a>
       <a href="/filtering-demo.html">Filtering demo</a>
       <a href="/srs-game-tester.html">SRS tester</a>
+      <a href="/learning-progress.html">Progress</a>
+      <a href="/practice-talking.html">Practice talking</a>
     </nav>
   </div>
 
@@ -390,6 +444,34 @@
       </div>
 
       <div class="panel">
+        <h2>Expert mode</h2>
+        <label class="expert-toggle">
+          <input type="checkbox" id="expert-mode">
+          <span class="expert-copy">
+            <strong>Load Favourites + History corpus</strong>
+            <span class="note">Off by default. When on, Load account pages Favourites and History, then saves them on this computer per user. Next load of the same account only fetches items newer than the last save. Several accounts can be cached side by side.</span>
+          </span>
+        </label>
+        <div id="corpus-panel" class="hidden" style="margin-top:0.75rem;">
+          <p class="progress-line" id="corpus-status">Corpus not loaded. Click Load account.</p>
+          <div class="row" style="margin-top:0.45rem;">
+            <button type="button" class="btn ghost" id="btn-corpus-full-reload">Full reload</button>
+            <button type="button" class="btn ghost" id="btn-corpus-export">Export corpus</button>
+            <button type="button" class="btn ghost" id="btn-corpus-forget">Forget this user</button>
+          </div>
+          <p class="note" style="margin-top:0.35rem;">
+            Export downloads a JSON snapshot — save it into the repo’s
+            <code>Android_testing/</code> folder (browser download is fine; move the file there).
+            Scoring will list those files and ask which corpus to use.
+            Export <em>before</em> playing on the phone; do not run web quizzes in between.
+          </p>
+          <div class="cache-list" id="cached-users"></div>
+          <div class="srs-grid" id="corpus-grid" style="margin-top:0.55rem;"></div>
+          <p class="note" id="corpus-filter-note" style="margin-top:0.45rem;"></p>
+        </div>
+      </div>
+
+      <div class="panel">
         <h2>Automation</h2>
         <div class="row">
           <div class="field narrow">
@@ -421,7 +503,14 @@
         <button type="button" class="btn danger hidden" id="btn-stop">Stop</button>
       </div>
       <div class="stats-bar" id="stats-bar"></div>
-      <div class="log" id="log">Waiting…</div>
+      <div class="log-wrap">
+        <div class="log-toolbar">
+          <span class="note" id="log-meta">Session logs are saved locally as JSON + a readable transcript.</span>
+          <button type="button" class="btn ghost" id="btn-copy-log">Copy JSON</button>
+          <button type="button" class="btn ghost" id="btn-download-log">Download</button>
+        </div>
+        <div class="log" id="log">Waiting…</div>
+      </div>
 
       <div class="srs-report" id="srs-report">
         <h3>SRS reality check</h3>
@@ -443,6 +532,31 @@
                 </tr>
               </thead>
               <tbody id="srs-anomalies"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <div class="srs-report hidden" id="spec-report">
+        <h3>SRS spec check</h3>
+        <p class="note" id="spec-report-empty">Enable expert mode and Load account, then play games to compare quiz picks and updates to the spec.</p>
+        <div class="srs-grid hidden" id="spec-grid"></div>
+        <p class="note hidden" id="spec-mix-note"></p>
+        <details class="hidden" id="spec-issues-wrap">
+          <summary class="note" style="cursor:pointer; font-weight:600;">Spec mismatches</summary>
+          <div class="srs-table-wrap" style="margin-top:0.55rem;">
+            <table class="srs-table">
+              <thead>
+                <tr>
+                  <th>Game</th>
+                  <th>Word</th>
+                  <th>Bucket</th>
+                  <th>Answer</th>
+                  <th>SRS</th>
+                  <th>Issues</th>
+                </tr>
+              </thead>
+              <tbody id="spec-issues"></tbody>
             </table>
           </div>
         </details>
@@ -495,21 +609,58 @@
   <script>
     const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
 
+    const EXPERT_PAGE_SIZE = 100;
+    const EXPERT_MAX_PAGES = 80;
+    const EXPERT_PAGE_DELAY_MS = 40;
+    const DAY_MS = 86400000;
+    const SRS_INTERVAL_DAYS = { 1: 1, 2: 3, 3: 7, 4: 14 };
+
     const state = {
       lists: [],
       countMap: {},
       running: false,
       abort: null,
+      corpusAbort: null,
       stats: {
         gamesPlayed: 0,
         gamesSkipped: 0,
         cardsAnswered: 0,
         errors: 0,
+        quizCount: 0,
+        quizMsSum: 0,
+        quizMsMax: 0,
+        quizMsLast: 0,
       },
       srsReport: null,
+      specReport: null,
+      sessionLog: null,
+      activityLog: [],
       /** @type {Map<number, { id: number, sourceText: string, targetText: string, count: number, firstSrs: number, latestSrs: number, mastered: boolean }>} */
       wordTotals: new Map(),
+      corpus: emptyCorpus(),
     };
+
+    function emptyCorpus() {
+      return {
+        loaded: false,
+        loading: false,
+        favs: [],
+        history: [],
+        favPages: 0,
+        historyPages: 0,
+        favTotal: 0,
+        historyTotal: 0,
+        countMap: {},
+        errors: [],
+        loadedAt: null,
+        userId: "",
+        userLabel: "",
+        fromCache: false,
+        syncedAt: null,
+        deltaFavs: 0,
+        deltaHistory: 0,
+      };
+    }
 
     function emptySrsReport() {
       return {
@@ -536,14 +687,933 @@
     function snapshotCard(card) {
       return {
         id: card.id,
-        sourceText: card.sourceText || "",
-        targetText: card.targetText || "",
+        sourceText: card.sourceText || card.srcText || "",
+        targetText: card.targetText || card.trgText || "",
+        sourceLang: card.sourceLang || card.srcLang || "",
+        targetLang: card.targetLang || card.trgLang || "",
         timesSeen: Number(card.timesSeen ?? 0),
         srsCounter: Number(card.srsCounter ?? 0),
-        memorized: !!card.memorized,
-        lastStatus: card.lastStatus || "",
+        memorized: !!(card.memorized ?? card.isMemorized),
+        lastStatus: card.lastStatus,
         firstSeenDate: card.firstSeenDate || "",
+        lastSeenDate: card.lastSeenDate || "",
+        classification: card.classification || card.status || "",
       };
+    }
+
+    function isExpertMode() {
+      return !!document.getElementById("expert-mode")?.checked;
+    }
+
+    function isLastStatusCorrect(value) {
+      if (value === true || value === 1) return true;
+      if (value === false || value === 0 || value == null || value === "") return false;
+      const s = String(value).trim().toUpperCase();
+      return s === "TRUE" || s === "CORRECT" || s === "KNOW" || s === "YES" || s === "MEMORIZED";
+    }
+
+    function learnStatusOf(item) {
+      return String(item?.classification || item?.status || "").trim().toUpperCase();
+    }
+
+    function itemIsMastered(item) {
+      const status = learnStatusOf(item);
+      const last = String(item?.lastStatus || "").trim().toUpperCase();
+      return !!(item?.memorized || item?.isMemorized) || status === "MEMORIZED" || last === "MEMORIZED";
+    }
+
+    function itemLastStatusCorrect(item) {
+      if (isLastStatusCorrect(item?.lastStatus)) return true;
+      const status = learnStatusOf(item);
+      return status === "CORRECT" || status === "MEMORIZED";
+    }
+
+    function itemHasBeenReviewed(item) {
+      const status = learnStatusOf(item);
+      return Number(item?.timesSeen || 0) > 0
+        || Number(item?.srsCounter || 0) > 0
+        || isLastStatusCorrect(item?.lastStatus)
+        || status === "CORRECT"
+        || status === "INCORRECT"
+        || status === "MEMORIZED";
+    }
+
+    function termKey(srcLang, trgLang, srcText, trgText) {
+      return [
+        String(srcLang || "").toLowerCase(),
+        String(trgLang || "").toLowerCase(),
+        String(srcText || "").trim().toLowerCase(),
+        String(trgText || "").trim().toLowerCase(),
+      ].join("|");
+    }
+
+    function cardTermKey(card) {
+      return termKey(
+        card.sourceLang || card.srcLang,
+        card.targetLang || card.trgLang,
+        card.sourceText || card.srcText,
+        card.targetText || card.trgText
+      );
+    }
+
+    function isIneligibleTerm(srcText, favType, extra) {
+      const len = String(srcText || "").trim().length;
+      if (len > 0 && (len < 3 || len > 24)) return "source length";
+      const type = String(favType || extra?.histType || "").toLowerCase();
+      if (type === "syn" || type === "synonym" || type === "synonyms") return "synonym";
+      if (type === "mt") return "mt";
+      const register = String(extra?.register || extra?.languageLevel || "").toLowerCase();
+      if (register === "rude") return "rude";
+      return "";
+    }
+
+    function listIdsFromFav(fav) {
+      const lists = fav?.lists;
+      if (!Array.isArray(lists)) return [];
+      return lists.map((item) => {
+        if (item == null) return null;
+        if (typeof item === "object") return item.id ?? item.listId;
+        return item;
+      }).filter((id) => id != null);
+    }
+
+    function normalizeLearnFields(raw) {
+      const lc = raw && typeof raw === "object" ? raw : {};
+      const status = String(lc.status || lc.classification || "").toUpperCase();
+      const lastStatus = (lc.lastStatus != null && lc.lastStatus !== "")
+        ? lc.lastStatus
+        : (status === "CORRECT" || status === "INCORRECT" || status === "MEMORIZED" ? status : lc.lastStatus);
+      const memorized = !!(lc.memorized ?? lc.isMemorized)
+        || status === "MEMORIZED"
+        || String(lc.lastStatus || "").toUpperCase() === "MEMORIZED";
+      return {
+        learnId: lc.id ?? null,
+        timesSeen: Number(lc.timesSeen ?? 0),
+        srsCounter: Number(lc.srsCounter ?? 0),
+        memorized,
+        lastStatus,
+        lastStatusCorrect: isLastStatusCorrect(lastStatus) || status === "CORRECT" || status === "MEMORIZED",
+        lastSeenDate: lc.lastSeenDate || "",
+        firstSeenDate: lc.firstSeenDate || "",
+        classification: status,
+        ignored: status === "IGNORED" || !!lc.ignored || !!lc.isIgnored,
+        hasLearnCard: lc.id != null || lc.status != null || lc.timesSeen != null
+          || lc.srsCounter != null || lc.lastStatus != null,
+      };
+    }
+
+    function normalizeFavItem(fav) {
+      const srcText = String(fav.srcText || "").trim();
+      const trgText = String(fav.trgText || "").trim();
+      const srcLang = fav.srcLang || "";
+      const trgLang = fav.trgLang || "";
+      const learn = normalizeLearnFields(fav.learnCard);
+      const ineligible = isIneligibleTerm(srcText, fav.favType, fav);
+      return {
+        origin: "favourites",
+        id: fav.id,
+        ...learn,
+        srcText,
+        trgText,
+        srcLang,
+        trgLang,
+        srcContext: String(fav.srcContext || "").trim(),
+        trgContext: String(fav.trgContext || "").trim(),
+        key: termKey(srcLang, trgLang, srcText, trgText),
+        creationDate: fav.creationDate || "",
+        lastEdit: fav.lastEdit || fav.creationDate || "",
+        favType: String(fav.favType || ""),
+        listIds: listIdsFromFav(fav),
+        ineligible,
+        excluded: learn.ignored || !!ineligible,
+      };
+    }
+
+    function normalizeHistoryItem(item) {
+      const srcText = String(item.srcText || item.word || "").trim();
+      const trgText = String(item.trgText || item.translation1 || "").trim();
+      const srcLang = item.srcLang || "";
+      const trgLang = item.trgLang || "";
+      const learn = normalizeLearnFields(item.learnCard || item);
+      const noResults = !trgText && !item.translation1 && !item.translation2;
+      const ineligible = isIneligibleTerm(srcText, item.histType || item.favType, item)
+        || (noResults ? "no results" : "");
+      const hasOwnLearn = !!item.learnCard;
+      return {
+        origin: "history",
+        id: item.id,
+        ...learn,
+        hasLearnCard: hasOwnLearn ? learn.hasLearnCard : (learn.timesSeen > 0 || learn.memorized || learn.srsCounter > 0),
+        srcText,
+        trgText,
+        srcLang,
+        trgLang,
+        key: termKey(srcLang, trgLang, srcText, trgText),
+        creationDate: item.creationDate || item.viewDate || "",
+        lastEdit: item.lastEdit || item.viewDate || item.creationDate || "",
+        favType: String(item.histType || item.favType || ""),
+        listIds: [],
+        ineligible,
+        excluded: learn.ignored || !!ineligible,
+      };
+    }
+
+    function daysOverdue(item, nowMs) {
+      if (!itemLastStatusCorrect(item)) return Number.POSITIVE_INFINITY;
+      const interval = SRS_INTERVAL_DAYS[item.srsCounter] ?? 0;
+      if (!item.lastSeenDate) return 0;
+      const seen = Date.parse(item.lastSeenDate);
+      if (!Number.isFinite(seen)) return 0;
+      const due = seen + interval * DAY_MS;
+      return (nowMs - due) / DAY_MS;
+    }
+
+    function classifyBucket(item, nowMs) {
+      if (item.ignored) return "excluded";
+      if (item.ineligible) return "ineligible";
+      if (itemIsMastered(item)) return "mastered";
+      if (!item.hasLearnCard || !itemHasBeenReviewed(item)) return "new";
+      if (!itemLastStatusCorrect(item)) return "mistake";
+      const overdue = daysOverdue(item, nowMs);
+      if (overdue < 0) return "not_due";
+      if (overdue <= 30) return "fresh";
+      return "old";
+    }
+
+    function mixTargets(strategy, n) {
+      if (strategy === "NEW") return { new: n, fresh: 0, old: 0 };
+      if (strategy === "SRS") {
+        const nNew = Math.round(n * 0.25);
+        const nFresh = Math.round(n * 0.5);
+        return { new: nNew, fresh: nFresh, old: Math.max(0, n - nNew - nFresh) };
+      }
+      const nNew = Math.round(n * 0.4);
+      const nOld = Math.round(n * 0.1);
+      return { new: nNew, fresh: Math.max(0, n - nNew - nOld), old: nOld };
+    }
+
+    function expectedAfterSpec(before, answer) {
+      const correct = answer === "CORRECT";
+      const timesSeen = Number(before.timesSeen || 0) + 1;
+      let srs = Number(before.srsCounter || 0);
+      let memorized = !!before.memorized;
+      if (correct) {
+        if (!before.memorized && srs >= 4) {
+          srs = 0;
+          memorized = true;
+        } else {
+          srs += 1;
+        }
+      } else {
+        srs = Math.max(0, srs - 1);
+      }
+      if (before.memorized) memorized = true;
+      return {
+        timesSeen,
+        srsCounter: srs,
+        memorized,
+        lastStatusCorrect: correct,
+      };
+    }
+
+    function emptySpecReport() {
+      return {
+        plays: [],
+        mix: {
+          new: 0, mistake: 0, fresh: 0, old: 0,
+          not_due: 0, mastered: 0, ineligible: 0, excluded: 0, unknown: 0,
+        },
+        selectionOk: 0,
+        selectionBad: 0,
+        updateOk: 0,
+        updateBad: 0,
+        seenIds: new Set(),
+      };
+    }
+
+    function filteredCorpusItems(params, nowMs) {
+      const strategy = params.sourceStrategy;
+      const src = String(params.sourceLang || "").toLowerCase();
+      const tgt = String(params.targetLang || "").toLowerCase();
+      const listId = params.vocabularyListId != null ? String(params.vocabularyListId) : "";
+      const fromFavs = strategy !== "HISTORY";
+      const fromHistory = strategy === "HISTORY" || strategy === "ALL";
+      const out = [];
+      const push = (item) => {
+        if (src && String(item.srcLang || "").toLowerCase() !== src) return;
+        if (tgt && String(item.trgLang || "").toLowerCase() !== tgt) return;
+        if (strategy === "VOCABULARYLIST" && listId) {
+          if (!item.listIds.some((id) => String(id) === listId)) return;
+        }
+        out.push({ ...item, bucket: classifyBucket(item, nowMs) });
+      };
+      if (fromFavs) state.corpus.favs.forEach(push);
+      if (fromHistory) state.corpus.history.forEach(push);
+      return out;
+    }
+
+    function corpusIndex(items) {
+      const byLearnId = new Map();
+      const byRowId = new Map();
+      const byKey = new Map();
+      for (const item of items) {
+        if (item.learnId != null) byLearnId.set(item.learnId, item);
+        if (item.id != null) byRowId.set(item.id, item);
+        if (item.key) byKey.set(item.key, item);
+      }
+      return { byLearnId, byRowId, byKey };
+    }
+
+    function findCorpusItem(card, index) {
+      if (card?.id != null && index.byLearnId.has(card.id)) return index.byLearnId.get(card.id);
+      if (card?.id != null && index.byRowId.has(card.id)) return index.byRowId.get(card.id);
+      const key = cardTermKey(card);
+      return index.byKey.get(key) || null;
+    }
+
+    function applyLearnUpdateToItem(item, after, stampLastSeen) {
+      if (!item || !after) return;
+      item.hasLearnCard = true;
+      item.timesSeen = after.timesSeen;
+      item.srsCounter = after.srsCounter;
+      item.memorized = after.memorized;
+      item.lastStatus = after.lastStatus;
+      if (after.classification != null && after.classification !== "") {
+        item.classification = after.classification;
+      }
+      item.lastStatusCorrect = itemLastStatusCorrect(item);
+      if (after.lastSeenDate) item.lastSeenDate = after.lastSeenDate;
+      else if (stampLastSeen !== false) item.lastSeenDate = new Date().toISOString();
+    }
+
+    function applyLearnUpdateToCorpus(card, after) {
+      const patch = (item) => {
+        if (!item) return;
+        const match = (item.learnId != null && item.learnId === card.id)
+          || (item.id != null && item.id === card.id)
+          || item.key === cardTermKey(card);
+        if (match) applyLearnUpdateToItem(item, after, after !== card);
+      };
+      state.corpus.favs.forEach(patch);
+      state.corpus.history.forEach(patch);
+    }
+
+    function bucketCounts(items) {
+      const counts = {
+        new: 0, mistake: 0, fresh: 0, old: 0,
+        not_due: 0, mastered: 0, ineligible: 0, excluded: 0,
+      };
+      for (const item of items) {
+        counts[item.bucket] = (counts[item.bucket] || 0) + 1;
+      }
+      return counts;
+    }
+
+    function assessSelection(bucket, strategy, poolCounts, n) {
+      const issues = [];
+      if (bucket === "ineligible") issues.push("ineligible term in quiz");
+      if (bucket === "excluded") issues.push("ignored/excluded term drawn");
+      if (strategy === "NEW" && bucket !== "new" && bucket !== "unknown") {
+        issues.push("NEW strategy drew a non-new card");
+      }
+      if (bucket === "mastered") {
+        const learningLeft = (poolCounts.mistake || 0) + (poolCounts.fresh || 0)
+          + (poolCounts.old || 0) + (poolCounts.not_due || 0) + (poolCounts.new || 0);
+        if (learningLeft > 0) issues.push("mastered drawn while learning cards remain");
+      }
+      if (bucket === "not_due") {
+        const dueLeft = (poolCounts.mistake || 0) + (poolCounts.fresh || 0)
+          + (poolCounts.old || 0) + (poolCounts.new || 0);
+        if (dueLeft >= n) issues.push("not-due card drawn while enough due/new cards exist");
+      }
+      if (bucket === "old" && strategy === "MIXED" && (poolCounts.fresh || 0) >= n) {
+        issues.push("old review drawn while enough fresh (≤30d) reviews exist");
+      }
+      return issues;
+    }
+
+    function assessUpdate(before, after, answer) {
+      const issues = [];
+      if (!after) {
+        issues.push("no update row");
+        return issues;
+      }
+      const expected = expectedAfterSpec(before, answer);
+      if (after.timesSeen !== expected.timesSeen) {
+        issues.push(`timesSeen ${before.timesSeen}→${after.timesSeen}, expected ${expected.timesSeen}`);
+      }
+      if (after.srsCounter !== expected.srsCounter) {
+        issues.push(`SRS ${before.srsCounter}→${after.srsCounter}, expected ${expected.srsCounter}`);
+      }
+      if (!!after.memorized !== expected.memorized) {
+        issues.push(`memorized ${after.memorized ? "Y" : "N"}, expected ${expected.memorized ? "Y" : "N"}`);
+      }
+      const afterCorrect = isLastStatusCorrect(after.lastStatus);
+      if (afterCorrect !== expected.lastStatusCorrect && after.lastStatus != null && after.lastStatus !== "") {
+        issues.push("lastStatus mismatch");
+      }
+      return issues;
+    }
+
+    function recordSpecPlays(cards, entries, updatedCards, gameIndex, params) {
+      if (!isExpertMode() || !state.corpus.loaded) return;
+      if (!state.specReport) state.specReport = emptySpecReport();
+      const nowMs = Date.now();
+      const pool = filteredCorpusItems(params, nowMs);
+      const index = corpusIndex(pool);
+      const poolCounts = bucketCounts(pool);
+      const afterById = new Map();
+      for (const card of updatedCards || []) {
+        if (card?.id != null) afterById.set(card.id, snapshotCard(card));
+      }
+      const entryById = new Map(entries.map((e) => [e.id, e.status]));
+      const n = params.nbTerms || cards.length;
+
+      for (const card of cards) {
+        const before = snapshotCard(card);
+        const after = afterById.get(card.id) || null;
+        const answer = entryById.get(card.id) || "?";
+        const matched = findCorpusItem(before, index);
+        applyLearnUpdateToCorpus(before, before); // quiz GET: copy SRS fields, don't stamp lastSeen
+        const bucket = classifyBucket({
+          ...before,
+          hasLearnCard: true,
+          lastStatusCorrect: itemLastStatusCorrect(before),
+          ignored: !!(matched && matched.ignored),
+          ineligible: (matched && matched.ineligible) || "",
+        }, nowMs);
+        const selectionIssues = assessSelection(bucket, params.learningStrategy, poolCounts, n);
+        if (!matched && params.sourceStrategy !== "ALL") {
+          selectionIssues.push("not in loaded corpus");
+        }
+        const learningPoolSize = (poolCounts.new || 0) + (poolCounts.mistake || 0)
+          + (poolCounts.fresh || 0) + (poolCounts.old || 0) + (poolCounts.not_due || 0);
+        if (
+          params.learningStrategy === "SRS"
+          && learningPoolSize < 21
+          && (bucket === "fresh" || bucket === "old" || bucket === "not_due")
+          && (poolCounts.new || 0) > 0
+          && state.specReport.seenIds.has(before.id)
+        ) {
+          selectionIssues.push("repeat before 21 unique Learn DB cards");
+        }
+        const updateIssues = assessUpdate(before, after, answer);
+        if (state.specReport.mix[bucket] == null) state.specReport.mix.unknown += 1;
+        else state.specReport.mix[bucket] += 1;
+        if (selectionIssues.length) state.specReport.selectionBad += 1;
+        else state.specReport.selectionOk += 1;
+        if (updateIssues.length) state.specReport.updateBad += 1;
+        else state.specReport.updateOk += 1;
+        state.specReport.plays.push({
+          gameIndex,
+          before,
+          after,
+          answer,
+          bucket,
+          inPool: !!matched,
+          issues: [...selectionIssues, ...updateIssues],
+        });
+        if (before.id != null) state.specReport.seenIds.add(before.id);
+        if (after) applyLearnUpdateToCorpus(before, after);
+      }
+      renderSpecReport();
+      scheduleCorpusSave();
+    }
+
+    function bucketLabel(bucket) {
+      return {
+        new: "New",
+        mistake: "Mistake",
+        fresh: "Fresh review (≤30d)",
+        old: "Old review (>30d)",
+        not_due: "Not yet due",
+        mastered: "Mastered",
+        ineligible: "Ineligible",
+        excluded: "Excluded",
+        unknown: "Unknown",
+      }[bucket] || bucket;
+    }
+
+    function renderCorpusSummary() {
+      const statusEl = document.getElementById("corpus-status");
+      const grid = document.getElementById("corpus-grid");
+      const note = document.getElementById("corpus-filter-note");
+      if (!statusEl) return;
+      const corpus = state.corpus;
+      if (corpus.loading && !corpus.loaded) {
+        statusEl.textContent = "Loading corpus…";
+        return;
+      }
+      if (!corpus.loaded) {
+        statusEl.textContent = "Corpus not loaded. Click Load account.";
+        grid.innerHTML = "";
+        note.textContent = "";
+        return;
+      }
+      const who = corpus.userLabel ? `${corpus.userLabel} · ` : "";
+      const cacheBit = corpus.fromCache
+        ? `cache ${formatAgo(corpus.syncedAt)}`
+        : (corpus.syncedAt ? `saved ${formatAgo(corpus.syncedAt)}` : "");
+      const deltaBit = (corpus.deltaFavs || corpus.deltaHistory)
+        ? ` · +${corpus.deltaFavs} favs / +${corpus.deltaHistory} history this sync`
+        : "";
+      const updating = corpus.loading ? " · updating…" : "";
+      const errBit = corpus.errors.length ? ` · ${corpus.errors.length} warning(s)` : "";
+      statusEl.textContent = `${who}${corpus.favs.length} favourites · ${corpus.history.length} history · ${cacheBit || "in memory"}${deltaBit}${updating}${errBit}`;
+
+      let params;
+      try { params = quizParams(); } catch { params = {}; }
+      const pool = filteredCorpusItems(params, Date.now());
+      const counts = bucketCounts(pool);
+      const cards = [
+        { title: "In scope", value: String(pool.length), sub: `${params.sourceStrategy || "—"} · ${(params.sourceLang || "?").toUpperCase()}→${(params.targetLang || "?").toUpperCase()}`, cls: "" },
+        { title: "New", value: String(counts.new), sub: "Not started / never seen", cls: counts.new ? "ok" : "" },
+        { title: "Mistakes", value: String(counts.mistake), sub: "LastStatus false · due now", cls: "" },
+        { title: "Fresh review", value: String(counts.fresh), sub: "Timer done ≤ 30 days ago", cls: "" },
+        { title: "Old review", value: String(counts.old), sub: "Timer done > 30 days ago", cls: counts.old > counts.fresh ? "warn" : "" },
+        { title: "Not yet due", value: String(counts.not_due), sub: "LastStatus true · timer remaining", cls: "" },
+        { title: "Mastered", value: String(counts.mastered), sub: "Should wait until learning is exhausted", cls: "" },
+        { title: "Skipped", value: String((counts.ineligible || 0) + (counts.excluded || 0)), sub: "Ignored, syn/mt, length <3 or >24", cls: "" },
+      ];
+      grid.innerHTML = cards.map((item) => `
+        <div class="srs-card ${item.cls}">
+          <div class="k">${item.title}</div>
+          <div class="v">${item.value}</div>
+          <div class="sub">${item.sub}</div>
+        </div>
+      `).join("");
+      const targets = mixTargets(params.learningStrategy || "MIXED", getNbTerms());
+      note.textContent = `Spec mix for ${params.learningStrategy} × ${getNbTerms()} cards: ~${targets.new} new · ${targets.fresh} fresh review · ${targets.old} old review (mistakes first). 21-card rule and “never mastered before learning” also apply. Delta sync pages newest first until items older than the last save; use Full reload if SRS on old cards looks stale.`;
+    }
+
+    function renderSpecReport() {
+      const wrap = document.getElementById("spec-report");
+      if (!wrap) return;
+      wrap.classList.toggle("hidden", !isExpertMode());
+      const emptyEl = document.getElementById("spec-report-empty");
+      const grid = document.getElementById("spec-grid");
+      const mixNote = document.getElementById("spec-mix-note");
+      const issuesWrap = document.getElementById("spec-issues-wrap");
+      const issuesBody = document.getElementById("spec-issues");
+      const report = state.specReport;
+
+      if (!isExpertMode()) return;
+      if (!state.corpus.loaded) {
+        emptyEl.classList.remove("hidden");
+        emptyEl.textContent = "Load account in expert mode to fetch the corpus, then play games.";
+        grid.classList.add("hidden");
+        mixNote.classList.add("hidden");
+        issuesWrap.classList.add("hidden");
+        return;
+      }
+      if (!report || !report.plays.length) {
+        emptyEl.classList.remove("hidden");
+        emptyEl.textContent = "Corpus ready. Play games to compare quiz picks and SRS updates to the spec.";
+        grid.classList.add("hidden");
+        mixNote.classList.add("hidden");
+        issuesWrap.classList.add("hidden");
+        return;
+      }
+
+      emptyEl.classList.add("hidden");
+      grid.classList.remove("hidden");
+      const total = report.plays.length;
+      const mix = report.mix;
+      const selRate = report.selectionOk / Math.max(1, report.selectionOk + report.selectionBad);
+      const updRate = report.updateOk / Math.max(1, report.updateOk + report.updateBad);
+      grid.innerHTML = [
+        {
+          title: "Selection vs spec",
+          value: `${report.selectionOk}/${report.selectionOk + report.selectionBad}`,
+          sub: "Cards whose bucket is allowed for this strategy / pool",
+          cls: selRate < 0.85 ? "err" : "ok",
+        },
+        {
+          title: "Updates vs spec",
+          value: `${report.updateOk}/${report.updateOk + report.updateBad}`,
+          sub: "Know: SRS+1 (or master at 4). Don’t know: SRS−1. TimesSeen+1. Memorized stays true.",
+          cls: updRate < 0.85 ? "err" : "ok",
+        },
+        {
+          title: "Drawn mix",
+          value: `${mix.new}n · ${mix.mistake}m · ${mix.fresh}f · ${mix.old}o`,
+          sub: `Not due ${mix.not_due} · mastered ${mix.mastered} · other ${mix.ineligible + mix.excluded + mix.unknown}`,
+          cls: "",
+        },
+        {
+          title: "Mastered drawn",
+          value: String(mix.mastered),
+          sub: `${pct(mix.mastered, total)} of plays`,
+          cls: mix.mastered ? "warn" : "ok",
+        },
+      ].map((item) => `
+        <div class="srs-card ${item.cls}">
+          <div class="k">${item.title}</div>
+          <div class="v">${item.value}</div>
+          <div class="sub">${item.sub}</div>
+        </div>
+      `).join("");
+
+      let params;
+      try { params = quizParams(); } catch { params = { learningStrategy: "MIXED", nbTerms: 7 }; }
+      const targets = mixTargets(params.learningStrategy, params.nbTerms || 7);
+      mixNote.classList.remove("hidden");
+      mixNote.textContent = `Target mix (${params.learningStrategy}): ~${targets.new} new / ${targets.fresh} fresh / ${targets.old} old per game of ${params.nbTerms || 7}. Actual across ${total} card plays: new ${pct(mix.new, total)}, mistakes ${pct(mix.mistake, total)}, fresh ${pct(mix.fresh, total)}, old ${pct(mix.old, total)}.`;
+
+      const mismatches = report.plays.filter((p) => p.issues.length).slice(-100);
+      if (mismatches.length) {
+        issuesWrap.classList.remove("hidden");
+        issuesBody.innerHTML = mismatches.map((play) => {
+          const srs = play.after
+            ? `${play.before.srsCounter}→${play.after.srsCounter}`
+            : `${play.before.srsCounter}→?`;
+          const tags = play.issues.map((issue) => `<span class="issue-tag">${escapeHtml(issue)}</span>`).join("");
+          return `<tr>
+            <td class="num">${play.gameIndex}</td>
+            <td>${escapeHtml(wordLabel(play.before, 36))} <span class="muted-id">#${play.before.id}</span></td>
+            <td>${escapeHtml(bucketLabel(play.bucket))}${play.inPool ? "" : " <span class=\"muted-id\">(no corpus row)</span>"}</td>
+            <td>${play.answer}</td>
+            <td class="num">${srs}</td>
+            <td>${tags}</td>
+          </tr>`;
+        }).join("");
+      } else {
+        issuesWrap.classList.add("hidden");
+        issuesBody.innerHTML = "";
+      }
+    }
+
+    function syncExpertUi() {
+      const on = isExpertMode();
+      document.getElementById("corpus-panel").classList.toggle("hidden", !on);
+      document.getElementById("spec-report").classList.toggle("hidden", !on);
+      if (on) {
+        renderCorpusSummary();
+        renderSpecReport();
+        renderCachedUsers();
+      }
+    }
+
+    const CORPUS_DB_NAME = "srs-game-tester-corpus";
+    const CORPUS_DB_VERSION = 1;
+    const CORPUS_DELTA_OVERLAP_MS = 2 * 60 * 60 * 1000;
+    let corpusDbPromise = null;
+    let corpusSaveTimer = null;
+
+    function currentJwtPayload() {
+      const token = document.getElementById("auth-token")?.value.trim()
+        || FavAuth.loadAuth().authToken
+        || "";
+      return FavAuth.decodeJwtPayload(token) || {};
+    }
+
+    function fnv1a(str) {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i += 1) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(16);
+    }
+
+    function currentUserIdentity() {
+      const payload = currentJwtPayload();
+      const userId = payload.sub || payload.userId || payload.user_id || payload.uid
+        || payload.nameid || payload.nuserId || payload.uniqueId;
+      const label = payload.email || payload.preferred_username || payload.unique_name
+        || payload.name || (userId ? String(userId) : "");
+      if (userId) return { userId: String(userId), label: label || String(userId) };
+      const refresh = document.getElementById("refresh-token")?.value.trim()
+        || FavAuth.loadAuth().refreshToken
+        || "";
+      if (refresh) {
+        const hash = fnv1a(refresh);
+        return { userId: `rt-${hash}`, label: `Saved token ${hash.slice(0, 6)}` };
+      }
+      return { userId: "", label: "" };
+    }
+
+    function openCorpusDb() {
+      if (corpusDbPromise) return corpusDbPromise;
+      corpusDbPromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("IndexedDB is not available in this browser."));
+          return;
+        }
+        const req = indexedDB.open(CORPUS_DB_NAME, CORPUS_DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("users")) {
+            db.createObjectStore("users", { keyPath: "userId" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => {
+          corpusDbPromise = null;
+          reject(req.error || new Error("Could not open corpus database."));
+        };
+      });
+      return corpusDbPromise;
+    }
+
+    function idbReq(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function readUserCorpus(userId) {
+      if (!userId) return null;
+      const db = await openCorpusDb();
+      return idbReq(db.transaction("users").objectStore("users").get(userId));
+    }
+
+    async function listUserCorpora() {
+      try {
+        const db = await openCorpusDb();
+        const rows = await idbReq(db.transaction("users").objectStore("users").getAll());
+        return Array.isArray(rows) ? rows : [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function writeUserCorpus(snap) {
+      const db = await openCorpusDb();
+      await idbReq(db.transaction("users", "readwrite").objectStore("users").put(snap));
+    }
+
+    async function deleteUserCorpus(userId) {
+      if (!userId) return;
+      const db = await openCorpusDb();
+      await idbReq(db.transaction("users", "readwrite").objectStore("users").delete(userId));
+    }
+
+    function snapshotFromState() {
+      const corpus = state.corpus;
+      return {
+        userId: corpus.userId,
+        userLabel: corpus.userLabel,
+        syncedAt: Date.now(),
+        lists: state.lists,
+        countMap: state.countMap,
+        favs: corpus.favs,
+        history: corpus.history,
+        favTotal: corpus.favTotal,
+        historyTotal: corpus.historyTotal,
+        errors: corpus.errors,
+      };
+    }
+
+    async function saveUserCorpusFromState() {
+      if (!state.corpus.loaded || !state.corpus.userId) return;
+      try {
+        const snap = snapshotFromState();
+        await writeUserCorpus(snap);
+        state.corpus.syncedAt = snap.syncedAt;
+        await renderCachedUsers();
+      } catch (err) {
+        logLine(`Could not save corpus locally: ${err.message}`, "warn");
+      }
+    }
+
+    function scheduleCorpusSave() {
+      if (!state.corpus.userId || !state.corpus.loaded) return;
+      clearTimeout(corpusSaveTimer);
+      corpusSaveTimer = setTimeout(() => {
+        saveUserCorpusFromState();
+      }, 800);
+    }
+
+    function formatAgo(ms) {
+      if (!ms) return "never";
+      const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
+      if (sec < 60) return `${sec}s ago`;
+      const min = Math.floor(sec / 60);
+      if (min < 60) return `${min}m ago`;
+      const hr = Math.floor(min / 60);
+      if (hr < 48) return `${hr}h ago`;
+      const days = Math.floor(hr / 24);
+      return `${days}d ago`;
+    }
+
+    function itemRecencyMs(raw) {
+      const lc = raw?.learnCard && typeof raw.learnCard === "object" ? raw.learnCard : {};
+      const stamps = [
+        raw?.lastEdit, raw?.creationDate, raw?.viewDate, raw?.lastSeenDate,
+        lc.lastSeenDate, lc.lastEdit, lc.firstSeenDate,
+      ];
+      let max = 0;
+      for (const value of stamps) {
+        const t = Date.parse(value || "");
+        if (Number.isFinite(t) && t > max) max = t;
+      }
+      return max;
+    }
+
+    function mergeNormalizedById(existing, incoming) {
+      const map = new Map();
+      for (const item of existing || []) {
+        const key = item.id != null ? `id:${item.id}` : `key:${item.key}`;
+        map.set(key, item);
+      }
+      let addedOrUpdated = 0;
+      for (const item of incoming || []) {
+        const key = item.id != null ? `id:${item.id}` : `key:${item.key}`;
+        const prev = map.get(key);
+        map.set(key, item);
+        if (!prev) {
+          addedOrUpdated += 1;
+        } else if (
+          prev.lastEdit !== item.lastEdit
+          || prev.srsCounter !== item.srsCounter
+          || prev.timesSeen !== item.timesSeen
+          || prev.memorized !== item.memorized
+          || prev.lastSeenDate !== item.lastSeenDate
+        ) {
+          addedOrUpdated += 1;
+        }
+      }
+      return { items: [...map.values()], changed: addedOrUpdated };
+    }
+
+    function applyCorpusSnapshot(snap, extras = {}) {
+      state.lists = snap.lists || state.lists || [];
+      state.countMap = snap.countMap || {};
+      state.corpus = {
+        ...emptyCorpus(),
+        loaded: true,
+        loading: !!extras.loading,
+        favs: snap.favs || [],
+        history: snap.history || [],
+        favPages: extras.favPages || 0,
+        historyPages: extras.historyPages || 0,
+        favTotal: snap.favTotal || (snap.favs || []).length,
+        historyTotal: snap.historyTotal || (snap.history || []).length,
+        countMap: snap.countMap || {},
+        errors: snap.errors || [],
+        loadedAt: extras.loadedAt || snap.syncedAt || Date.now(),
+        userId: snap.userId || "",
+        userLabel: snap.userLabel || "",
+        fromCache: !!extras.fromCache,
+        syncedAt: snap.syncedAt || null,
+        deltaFavs: extras.deltaFavs || 0,
+        deltaHistory: extras.deltaHistory || 0,
+      };
+    }
+
+    async function renderCachedUsers() {
+      const wrap = document.getElementById("cached-users");
+      if (!wrap) return;
+      const rows = await listUserCorpora();
+      if (!rows.length) {
+        wrap.innerHTML = "";
+        return;
+      }
+      const currentId = state.corpus.userId || currentUserIdentity().userId;
+      wrap.innerHTML = rows
+        .slice()
+        .sort((a, b) => (b.syncedAt || 0) - (a.syncedAt || 0))
+        .map((row) => {
+          const current = row.userId === currentId ? " current" : "";
+          const favN = (row.favs || []).length;
+          const histN = (row.history || []).length;
+          return `<div class="cache-user${current}" data-user-id="${escapeHtml(row.userId)}">
+            <span class="name">${escapeHtml(row.userLabel || row.userId)}</span>
+            <span class="meta">${favN} favs · ${histN} history · ${formatAgo(row.syncedAt)}</span>
+            <button type="button" class="btn ghost" data-cache-forget="${escapeHtml(row.userId)}">Forget</button>
+          </div>`;
+        })
+        .join("");
+    }
+
+    async function fetchPagedCollection(path, extraParams, label, signal, options = {}) {
+      const items = [];
+      let start = 0;
+      let pages = 0;
+      let reportedTotal = null;
+      let countMap = {};
+      let sinceMs = options.sinceMs || null;
+      const knownIds = options.knownIds || null;
+      const knownCount = options.knownCount || 0;
+      let deltaStopArmed = sinceMs != null;
+
+      while (pages < EXPERT_MAX_PAGES) {
+        if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+        const { data } = await apiGet(path, {
+          order: 10,
+          ...extraParams,
+          length: EXPERT_PAGE_SIZE,
+          start,
+        });
+        const batch = Array.isArray(data.results) ? data.results : [];
+        if (reportedTotal == null) {
+          reportedTotal = Number(data.numFilteredResults ?? data.numTotalResults ?? 0);
+        }
+        if (data.count && typeof data.count === "object") countMap = data.count;
+        else if (data.countByPair && typeof data.countByPair === "object") countMap = data.countByPair;
+        items.push(...batch);
+        pages += 1;
+        const mode = deltaStopArmed ? "delta" : "full";
+        setStatus(null, "Loading corpus…", `${label} ${mode}: ${items.length}${reportedTotal ? "/" + reportedTotal : ""}`);
+        logLine(`${label}: page ${pages} · ${items.length}${reportedTotal ? "/" + reportedTotal : ""} (${mode})`);
+
+        if (deltaStopArmed && batch.length) {
+          const allOld = batch.every((raw) => {
+            const recency = itemRecencyMs(raw);
+            const known = !knownIds || raw.id == null || knownIds.has(raw.id);
+            return recency > 0 && recency <= sinceMs && known;
+          });
+          if (pages === 1 && allOld && reportedTotal > knownCount + 10) {
+            logLine(`${label}: first page looks old but API total is ${reportedTotal} vs cache ${knownCount} — continuing full paging.`, "warn");
+            deltaStopArmed = false;
+          } else if (allOld) {
+            break;
+          }
+        }
+
+        if (batch.length < EXPERT_PAGE_SIZE) break;
+        start += EXPERT_PAGE_SIZE;
+        if (EXPERT_PAGE_DELAY_MS) await sleep(EXPERT_PAGE_DELAY_MS, signal);
+      }
+      return { items, pages, total: reportedTotal ?? items.length, countMap };
+    }
+
+    async function fetchHistoryCorpus(signal, options) {
+      try {
+        return await fetchPagedCollection("/user/history", { learningInfo: true }, "History", signal, options);
+      } catch (err) {
+        logLine(`History with learningInfo failed (${err.message}), retrying plain…`, "warn");
+        try {
+          return await fetchPagedCollection("/user/history", {}, "History", signal, options);
+        } catch (err2) {
+          const msg = `History fetch failed: ${err2.message}`;
+          logLine(msg, "warn");
+          return { items: [], pages: 0, total: 0, countMap: {}, error: msg };
+        }
+      }
+    }
+
+    function fillCountMapFromCorpus() {
+      if (!Object.keys(state.countMap).length && state.corpus.countMap) {
+        state.countMap = state.corpus.countMap;
+      }
+      if (!Object.keys(state.countMap).length) {
+        const count = {};
+        for (const item of [...state.corpus.favs, ...state.corpus.history]) {
+          if (!item.srcLang || !item.trgLang) continue;
+          const pair = `${item.srcLang}-${item.trgLang}`;
+          count[pair] = (count[pair] || 0) + 1;
+        }
+        state.countMap = count;
+      } else {
+        for (const item of state.corpus.history) {
+          if (!item.srcLang || !item.trgLang) continue;
+          const pair = `${item.srcLang}-${item.trgLang}`;
+          if (!state.countMap[pair]) state.countMap[pair] = 0;
+        }
+      }
     }
 
     function wordLabel(card, maxLen = 48) {
@@ -655,6 +1725,15 @@
       return timesSeen <= 1 ? "new" : "review";
     }
 
+    function isMasteryReset(before, after, answer) {
+      return answer === "CORRECT"
+        && !!after
+        && !before.memorized
+        && after.memorized
+        && Number(before.srsCounter) >= 4
+        && Number(after.srsCounter) === 0;
+    }
+
     function recordSrsPlays(cards, entries, updateData, gameIndex) {
       if (!state.srsReport) state.srsReport = emptySrsReport();
       const afterById = new Map();
@@ -684,8 +1763,11 @@
             else agg.correctSrsDecreased += 1;
             if (!before.memorized) {
               agg.correctNonMastered += 1;
-              if (after.srsCounter > before.srsCounter) agg.correctNonMasteredSrsIncreased += 1;
-              else agg.correctNonMasteredSrsUnchanged += 1;
+              if (after.srsCounter > before.srsCounter || isMasteryReset(before, after, answer)) {
+                agg.correctNonMasteredSrsIncreased += 1;
+              } else {
+                agg.correctNonMasteredSrsUnchanged += 1;
+              }
             }
             if (!before.memorized && after.memorized) agg.correctNewlyMemorized += 1;
           } else if (answer === "INCORRECT") {
@@ -744,7 +1826,7 @@
         {
           title: "CORRECT → SRS ↑",
           value: `${a.correctNonMasteredSrsIncreased} / ${a.correctNonMastered}`,
-          sub: `Learning cards only (excl. already mastered). Unchanged: ${a.correctNonMasteredSrsUnchanged}. All CORRECT: ${a.correctSrsIncreased}/${a.correctAnswers} increased.`,
+          sub: `Learning cards only (excl. already mastered). Includes Know at SRS 4 → 0 + mastered. Unchanged: ${a.correctNonMasteredSrsUnchanged}. All CORRECT: ${a.correctSrsIncreased}/${a.correctAnswers} increased.`,
           cls: srsOkRate < 0.8 && a.correctNonMastered > 0 ? "warn" : "ok",
         },
         {
@@ -776,6 +1858,7 @@
       const anomalies = report.plays.filter((play) => {
         if (!play.after) return true;
         if (play.before.memorized) return true;
+        if (isMasteryReset(play.before, play.after, play.answer)) return false;
         if (
           play.answer === "CORRECT" &&
           !play.before.memorized &&
@@ -794,7 +1877,8 @@
             play.after &&
             play.answer === "CORRECT" &&
             !play.before.memorized &&
-            play.after.srsCounter <= play.before.srsCounter
+            play.after.srsCounter <= play.before.srsCounter &&
+            !isMasteryReset(play.before, play.after, play.answer)
           ) {
             issues.push("SRS not increased");
           }
@@ -829,12 +1913,30 @@
         .replace(/"/g, "&quot;");
     }
 
+    function logQuizTiming() {
+      const s = state.stats;
+      if (!s.quizCount) return;
+      logLine(
+        `Quiz GET /user/learn/cards/quiz: ${s.quizCount} request(s) · avg ${formatMs(quizAvgMs())} · max ${formatMs(s.quizMsMax)} · last ${formatMs(s.quizMsLast)}`
+      );
+    }
+
     function logSrsSummary() {
       const a = state.srsReport?.aggregates;
       if (!a?.totalPlays) return;
       logLine(
         `SRS summary: new ${pct(a.newPlays, a.totalPlays)} · mastered drawn ${pct(a.masteredAtDraw, a.totalPlays)} · learning+CORRECT→SRS↑ ${pct(a.correctNonMasteredSrsIncreased, a.correctNonMastered)}`,
         a.masteredAtDraw / a.totalPlays > 0.15 ? "warn" : "ok"
+      );
+    }
+
+    function logSpecSummary() {
+      const r = state.specReport;
+      if (!r?.plays?.length) return;
+      const total = r.plays.length;
+      logLine(
+        `Spec check: selection ${r.selectionOk}/${r.selectionOk + r.selectionBad} ok · updates ${r.updateOk}/${r.updateOk + r.updateBad} ok · mix new ${pct(r.mix.new, total)} / mistakes ${pct(r.mix.mistake, total)} / fresh ${pct(r.mix.fresh, total)} / old ${pct(r.mix.old, total)} / mastered ${pct(r.mix.mastered, total)}`,
+        r.selectionBad || r.updateBad ? "warn" : "ok"
       );
     }
 
@@ -885,17 +1987,395 @@
       return { url, data };
     }
 
+    function newSessionId() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+      return `srs-${stamp}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    function corpusSnapshotForLog(params) {
+      if (!isExpertMode() || !state.corpus.loaded) return null;
+      const pool = filteredCorpusItems(params, Date.now());
+      return {
+        userId: state.corpus.userId || "",
+        userLabel: state.corpus.userLabel || "",
+        favs: state.corpus.favs.length,
+        history: state.corpus.history.length,
+        inScope: pool.length,
+        buckets: bucketCounts(pool),
+      };
+    }
+
+    function compactLearn(card) {
+      if (!card) return null;
+      return {
+        id: card.id ?? null,
+        sourceText: card.sourceText || card.srcText || "",
+        targetText: card.targetText || card.trgText || "",
+        timesSeen: Number(card.timesSeen ?? 0),
+        srsCounter: Number(card.srsCounter ?? 0),
+        memorized: !!(card.memorized ?? card.isMemorized),
+        lastStatus: card.lastStatus ?? null,
+        lastSeenDate: card.lastSeenDate || "",
+        classification: card.classification || card.status || "",
+      };
+    }
+
+    function srsIssuesForPlay(before, after, answer) {
+      const issues = [];
+      if (!after) issues.push("no update row");
+      if (before.memorized) issues.push("mastered drawn");
+      if (
+        after &&
+        answer === "CORRECT" &&
+        !before.memorized &&
+        after.srsCounter <= before.srsCounter &&
+        !isMasteryReset(before, after, answer)
+      ) {
+        issues.push("SRS not increased");
+      }
+      return issues;
+    }
+
+    function uniqueIssues(list) {
+      const out = [];
+      for (const item of list || []) {
+        if (item && !out.includes(item)) out.push(item);
+      }
+      return out;
+    }
+
+    function mixFromBuckets(cardLogs) {
+      const mix = {
+        new: 0, mistake: 0, fresh: 0, old: 0, not_due: 0,
+        mastered: 0, ineligible: 0, excluded: 0, review: 0, unknown: 0,
+      };
+      for (const card of cardLogs) {
+        const key = Object.prototype.hasOwnProperty.call(mix, card.bucket) ? card.bucket : "unknown";
+        mix[key] += 1;
+      }
+      return mix;
+    }
+
+    function formatMix(mix) {
+      if (!mix) return "";
+      return Object.entries(mix)
+        .filter(([, n]) => n)
+        .map(([k, n]) => `${n} ${k}`)
+        .join(", ");
+    }
+
+    function cardPlayLine(card) {
+      const srs = card.after
+        ? `${card.before.srsCounter}→${card.after.srsCounter}`
+        : `${card.before.srsCounter}→?`;
+      const seen = card.after
+        ? `${card.before.timesSeen}→${card.after.timesSeen}`
+        : String(card.before.timesSeen);
+      const mem = card.before.memorized || card.after?.memorized
+        ? ` · mem ${card.before.memorized ? "Y" : "N"}→${card.after?.memorized ? "Y" : "N"}`
+        : "";
+      const issues = card.issues.length ? ` · ${card.issues.join("; ")}` : "";
+      return `  · ${card.word} · ${card.bucket} · ${card.answer} · SRS ${srs} · seen ${seen}${mem}${issues}`;
+    }
+
+    function buildGameLog({ gameIndex, cards, entries, updatedCards, quizMs, requested, skipped, reason, poolSnap }) {
+      const specById = new Map(
+        (state.specReport?.plays || [])
+          .filter((play) => play.gameIndex === gameIndex)
+          .map((play) => [play.before.id, play])
+      );
+      const entryById = new Map((entries || []).map((e) => [e.id, e.status]));
+      const afterById = new Map((updatedCards || []).map((card) => [card.id, snapshotCard(card)]));
+      const cardLogs = (cards || []).map((card) => {
+        const spec = specById.get(card.id);
+        const before = snapshotCard(card);
+        const after = afterById.get(card.id) || spec?.after || null;
+        const answer = entryById.get(card.id) || spec?.answer || "?";
+        const bucket = spec?.bucket || classifyNewness(before.timesSeen);
+        const issues = uniqueIssues([
+          ...(spec?.issues || []),
+          ...srsIssuesForPlay(before, after, answer),
+        ]);
+        return {
+          id: before.id,
+          word: wordWithId(before, 40),
+          answer,
+          bucket,
+          inPool: spec ? !!spec.inPool : null,
+          before: compactLearn(before),
+          after: compactLearn(after),
+          issues,
+        };
+      });
+      return {
+        gameIndex,
+        skipped: !!skipped,
+        reason: reason || "",
+        quizMs: Math.round(quizMs || 0),
+        requested: requested || 0,
+        returned: (cards || []).length,
+        mix: mixFromBuckets(cardLogs),
+        pool: poolSnap,
+        cards: cardLogs,
+        hasIssues: cardLogs.some((card) => card.issues.length),
+      };
+    }
+
+    function sessionTranscript(log) {
+      if (!log) return "";
+      const lines = [];
+      lines.push(`# ${log.sessionId} ${log.startedAt}${log.endedAt ? " → " + log.endedAt : ""}`);
+      if (log.params) {
+        lines.push(
+          `params ${log.params.sourceLang}→${log.params.targetLang} · ${log.params.sourceStrategy} · ${log.params.learningStrategy} · n=${log.params.nbTerms} · answers=${log.answerMode}`
+        );
+      }
+      if (log.expectedMix) {
+        lines.push(`expected mix ~${log.expectedMix.new} new · ${log.expectedMix.fresh} fresh · ${log.expectedMix.old} old`);
+      }
+      if (log.corpus?.buckets) {
+        const b = log.corpus.buckets;
+        lines.push(
+          `pool ${log.corpus.inScope} in scope · new ${b.new} · mistakes ${b.mistake} · fresh ${b.fresh} · old ${b.old} · not due ${b.not_due} · mastered ${b.mastered}`
+        );
+      }
+      for (const event of log.events || []) {
+        if (event.kind === "console") lines.push(event.text);
+      }
+      if (log.summary) {
+        lines.push(`summary ${JSON.stringify(log.summary)}`);
+      }
+      return lines.join("\n");
+    }
+
+    function serializeSessionLog() {
+      const log = state.sessionLog;
+      if (!log) return null;
+      return JSON.parse(JSON.stringify({
+        ...log,
+        transcript: sessionTranscript(log),
+      }));
+    }
+
+    function updateLogMeta(text) {
+      const el = document.getElementById("log-meta");
+      if (el) el.textContent = text;
+    }
+
+    let persistTimer = null;
+    function flushSessionLog() {
+      const payload = serializeSessionLog();
+      if (!payload) return;
+      if (!LIVE_API_ENABLED) {
+        updateLogMeta(`${payload.sessionId} · in memory only (run locally to save files)`);
+        return;
+      }
+      fetch("/srs-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+          if (ok && data.ok) {
+            updateLogMeta(`Saved ${data.file} · ${data.latestTxt || data.latest}`);
+          } else {
+            updateLogMeta(data.error || "Disk save failed");
+          }
+        })
+        .catch((err) => {
+          updateLogMeta(`Disk save failed: ${err.message}`);
+        });
+    }
+
+    function persistSessionLog(immediate) {
+      if (persistTimer) {
+        clearTimeout(persistTimer);
+        persistTimer = null;
+      }
+      if (immediate) {
+        flushSessionLog();
+        return;
+      }
+      persistTimer = setTimeout(flushSessionLog, 200);
+    }
+
+    function startSessionLog(params, extra) {
+      const expectedMix = mixTargets(params.learningStrategy, params.nbTerms);
+      state.sessionLog = {
+        sessionId: newSessionId(),
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        status: "running",
+        user: {
+          userId: state.corpus.userId || currentUserIdentity().userId || "",
+          label: state.corpus.userLabel || currentUserIdentity().label || "",
+        },
+        params,
+        answerMode: extra.answerMode,
+        totalGamesRequested: extra.totalGames,
+        delayMs: extra.delayMs,
+        expertMode: isExpertMode(),
+        expectedMix,
+        corpus: corpusSnapshotForLog(params),
+        recentActivity: state.activityLog.slice(-50),
+        events: [],
+        games: [],
+        stats: null,
+        srsAggregates: null,
+        spec: null,
+        summary: null,
+      };
+      updateLogMeta(`${state.sessionLog.sessionId} · recording…`);
+    }
+
+    function appendGameToLog(gameLog) {
+      if (!state.sessionLog || !gameLog) return;
+      state.sessionLog.games.push(gameLog);
+      persistSessionLog();
+    }
+
+    function finishSessionLog(status) {
+      const log = state.sessionLog;
+      if (!log) return;
+      log.endedAt = new Date().toISOString();
+      log.status = status || "done";
+      log.stats = { ...state.stats };
+      log.srsAggregates = state.srsReport?.aggregates ? { ...state.srsReport.aggregates } : null;
+      if (state.specReport) {
+        log.spec = {
+          mix: { ...state.specReport.mix },
+          selectionOk: state.specReport.selectionOk,
+          selectionBad: state.specReport.selectionBad,
+          updateOk: state.specReport.updateOk,
+          updateBad: state.specReport.updateBad,
+        };
+      }
+      const durationMs = Date.parse(log.endedAt) - Date.parse(log.startedAt);
+      log.summary = {
+        status: log.status,
+        durationMs: Number.isFinite(durationMs) ? durationMs : null,
+        games: log.games.length,
+        skipped: log.games.filter((g) => g.skipped).length,
+        cards: log.games.reduce((n, g) => n + (g.cards?.length || 0), 0),
+        issueCards: log.games.reduce((n, g) => n + (g.cards || []).filter((c) => c.issues.length).length, 0),
+      };
+      persistSessionLog(true);
+    }
+
+    async function copySessionLog() {
+      const payload = serializeSessionLog();
+      if (!payload) {
+        updateLogMeta("No session to copy yet — play games first.");
+        return;
+      }
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      updateLogMeta(`Copied ${payload.sessionId} JSON`);
+    }
+
+    function downloadSessionLog() {
+      const payload = serializeSessionLog();
+      if (!payload) {
+        updateLogMeta("No session to download yet — play games first.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${payload.sessionId}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      updateLogMeta(`Downloaded ${payload.sessionId}.json`);
+    }
+
+    function downloadCorpusExport() {
+      if (!isExpertMode() || !state.corpus.loaded) {
+        logLine("Load the expert-mode corpus first, then export.", "warn");
+        return;
+      }
+      const syncedAt = state.corpus.syncedAt || state.corpus.loadedAt || Date.now();
+      const payload = {
+        syncedAt,
+        syncedAtIso: new Date(syncedAt).toISOString(),
+        userId: state.corpus.userId || "",
+        userLabel: state.corpus.userLabel || "",
+        sourceStrategy: "FAVOURITES",
+        favTotal: state.corpus.favTotal || state.corpus.favs.length,
+        historyTotal: state.corpus.historyTotal || state.corpus.history.length,
+        countMap: state.corpus.countMap || state.countMap || {},
+        favs: state.corpus.favs,
+        history: state.corpus.history,
+      };
+      const stamp = new Date(syncedAt).toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const name = `corpus-${payload.userId || "user"}-${stamp}.json`;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      logLine(
+        `Exported corpus (${payload.favs.length} favs) → ${name}. Move that file into Android_testing/ before scoring.`,
+        "ok"
+      );
+    }
+
     function logLine(text, cls) {
       const el = document.getElementById("log");
+      if (el.textContent === "Waiting…") el.textContent = "";
       const span = document.createElement("span");
       if (cls) span.className = cls;
       span.textContent = text + "\n";
       el.append(span);
       el.scrollTop = el.scrollHeight;
+      const event = {
+        t: new Date().toISOString(),
+        level: cls || "info",
+        kind: "console",
+        text,
+      };
+      state.activityLog.push(event);
+      if (state.activityLog.length > 400) state.activityLog.splice(0, state.activityLog.length - 400);
+      if (state.sessionLog) state.sessionLog.events.push(event);
     }
 
     function clearLog() {
       document.getElementById("log").textContent = "";
+    }
+
+    function emptyRunStats() {
+      return {
+        gamesPlayed: 0,
+        gamesSkipped: 0,
+        cardsAnswered: 0,
+        errors: 0,
+        quizCount: 0,
+        quizMsSum: 0,
+        quizMsMax: 0,
+        quizMsLast: 0,
+      };
+    }
+
+    function formatMs(ms) {
+      if (!Number.isFinite(ms)) return "—";
+      if (ms < 1000) return `${Math.round(ms)}ms`;
+      return `${(ms / 1000).toFixed(2)}s`;
+    }
+
+    function recordQuizTiming(ms) {
+      const s = state.stats;
+      const n = Math.max(0, Number(ms) || 0);
+      s.quizCount += 1;
+      s.quizMsSum += n;
+      s.quizMsLast = n;
+      if (n > s.quizMsMax) s.quizMsMax = n;
+    }
+
+    function quizAvgMs() {
+      const s = state.stats;
+      return s.quizCount ? s.quizMsSum / s.quizCount : 0;
     }
 
     function renderStats() {
@@ -905,6 +2385,9 @@
         { k: "Skipped", v: s.gamesSkipped },
         { k: "Cards answered", v: s.cardsAnswered },
         { k: "Errors", v: s.errors },
+        { k: "Quiz avg", v: s.quizCount ? formatMs(quizAvgMs()) : "—" },
+        { k: "Quiz max", v: s.quizCount ? formatMs(s.quizMsMax) : "—" },
+        { k: "Quiz last", v: s.quizCount ? formatMs(s.quizMsLast) : "—" },
       ].map((it) => `<div class="stat"><div class="k">${it.k}</div><div class="v">${it.v}</div></div>`).join("");
     }
 
@@ -1089,30 +2572,149 @@
       return params;
     }
 
-    async function loadAccount() {
+    async function loadAccount(options = {}) {
+      const fullReload = !!options.fullReload;
       saveAuth();
       if (!FavAuth.authReadyForLiveApi()) {
         setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
         document.getElementById("auth-panel").open = true;
         return;
       }
+      if (state.corpusAbort) state.corpusAbort.abort();
+      const expert = isExpertMode();
+      const corpusAbort = new AbortController();
+      state.corpusAbort = corpusAbort;
       setStatus(null, "Loading…", "");
       try {
         await FavAuth.ensureAccessToken();
         updateJwtUi();
-        const [favsRes, listsRes] = await Promise.all([
-          apiGet("/user/favourites", { length: 1, start: 0, learningInfo: true, includeDef: "YES" }),
-          apiGet("/user/favouritesLists", { length: 100, start: 0, learningInfo: true, includeDef: "YES" }),
-        ]);
-        state.countMap = favsRes.data.count || favsRes.data.countByPair || {};
+        const listsRes = await apiGet("/user/favouritesLists", { length: 100, start: 0, learningInfo: true, includeDef: "YES" });
         state.lists = listsRes.data.results || [];
+        const identity = currentUserIdentity();
+        if (expert && !identity.userId) {
+          logLine("Could not identify the user from the access token — corpus will stay in memory only.", "warn");
+        }
+
+        if (expert) {
+          document.getElementById("btn-stop").classList.remove("hidden");
+          document.getElementById("btn-load-account").disabled = true;
+          document.getElementById("btn-run").disabled = true;
+
+          let cached = null;
+          if (identity.userId && !fullReload) {
+            try { cached = await readUserCorpus(identity.userId); }
+            catch (err) { logLine(`Local corpus read failed: ${err.message}`, "warn"); }
+          }
+
+          if (cached) {
+            applyCorpusSnapshot({ ...cached, userId: identity.userId, userLabel: identity.label || cached.userLabel }, {
+              fromCache: true,
+              loading: true,
+              loadedAt: Date.now(),
+            });
+            fillCountMapFromCorpus();
+            populateLanguageSelects(state.countMap);
+            populateLists(state.lists);
+            renderCorpusSummary();
+            logLine(`Loaded local cache for ${identity.label || identity.userId} (${formatAgo(cached.syncedAt)}). Fetching updates…`);
+          } else {
+            state.corpus = emptyCorpus();
+            state.corpus.loading = true;
+            state.corpus.userId = identity.userId;
+            state.corpus.userLabel = identity.label;
+            renderCorpusSummary();
+            logLine(fullReload
+              ? "Expert mode: full reload (ignoring local cache)…"
+              : "Expert mode: first save for this user, paging Favourites and History…");
+          }
+
+          const sinceMs = !fullReload && cached?.syncedAt
+            ? cached.syncedAt - CORPUS_DELTA_OVERLAP_MS
+            : null;
+          const favOptions = {
+            sinceMs,
+            knownIds: new Set((cached?.favs || []).map((item) => item.id).filter((id) => id != null)),
+            knownCount: (cached?.favs || []).length,
+          };
+          const histOptions = {
+            sinceMs,
+            knownIds: new Set((cached?.history || []).map((item) => item.id).filter((id) => id != null)),
+            knownCount: (cached?.history || []).length,
+          };
+          const favParams = { learningInfo: true, includeDef: "YES", includeSyn: "YES" };
+          const favsP = fetchPagedCollection("/user/favourites", favParams, "Favourites", corpusAbort.signal, favOptions);
+          const histP = fetchHistoryCorpus(corpusAbort.signal, histOptions);
+          const [favsAll, histAll] = await Promise.all([favsP, histP]);
+
+          const favsMerged = mergeNormalizedById(
+            fullReload ? [] : (cached?.favs || []),
+            favsAll.items.map(normalizeFavItem)
+          );
+          const histMerged = mergeNormalizedById(
+            fullReload ? [] : (cached?.history || []),
+            histAll.items.map(normalizeHistoryItem)
+          );
+
+          const countMap = favsAll.countMap && Object.keys(favsAll.countMap).length
+            ? favsAll.countMap
+            : (cached?.countMap || {});
+          applyCorpusSnapshot({
+            userId: identity.userId,
+            userLabel: identity.label,
+            syncedAt: Date.now(),
+            lists: state.lists,
+            countMap,
+            favs: favsMerged.items,
+            history: histMerged.items,
+            favTotal: favsAll.total || favsMerged.items.length,
+            historyTotal: histAll.total || histMerged.items.length,
+            errors: histAll.error ? [histAll.error] : [],
+          }, {
+            fromCache: !!cached && !fullReload,
+            loading: false,
+            loadedAt: Date.now(),
+            favPages: favsAll.pages,
+            historyPages: histAll.pages,
+            deltaFavs: favsMerged.changed,
+            deltaHistory: histMerged.changed,
+          });
+          fillCountMapFromCorpus();
+          await saveUserCorpusFromState();
+          logLine(
+            `Corpus saved for ${identity.label || identity.userId}: ${state.corpus.favs.length} favs (${favsAll.pages} pages) · ${state.corpus.history.length} history (${histAll.pages} pages) · ${favsMerged.changed} fav updates · ${histMerged.changed} history updates`,
+            "ok"
+          );
+        } else {
+          state.corpus = emptyCorpus();
+          const favsRes = await apiGet("/user/favourites", { length: 1, start: 0, learningInfo: true, includeDef: "YES" });
+          state.countMap = favsRes.data.count || favsRes.data.countByPair || {};
+        }
+
         populateLanguageSelects(state.countMap);
         populateLists(state.lists);
-        setStatus(true, "OK", `${Object.keys(state.countMap).length} pairs · ${state.lists.length} lists`);
+        syncExpertUi();
+        const extra = expert
+          ? ` · ${state.corpus.favs.length} favs / ${state.corpus.history.length} history`
+          : "";
+        setStatus(true, "OK", `${Object.keys(state.countMap).length} pairs · ${state.lists.length} lists${extra}`);
         document.getElementById("auth-panel").open = false;
       } catch (err) {
-        setStatus(false, "Error", "");
-        logLine(err.message, "err");
+        if (err.name === "AbortError") {
+          setStatus(false, "Stopped", "Corpus load aborted");
+          logLine("Corpus load stopped.", "warn");
+        } else {
+          setStatus(false, "Error", "");
+          logLine(err.message, "err");
+        }
+        state.corpus.loading = false;
+        renderCorpusSummary();
+      } finally {
+        if (state.corpusAbort === corpusAbort) state.corpusAbort = null;
+        document.getElementById("btn-load-account").disabled = false;
+        if (!state.running) {
+          document.getElementById("btn-run").disabled = false;
+          document.getElementById("btn-stop").classList.add("hidden");
+        }
       }
     }
 
@@ -1130,10 +2732,20 @@
     async function playOneGame(gameIndex, answerMode, signal) {
       const params = quizParams();
       const requested = params.nbTerms;
-      const quizRes = await apiGet("/user/learn/cards/quiz", params);
+      const poolSnap = corpusSnapshotForLog(params);
+      const quizStarted = performance.now();
+      let quizRes;
+      try {
+        quizRes = await apiGet("/user/learn/cards/quiz", params);
+      } finally {
+        recordQuizTiming(performance.now() - quizStarted);
+        renderStats();
+      }
+      const quizMs = state.stats.quizMsLast;
       document.getElementById("raw-quiz").textContent = JSON.stringify({
         requestUrl: quizRes.url,
         requestedNbTerms: requested,
+        quizMs: Math.round(quizMs),
         ...quizRes.data,
       }, null, 2);
 
@@ -1143,7 +2755,18 @@
 
       if (!cards.length) {
         const reason = quiz.reason || quiz.message || "no cards";
-        logLine(`Game ${gameIndex}: skipped — ${reason}`, "warn");
+        logLine(`Game ${gameIndex}: skipped — ${reason} · quiz ${formatMs(quizMs)}`, "warn");
+        appendGameToLog(buildGameLog({
+          gameIndex,
+          cards: [],
+          entries: [],
+          updatedCards: [],
+          quizMs,
+          requested,
+          skipped: true,
+          reason,
+          poolSnap,
+        }));
         state.stats.gamesSkipped += 1;
         renderStats();
         return { skipped: true };
@@ -1168,17 +2791,29 @@
       const updatedCards = extractUpdateCards(updateRes.data);
       recordSrsPlays(cards, entries, { entries: updatedCards }, gameIndex);
       renderSrsReport();
+      recordSpecPlays(cards, entries, updatedCards, gameIndex, params);
+      renderCorpusSummary();
 
-      const statuses = entries.reduce((acc, e) => {
-        acc[e.status] = (acc[e.status] || 0) + 1;
-        return acc;
-      }, {});
-      const statusSummary = Object.entries(statuses).map(([k, v]) => `${v}×${k}`).join(", ");
-      const wordSummary = cards.map((c) => wordWithId(c, 32)).join(", ");
+      const gameLog = buildGameLog({
+        gameIndex,
+        cards,
+        entries,
+        updatedCards,
+        quizMs,
+        requested,
+        skipped: false,
+        poolSnap,
+      });
+      const mixSummary = formatMix(gameLog.mix);
+      const statusCls = cards.length < requested || gameLog.hasIssues ? "warn" : "ok";
       logLine(
-        `Game ${gameIndex}: ${cards.length}/${requested} cards [${statusSummary}] — ${wordSummary}`,
-        cards.length < requested ? "warn" : "ok"
+        `Game ${gameIndex}: ${cards.length}/${requested} cards [${mixSummary || "—"}] · quiz ${formatMs(quizMs)}`,
+        statusCls
       );
+      for (const card of gameLog.cards) {
+        logLine(cardPlayLine(card), card.issues.length ? "issue" : "dim");
+      }
+      appendGameToLog(gameLog);
 
       recordWordPlays(cards, updatedCards);
       state.stats.gamesPlayed += 1;
@@ -1199,6 +2834,15 @@
         return;
       }
 
+      if (state.corpus.loading) {
+        logLine("Wait for the expert corpus load to finish.", "warn");
+        return;
+      }
+
+      if (isExpertMode() && !state.corpus.loaded) {
+        logLine("Expert mode is on but the corpus is not loaded yet. Click Load account first (or turn expert mode off).", "warn");
+      }
+
       let params;
       try {
         params = validateBeforeRun();
@@ -1213,12 +2857,23 @@
 
       state.running = true;
       state.abort = new AbortController();
-      state.stats = { gamesPlayed: 0, gamesSkipped: 0, cardsAnswered: 0, errors: 0 };
+      state.stats = emptyRunStats();
       state.srsReport = emptySrsReport();
+      state.specReport = emptySpecReport();
       renderStats();
       renderSrsReport();
+      renderSpecReport();
       clearLog();
+      startSessionLog(params, { answerMode, totalGames, delayMs });
       logLine(`Starting ${totalGames} game(s) · ${params.sourceLang}→${params.targetLang} · ${params.sourceStrategy} · ${params.learningStrategy} · answers: ${answerMode}`);
+      if (state.sessionLog.corpus?.buckets) {
+        const b = state.sessionLog.corpus.buckets;
+        logLine(
+          `Pool: ${state.sessionLog.corpus.inScope} in scope · new ${b.new} · mistakes ${b.mistake} · fresh ${b.fresh} · old ${b.old} · not due ${b.not_due} · mastered ${b.mastered}`
+        );
+      }
+      const mix = state.sessionLog.expectedMix;
+      logLine(`Spec target mix: ~${mix.new} new · ${mix.fresh} fresh · ${mix.old} old (mistakes first)`);
 
       document.getElementById("btn-run").disabled = true;
       document.getElementById("btn-stop").classList.remove("hidden");
@@ -1234,21 +2889,32 @@
         }
         if (state.abort.signal.aborted) {
           logLine("Stopped by user.", "warn");
+          logQuizTiming();
+          logSrsSummary();
+          logSpecSummary();
+          finishSessionLog("stopped");
           setRunStatus("Stopped", "");
         } else {
           logLine("Done.", "ok");
+          logQuizTiming();
           logSrsSummary();
+          logSpecSummary();
+          finishSessionLog("done");
           setRunStatus("Done", "ok");
         }
       } catch (err) {
         if (err.name === "AbortError") {
           logLine("Stopped.", "warn");
+          logQuizTiming();
           logSrsSummary();
+          logSpecSummary();
+          finishSessionLog("stopped");
           setRunStatus("Stopped", "");
         } else {
           state.stats.errors += 1;
           renderStats();
           logLine(err.message, "err");
+          finishSessionLog("error");
           setRunStatus("Error", "err");
         }
       } finally {
@@ -1261,19 +2927,76 @@
 
     function stopGames() {
       if (state.abort) state.abort.abort();
+      if (state.corpusAbort) state.corpusAbort.abort();
     }
 
     function init() {
       FavAuth.initAuthUi();
 
-      document.getElementById("btn-load-account").onclick = loadAccount;
+      document.getElementById("btn-load-account").onclick = () => loadAccount();
       document.getElementById("btn-run").onclick = runGames;
       document.getElementById("btn-stop").onclick = stopGames;
       document.getElementById("btn-clear-word-totals").onclick = clearWordTotals;
-      document.getElementById("source-strategy").addEventListener("change", syncSourceFieldsVisibility);
-      document.getElementById("vocabulary-list").addEventListener("change", updateListLangHint);
+      document.getElementById("btn-copy-log").onclick = () => copySessionLog().catch((err) => updateLogMeta(err.message));
+      document.getElementById("btn-download-log").onclick = downloadSessionLog;
+      document.getElementById("btn-corpus-full-reload").onclick = () => {
+        if (!isExpertMode()) {
+          logLine("Turn on expert mode first.", "warn");
+          return;
+        }
+        loadAccount({ fullReload: true });
+      };
+      document.getElementById("btn-corpus-export").onclick = downloadCorpusExport;
+      document.getElementById("btn-corpus-forget").onclick = async () => {
+        const userId = state.corpus.userId || currentUserIdentity().userId;
+        if (!userId) {
+          logLine("No cached user to forget.", "warn");
+          return;
+        }
+        try {
+          await deleteUserCorpus(userId);
+          if (state.corpus.userId === userId) {
+            state.corpus = emptyCorpus();
+            renderCorpusSummary();
+          }
+          await renderCachedUsers();
+          logLine(`Forgot local corpus for ${userId}.`);
+        } catch (err) {
+          logLine(err.message, "err");
+        }
+      };
+      document.getElementById("cached-users").addEventListener("click", async (ev) => {
+        const btn = ev.target.closest("[data-cache-forget]");
+        if (!btn) return;
+        const userId = btn.getAttribute("data-cache-forget");
+        try {
+          await deleteUserCorpus(userId);
+          if (state.corpus.userId === userId) {
+            state.corpus = emptyCorpus();
+            renderCorpusSummary();
+          }
+          await renderCachedUsers();
+          logLine(`Forgot local corpus for ${userId}.`);
+        } catch (err) {
+          logLine(err.message, "err");
+        }
+      });
+      document.getElementById("expert-mode").addEventListener("change", syncExpertUi);
+      document.getElementById("source-strategy").addEventListener("change", () => {
+        syncSourceFieldsVisibility();
+        renderCorpusSummary();
+      });
+      document.getElementById("vocabulary-list").addEventListener("change", () => {
+        updateListLangHint();
+        renderCorpusSummary();
+      });
+      document.getElementById("source-lang").addEventListener("change", renderCorpusSummary);
+      document.getElementById("target-lang").addEventListener("change", renderCorpusSummary);
+      document.getElementById("learning-strategy").addEventListener("change", renderCorpusSummary);
+      document.getElementById("nb-terms").addEventListener("change", renderCorpusSummary);
 
       syncSourceFieldsVisibility();
+      syncExpertUi();
       renderStats();
       renderSrsReport();
       renderWordTotals();

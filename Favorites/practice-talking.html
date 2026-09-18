@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice talking | Reverso Vocabulary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #222c31;
+      --muted: #607d8b;
+      --muted-strong: #546d79;
+      --line: #dee4e7;
+      --line-soft: #eaeef1;
+      --surface: #ffffff;
+      --bg: #f2f9ff;
+      --bg-grad: linear-gradient(180deg, #d9ecfc 0.78%, #f8fcfe 33.72%, #f2f9ff 100%);
+      --blue: #2a8bdf;
+      --blue-hover: #0a6cc2;
+      --blue-deep: #0970ac;
+      --blue-soft: #e8f3fc;
+      --blue-tint: #d9ecfc;
+      --blue-link: #157cd5;
+      --green: #36ba69;
+      --green-bg: #f3fbf6;
+      --err: #e45c45;
+      --err-bg: #fdf5f4;
+      --user-ink: #c44a38;
+      --user-bg: #fdf5f4;
+      --user-line: #f0b8ae;
+      --warn-bg: #fff8e5;
+      --warn-ink: #95581a;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      --sans: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --radius-btn: 10px 10px 7px 7px;
+      --radius-card: 12px;
+      --header-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      background-image: var(--bg-grad);
+      background-attachment: fixed;
+      color: var(--ink);
+      line-height: 1.45;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: var(--header-h);
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 1.25rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+      min-width: 0;
+    }
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: conic-gradient(from 210deg, #ec523b 0 50%, #2a8bdf 50% 100%);
+      flex: 0 0 auto;
+      position: relative;
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .brand-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--blue-deep);
+      letter-spacing: -0.01em;
+    }
+    .brand-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--line);
+      flex: 0 0 auto;
+    }
+    .brand-product {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--blue-link);
+    }
+    .site-header nav {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .site-header nav a {
+      color: var(--muted-strong);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .site-header nav a:hover {
+      color: var(--blue-hover);
+      background: var(--blue-soft);
+    }
+    .site-header nav a.active {
+      color: var(--blue-hover);
+      border-color: var(--line);
+      background: #fff;
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 0.25rem 0 0.35rem;
+    }
+    .back-link {
+      color: var(--blue-link);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      width: fit-content;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .hero h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .hero-meta {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .hero p.lead {
+      color: var(--ink);
+      font-size: 0.95rem;
+      max-width: 40rem;
+      margin-top: 0.15rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 1rem 1.1rem;
+      box-shadow: 0 1px 0 rgba(5, 54, 97, 0.03);
+    }
+    .card + .card { margin-top: 0; }
+    .card h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.7rem;
+    }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .card-head h2 { margin-bottom: 0; }
+    .card-head .grow { flex: 1; }
+
+    details.auth-panel {
+      padding: 0;
+      overflow: hidden;
+    }
+    details.auth-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      padding: 0.85rem 1.1rem;
+      user-select: none;
+    }
+    details.auth-panel > summary::-webkit-details-marker { display: none; }
+    details.auth-panel > summary .sum-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--blue-deep);
+      font-weight: 600;
+    }
+    details.auth-panel > summary .sum-chev { margin-left: auto; color: var(--muted); }
+    details.auth-panel[open] > summary .sum-chev { transform: rotate(180deg); }
+    details.auth-panel .auth-body {
+      padding: 0 1.1rem 1rem;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 0.85rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 140px; min-width: 0; }
+    .field.full { flex: 1 1 100%; }
+    label { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.18);
+    }
+    textarea.auth { min-height: 2.6rem; font-family: var(--mono); font-size: 0.72rem; }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--blue);
+      border-radius: var(--radius-btn);
+      padding: 0.55rem 1rem;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn:hover:not(:disabled) { background: var(--blue-hover); border-color: var(--blue-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.ghost {
+      background: #fff;
+      color: var(--muted-strong);
+      border-color: var(--line);
+    }
+    .btn.ghost:hover:not(:disabled) {
+      color: var(--blue-hover);
+      border-color: var(--blue);
+      background: var(--blue-soft);
+    }
+    .btn.danger {
+      background: #fff;
+      color: var(--err);
+      border-color: #f3b8ae;
+    }
+    .btn.danger:hover:not(:disabled) {
+      background: var(--err-bg);
+      border-color: var(--err);
+    }
+    .btn.success,
+    .btn.primary-wide {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .btn.primary-wide {
+      width: 100%;
+      height: 48px;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.74rem; padding: 0.18rem 0.55rem; border-radius: 999px;
+      background: var(--blue-soft); color: var(--blue-deep); font-weight: 500;
+    }
+    .pill.ok { background: var(--green-bg); color: var(--green); }
+    .pill.err { background: var(--err-bg); color: var(--err); }
+    .pill.run { background: var(--blue-tint); color: var(--blue-hover); }
+    .note { font-size: 0.8rem; color: var(--muted); }
+    .note code {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: var(--blue-soft);
+      color: var(--blue-deep);
+      padding: 0.05rem 0.3rem;
+      border-radius: 4px;
+    }
+    .jwt-badge {
+      display: inline-flex; font-size: 0.74rem; padding: 0.18rem 0.55rem;
+      border-radius: 999px; background: var(--line-soft); color: var(--muted); font-weight: 500;
+    }
+    .jwt-badge.ok { background: var(--green-bg); color: var(--green); }
+    .jwt-badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .jwt-badge.err { background: var(--err-bg); color: var(--err); }
+    .jwt-warn-inline {
+      margin-top: 0.45rem; font-size: 0.78rem; padding: 0.45rem 0.6rem;
+      border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink);
+      border: 1px solid #ffecb4; display: none;
+    }
+    .jwt-warn-inline.show { display: block; }
+    .jwt-warn-inline.err { background: var(--err-bg); color: var(--err); border-color: #f8d7d1; }
+    .hidden { display: none !important; }
+
+    .setup-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.85rem;
+    }
+    .setup-actions .btn.primary-wide {
+      width: auto;
+      flex: 1 1 220px;
+      min-width: 180px;
+    }
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .scenario-card {
+      appearance: none;
+      text-align: left;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      background: #fff;
+      padding: 0.85rem 0.9rem;
+      cursor: pointer;
+      font: inherit;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-height: 148px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .scenario-card:hover {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+    }
+    .scenario-card.selected {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.18);
+      background: var(--blue-soft);
+    }
+    .scenario-card .sc-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--blue-deep);
+    }
+    .scenario-card .sc-goal {
+      font-size: 0.8rem;
+      color: var(--muted-strong);
+      line-height: 1.35;
+      flex: 1;
+    }
+    .scenario-card .sc-persona {
+      font-size: 0.75rem;
+      color: var(--ink);
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--line-soft);
+      line-height: 1.35;
+    }
+    .scenario-card .sc-persona strong {
+      font-weight: 600;
+      color: var(--blue-hover);
+    }
+    .scenario-card .sc-you {
+      font-size: 0.75rem;
+      color: var(--user-ink);
+      line-height: 1.35;
+    }
+    .scenario-card .sc-you strong {
+      font-weight: 600;
+    }
+    .role-banner {
+      display: none;
+      margin: 0 0 0.85rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      background: linear-gradient(135deg, var(--user-bg) 0 48%, var(--blue-soft) 52% 100%);
+      gap: 0.55rem 1.25rem;
+      flex-wrap: wrap;
+    }
+    .role-banner.show {
+      display: flex;
+    }
+    .role-banner .role-block {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .role-banner .role-label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.15rem;
+    }
+    .role-banner .role-block.you .role-label { color: var(--user-ink); }
+    .role-banner .role-block.them .role-label { color: var(--blue-hover); }
+    .role-banner .role-main {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+    .role-banner .role-sub {
+      font-size: 0.78rem;
+      color: var(--muted-strong);
+      line-height: 1.35;
+      margin-top: 0.15rem;
+    }
+    .scenario-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+      margin-top: 0.85rem;
+    }
+    .scenario-toolbar .btn.primary-wide {
+      flex: 1 1 240px;
+      width: auto;
+      min-width: 180px;
+    }
+
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      grid-template-rows: minmax(200px, 1fr) auto;
+      gap: 0.85rem;
+      align-items: stretch;
+    }
+    .chat-layout > .chat-log {
+      grid-column: 1;
+      grid-row: 1;
+      min-height: 280px;
+      max-height: 420px;
+    }
+    .chat-layout > .vocab-rail {
+      grid-column: 2;
+      grid-row: 1;
+      min-height: 0;
+    }
+    .chat-layout > .talk-controls {
+      grid-column: 1;
+      grid-row: 2;
+      padding-top: 0;
+    }
+    .chat-layout > .score-panel {
+      grid-column: 2;
+      grid-row: 2;
+      align-self: start;
+    }
+    @media (max-width: 720px) {
+      .chat-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+      .chat-layout > .chat-log,
+      .chat-layout > .vocab-rail,
+      .chat-layout > .talk-controls,
+      .chat-layout > .score-panel {
+        grid-column: 1;
+        grid-row: auto;
+      }
+      .site-header { height: auto; min-height: 48px; padding: 0.55rem 1rem; flex-wrap: wrap; }
+      :root { --header-h: 48px; }
+    }
+    .chat-log {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 0.95rem;
+      min-height: 280px;
+      max-height: 420px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .bubble {
+      max-width: 85%;
+      padding: 0.6rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: var(--blue-soft);
+      border: 1px solid var(--blue-tint);
+      color: var(--ink);
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      border: 1px solid var(--user-line);
+      color: var(--ink);
+    }
+    .bubble .who {
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .bubble.bot .who {
+      color: var(--blue-hover);
+    }
+    .bubble.user .who {
+      color: var(--user-ink);
+    }
+    .bubble .body {
+      word-wrap: break-word;
+    }
+    .term-link {
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-thickness: 1.5px;
+      cursor: help;
+    }
+    .bubble.bot .term-link {
+      color: var(--blue-hover);
+      text-decoration-color: var(--blue);
+    }
+    .bubble.user .term-link {
+      color: var(--user-ink);
+      text-decoration-color: var(--err);
+    }
+    .term-tip-float {
+      position: fixed;
+      z-index: 1000;
+      max-width: min(280px, calc(100vw - 24px));
+      padding: 0.35rem 0.55rem;
+      border-radius: 8px;
+      background: #1f2a30;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 500;
+      line-height: 1.35;
+      box-shadow: 0 8px 24px rgba(15, 40, 60, 0.22);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      visibility: hidden;
+    }
+    .term-tip-float.show {
+      opacity: 1;
+      transform: translateY(0);
+      visibility: visible;
+    }
+    .chat-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: auto;
+      text-align: center;
+      max-width: 16rem;
+    }
+    .vocab-rail {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 0.75rem;
+      max-height: 420px;
+      overflow: auto;
+    }
+    .vocab-rail h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.55rem;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: flex-start;
+    }
+    .chip {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.28rem 0.55rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--ink);
+      text-align: left;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      max-width: 100%;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .chip:not(.spoken):hover {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue-hover);
+    }
+    .chip .chip-label {
+      line-height: 1.25;
+    }
+    .chip.spoken .chip-label {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-thickness: 1.5px;
+    }
+    .chip .chip-tr {
+      display: block;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      font-size: 0.7rem;
+      font-weight: 400;
+      line-height: 1.3;
+      color: var(--muted-strong);
+      transition: max-height 0.18s ease, opacity 0.18s ease, margin 0.18s ease;
+    }
+    .chip.spoken:hover .chip-tr,
+    .chip.spoken:focus-visible .chip-tr {
+      max-height: 3em;
+      opacity: 1;
+      margin-top: 0.2rem;
+    }
+    .chip.spoken-user {
+      background: var(--user-bg);
+      border-color: var(--user-line);
+      color: var(--user-ink);
+    }
+    .chip.spoken-user .chip-label {
+      text-decoration-color: var(--err);
+    }
+    .chip.spoken-ai {
+      background: var(--blue-tint);
+      border-color: #a2d0f5;
+      color: var(--blue-hover);
+    }
+    .chip.spoken-ai .chip-label {
+      text-decoration-color: var(--blue);
+    }
+    .chip.spoken-user.spoken-ai {
+      background: linear-gradient(135deg, var(--user-bg) 0 48%, var(--blue-soft) 52% 100%);
+      border-color: #c4a8d4;
+      color: #5a3d6e;
+    }
+    .chip.spoken-user.spoken-ai .chip-label {
+      text-decoration-color: #8b5a9e;
+    }
+    .chip.hint {
+      background: var(--warn-bg);
+      border-color: #ffecb4;
+      color: var(--warn-ink);
+    }
+    .talk-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 1rem 0 0.35rem;
+    }
+    .think-logo {
+      width: 56px;
+      height: 56px;
+      margin: 0.1rem 0;
+      border-radius: 50%;
+      object-fit: cover;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.88);
+      pointer-events: none;
+      transition: opacity 0.28s ease, visibility 0.28s ease;
+      box-shadow: 0 2px 10px rgba(10, 108, 194, 0.18);
+    }
+    .think-logo.is-on {
+      opacity: 1;
+      visibility: visible;
+      animation: logo-breathe 1.65s ease-in-out infinite;
+    }
+    @keyframes logo-breathe {
+      0%, 100% {
+        transform: scale(0.94);
+        box-shadow: 0 2px 8px rgba(42, 139, 223, 0.2);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 6px 22px rgba(42, 139, 223, 0.45);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .think-logo.is-on {
+        animation: none;
+        transform: scale(1);
+        opacity: 0.95;
+      }
+    }
+    .btn-talk {
+      width: 132px;
+      height: 132px;
+      border-radius: 999px;
+      border: 3px solid #fff;
+      background: var(--blue);
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      touch-action: none;
+      box-shadow: 0 8px 24px rgba(10, 108, 194, 0.28);
+    }
+    .btn-talk:hover:not(:disabled) { background: var(--blue-hover); }
+    .btn-talk:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-talk.recording {
+      background: var(--err);
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+    .type-test {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-top: 0.15rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fafcfd;
+    }
+    .type-test.show { display: flex; }
+    .type-test-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+    }
+    .type-test-row {
+      display: flex;
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+    .type-test textarea {
+      flex: 1;
+      min-height: 2.6rem;
+      max-height: 6rem;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.4rem 0.5rem;
+      font: inherit;
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+    .type-test textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.15);
+    }
+    .type-test .btn {
+      align-self: flex-end;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(228, 92, 69, 0.35); }
+      50% { box-shadow: 0 0 0 14px rgba(228, 92, 69, 0); }
+    }
+    .status-line {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+    .status-line.run { color: var(--blue-hover); }
+    .status-line.err { color: var(--err); }
+    .hint-banner {
+      font-size: 0.8rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 8px;
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+      border: 1px solid #ffecb4;
+      display: none;
+      width: 100%;
+      text-align: center;
+    }
+    .hint-banner.show { display: block; }
+    .guidance-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+      padding: 0.85rem 0.85rem 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+    .guidance-panel.show {
+      display: flex;
+    }
+    .guidance-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .reply-choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+    }
+    .reply-choice {
+      appearance: none;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-height: 100%;
+      padding: 0.75rem 0.8rem 0.7rem;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .reply-choice:hover {
+      border-color: var(--blue);
+      background: #f7fbff;
+    }
+    .reply-choice:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.22);
+    }
+    .reply-choice.selected {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.16);
+    }
+    .reply-choice:nth-child(2):hover {
+      border-color: #d9897c;
+      background: #fff8f6;
+    }
+    .reply-choice:nth-child(2).selected {
+      border-color: var(--user-ink);
+      background: var(--user-bg);
+      box-shadow: 0 0 0 3px rgba(196, 74, 56, 0.14);
+    }
+    .reply-choice-kicker {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--blue-hover);
+    }
+    .reply-choice:nth-child(2) .reply-choice-kicker {
+      color: var(--user-ink);
+    }
+    .reply-choice-text {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+    .reply-choice-text .term-link {
+      color: inherit;
+    }
+    .reply-choice-cta {
+      margin-top: auto;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .reply-choice.selected .reply-choice-cta {
+      color: var(--blue-hover);
+      font-weight: 600;
+    }
+    .reply-choice:nth-child(2).selected .reply-choice-cta {
+      color: var(--user-ink);
+    }
+    .reply-or {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .reply-or::before,
+    .reply-or::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+    .reply-invent {
+      appearance: none;
+      width: 100%;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.7rem 0.85rem;
+      border: 1.5px dashed var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--muted-strong);
+      text-align: center;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+    .reply-invent:hover {
+      border-color: var(--blue);
+      color: var(--blue-hover);
+      background: #f7fbff;
+    }
+    .reply-invent:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.22);
+    }
+    .reply-invent.selected {
+      border-style: solid;
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue-hover);
+      box-shadow: 0 0 0 3px rgba(42, 139, 223, 0.16);
+    }
+    .reply-choice:disabled,
+    .reply-invent:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    @media (max-width: 560px) {
+      .reply-choices { grid-template-columns: 1fr; }
+    }
+    .score-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 0.28rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfdff;
+    }
+    .score-panel.show { display: flex; }
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.25rem 0.4rem;
+      align-items: center;
+    }
+    .score-row .score-name {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      grid-column: 1;
+    }
+    .score-meta {
+      font-size: 0.65rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      text-align: right;
+      grid-column: 2;
+    }
+    .score-bar {
+      height: 5px;
+      border-radius: 999px;
+      background: var(--line-soft);
+      overflow: hidden;
+      grid-column: 1 / -1;
+    }
+    .score-bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      transition: width 0.35s ease;
+    }
+    .score-bar.talk > span { background: var(--user-ink); }
+    .score-bar.vocab > span { background: var(--blue); }
+    .score-bar.done > span { background: var(--green); }
+    .score-done {
+      display: none;
+      margin: 0.15rem 0 0;
+      padding: 0.3rem 0.4rem;
+      border-radius: 6px;
+      background: var(--green-bg);
+      color: #1f7a45;
+      border: 1px solid #b7e4c7;
+      font-size: 0.68rem;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .score-done.show { display: block; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/practice-talking.html" aria-label="Reverso Vocabulary">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Reverso</span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-product">Vocabulary</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/filtering-demo.html">Filtering demo</a>
+      <a href="/srs-game-tester.html">SRS tester</a>
+      <a href="/learning-progress.html">Progress</a>
+      <a class="active" href="/practice-talking.html">Practice talking</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <a class="back-link" href="/srs-game-tester.html">← Back</a>
+      <h1 id="hero-title">Practice talking</h1>
+      <p class="hero-meta" id="hero-meta">Pick one of your lists · speak in the source language</p>
+      <p class="lead">Have a short spoken conversation around the words in your list. After each question you’ll get two ready-made replies — or invent your own.</p>
+    </section>
+
+    <details class="card auth-panel" id="auth-panel" open>
+      <summary>
+        <span class="sum-title">Auth &amp; load</span>
+        <span id="jwt-badge" class="jwt-badge">No token</span>
+        <span id="status-pill" class="pill">Idle</span>
+        <span id="status-meta" class="note"></span>
+        <span class="sum-chev">▾</span>
+      </summary>
+      <div class="auth-body">
+        <div class="row">
+          <div class="field full">
+            <label for="refresh-token">Refresh token</label>
+            <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field full">
+            <label for="auth-token">Access token (auto)</label>
+            <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
+          </div>
+        </div>
+        <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
+        <div class="row" style="margin-top:0.55rem;">
+          <div class="field">
+            <label for="origin-header">X-Reverso-Origin</label>
+            <input id="origin-header" type="text" value="mainweb">
+          </div>
+          <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
+          <button type="button" class="btn" id="btn-load-account">Load account</button>
+        </div>
+        <p class="note" style="margin-top:0.55rem;">
+          Local server only: lists go through <code>/proxy</code>. Paste your refresh token once;
+          the page refreshes the JWT via <code>POST /api/v1/account/accessToken</code>.
+        </p>
+      </div>
+    </details>
+
+    <section class="card">
+      <h2>Your list</h2>
+      <div class="row">
+        <div class="field">
+          <label for="vocabulary-list">Vocabulary list</label>
+          <select id="vocabulary-list">
+            <option value="">— load account first —</option>
+          </select>
+          <p class="note hidden" id="list-lang-hint" style="margin-top:0.35rem;"></p>
+        </div>
+      </div>
+      <div class="setup-actions">
+        <button type="button" class="btn primary-wide" id="btn-start">Choose scenarios</button>
+        <button type="button" class="btn danger hidden" id="btn-end">Stop</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="scenario-panel">
+      <div class="card-head">
+        <h2>Pick a scenario</h2>
+        <span class="note grow" id="scenario-meta">5 situations based on your list</span>
+      </div>
+      <div class="scenario-grid" id="scenario-grid"></div>
+      <div class="scenario-toolbar">
+        <button type="button" class="btn ghost" id="btn-regen-scenarios">Generate new set</button>
+        <button type="button" class="btn primary-wide" id="btn-begin-scenario" disabled>Begin with this scenario</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Conversation</h2>
+        <span class="note grow">Pick a reply, then hold the mic to read it · or invent your own</span>
+        <button type="button" class="btn danger hidden" id="btn-stop-chat">Stop</button>
+        <span id="run-pill" class="pill">Ready</span>
+      </div>
+      <div class="role-banner" id="role-banner" aria-live="polite">
+        <div class="role-block you">
+          <span class="role-label">You play</span>
+          <div class="role-main" id="role-you-main">—</div>
+          <div class="role-sub" id="role-you-sub"></div>
+        </div>
+        <div class="role-block them">
+          <span class="role-label">Talking with</span>
+          <div class="role-main" id="role-them-main">—</div>
+          <div class="role-sub" id="role-them-sub"></div>
+        </div>
+      </div>
+
+      <div class="chat-layout">
+          <div class="chat-log" id="chat-log">
+            <div class="chat-empty" id="chat-empty">Load a list and start a conversation.</div>
+          </div>
+          <aside class="vocab-rail">
+            <h3>Terms</h3>
+            <div class="chips" id="vocab-chips">
+              <span class="note">No terms loaded</span>
+            </div>
+          </aside>
+          <div class="talk-controls">
+            <div class="status-line" id="talk-status">Idle</div>
+            <img class="think-logo" id="think-logo" src="/logo.png" width="64" height="64" alt="" aria-hidden="true">
+            <div class="guidance-panel" id="guidance-panel">
+              <div class="guidance-label">Pick a reply — then read it aloud</div>
+              <div class="reply-choices" id="reply-choices"></div>
+              <div class="reply-or">or</div>
+              <button type="button" class="reply-invent" id="btn-invent" aria-pressed="false">Invent your own answer</button>
+            </div>
+            <button type="button" class="btn-talk" id="btn-talk" disabled>Hold to talk</button>
+            <div class="type-test" id="type-test">
+              <div class="type-test-label">Type instead (testing)</div>
+              <div class="type-test-row">
+                <textarea id="type-answer" rows="2" placeholder="Type your reply…" disabled></textarea>
+                <button type="button" class="btn ghost" id="btn-type-send" disabled>Send</button>
+              </div>
+            </div>
+            <p class="note">The bot speaks the list’s <strong>source</strong> language. Hover a highlighted word for its translation.</p>
+            <div class="hint-banner" id="hint-banner"></div>
+          </div>
+          <div class="score-panel" id="score-panel">
+            <div class="score-row">
+              <span class="score-name">Speaking</span>
+              <span class="score-meta" id="score-talk-meta">0/400</span>
+              <div class="score-bar talk" id="score-talk-bar"><span id="score-talk-fill"></span></div>
+            </div>
+            <div class="score-row">
+              <span class="score-name">Words used</span>
+              <span class="score-meta" id="score-vocab-meta">0/8</span>
+              <div class="score-bar vocab" id="score-vocab-bar"><span id="score-vocab-fill"></span></div>
+            </div>
+            <p class="score-done" id="score-done">You’ve talked enough — nice work!</p>
+          </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/fav-auth.js"></script>
+  <script src="/voice-config.js"></script>
+  <script>
+    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const MAX_VOCAB = 80;
+    const MIN_RECORD_MS = 350;
+
+    const TALK_CHAR_TARGET = 400;
+    const VOCAB_HIT_TARGET = 8;
+
+    const SCENARIO_STORAGE_PREFIX = "practice-talk.scenarios.v4:";
+
+    const state = {
+      lists: [],
+      vocabulary: [],
+      messages: [],
+      active: false,
+      busy: false,
+      practiceLang: "",
+      hintLang: "",
+      listId: "",
+      listName: "",
+      scenarios: [],
+      scenario: null,
+      lastGuidance: { suggestedWords: [], hintAnswers: [], selected: null },
+      scores: {
+        talkChars: 0,
+        talkTurns: 0,
+        talkTarget: TALK_CHAR_TARGET,
+        vocabUsed: 0,
+        vocabTarget: VOCAB_HIT_TARGET,
+        enough: false,
+        enoughAnnounced: false,
+      },
+      spokenBy: { user: new Set(), ai: new Set() },
+      mediaRecorder: null,
+      mediaStream: null,
+      chunks: [],
+      recordStartedAt: 0,
+      audioEl: null,
+    };
+
+    function el(id) {
+      return document.getElementById(id);
+    }
+
+    function setStatus(ok, badge, meta) {
+      const pill = el("status-pill");
+      pill.textContent = badge;
+      pill.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+      el("status-meta").textContent = meta || "";
+    }
+
+    function setRunStatus(text, cls) {
+      const pill = el("run-pill");
+      pill.textContent = text;
+      pill.className = "pill " + (cls || "");
+    }
+
+    function setTalkStatus(text, cls) {
+      const line = el("talk-status");
+      line.textContent = text;
+      line.className = "status-line " + (cls || "");
+      const thinking = /thinking|transcribing|loading list/i.test(String(text || ""));
+      el("think-logo")?.classList.toggle("is-on", thinking);
+    }
+
+    function qs(params) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v === undefined || v === null || v === "") continue;
+        sp.set(k, String(v));
+      }
+      return sp.toString();
+    }
+
+    async function apiGet(path, params) {
+      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
+      const url = "/proxy" + path + "?" + qs(params);
+      const res = await FavAuth.fetchWithAuth(url);
+      const data = await FavAuth.readJsonResponse(res, path);
+      return { url, data };
+    }
+
+    function saveAuth() {
+      FavAuth.saveAuth();
+    }
+
+    function getSelectedList() {
+      const id = el("vocabulary-list").value;
+      if (!id) return null;
+      return state.lists.find((list) => String(list.id ?? list.listId) === String(id)) || null;
+    }
+
+    function listLangs(list) {
+      if (!list) return { sourceLang: "", targetLang: "" };
+      return {
+        sourceLang: list.srcLang || list.sourceLang || "",
+        targetLang: list.trgLang || list.targetLang || "",
+      };
+    }
+
+    function populateLists(results) {
+      const sel = el("vocabulary-list");
+      sel.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = results.length ? "— pick a list —" : "No lists";
+      sel.append(empty);
+      for (const list of results) {
+        const id = list.id ?? list.listId;
+        if (id == null) continue;
+        const { sourceLang, targetLang } = listLangs(list);
+        const opt = document.createElement("option");
+        opt.value = String(id);
+        const n = Number(list.numFavourites ?? 0);
+        const dir = sourceLang && targetLang ? ` · ${sourceLang}→${targetLang}` : "";
+        opt.textContent = `${list.listName || list.name || "List " + id} (${n} favs${dir})`;
+        sel.append(opt);
+      }
+      updateListLangHint();
+    }
+
+    function listDisplayName(list) {
+      return (list && (list.listName || list.name)) || "List";
+    }
+
+    function setHeroTitle(title) {
+      const titleEl = el("hero-title");
+      if (titleEl) titleEl.textContent = title;
+      document.title = `${title} | Reverso Vocabulary`;
+    }
+
+    function updateListLangHint() {
+      const hint = el("list-lang-hint");
+      const meta = el("hero-meta");
+      const list = getSelectedList();
+      const { sourceLang, targetLang } = listLangs(list);
+      if (sourceLang && targetLang) {
+        const n = Number(list.numFavourites ?? 0);
+        const name = listDisplayName(list);
+        hint.textContent = `Practice language (source): ${sourceLang.toUpperCase()} · translation: ${targetLang.toUpperCase()}`;
+        hint.classList.remove("hidden");
+        setHeroTitle(`Conversation about ${name}`);
+        if (meta) {
+          meta.textContent = `${n} entries · speak ${sourceLang.toUpperCase()} · ${sourceLang.toUpperCase()} → ${targetLang.toUpperCase()}`;
+        }
+      } else if (sourceLang) {
+        const n = Number(list.numFavourites ?? 0);
+        const name = listDisplayName(list);
+        hint.textContent = `Practice language (source): ${sourceLang.toUpperCase()}`;
+        hint.classList.remove("hidden");
+        setHeroTitle(`Conversation about ${name}`);
+        if (meta) meta.textContent = `${n} entries · speak ${sourceLang.toUpperCase()}`;
+      } else if (list) {
+        const name = listDisplayName(list);
+        hint.textContent = "This list has no srcLang/trgLang in the API response.";
+        hint.classList.remove("hidden");
+        setHeroTitle(`Conversation about ${name}`);
+        if (meta) meta.textContent = "Pick a list with language metadata";
+      } else {
+        hint.textContent = "";
+        hint.classList.add("hidden");
+        setHeroTitle("Practice talking");
+        if (meta) meta.textContent = "Pick one of your lists · speak in the source language";
+      }
+    }
+
+    function clearChat() {
+      const log = el("chat-log");
+      log.innerHTML = "";
+      const empty = document.createElement("div");
+      empty.className = "chat-empty";
+      empty.id = "chat-empty";
+      empty.textContent = "Load a list and start a conversation.";
+      log.append(empty);
+      hideTermTip();
+    }
+
+    function ensureTermTip() {
+      let tip = document.getElementById("term-tip-float");
+      if (!tip) {
+        tip = document.createElement("div");
+        tip.id = "term-tip-float";
+        tip.className = "term-tip-float";
+        tip.setAttribute("role", "tooltip");
+        document.body.append(tip);
+      }
+      return tip;
+    }
+
+    function hideTermTip() {
+      const tip = document.getElementById("term-tip-float");
+      if (tip) tip.classList.remove("show");
+    }
+
+    function showTermTip(anchor, text) {
+      if (!text) return;
+      const tip = ensureTermTip();
+      tip.textContent = text;
+      tip.classList.add("show");
+      const rect = anchor.getBoundingClientRect();
+      const tipRect = tip.getBoundingClientRect();
+      let left = rect.left + rect.width / 2 - tipRect.width / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+      let top = rect.bottom + 8;
+      if (top + tipRect.height > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - tipRect.height - 8);
+      }
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    }
+
+    function vocabLinkCandidates() {
+      const out = [];
+      const seen = new Set();
+      for (const term of state.vocabulary) {
+        const src = String(term.srcText || "").trim();
+        const trg = String(term.trgText || "").trim();
+        if (src && trg) {
+          const a = src.toLowerCase();
+          const b = trg.toLowerCase();
+          if (!seen.has(a)) {
+            seen.add(a);
+            out.push({ form: src, tip: trg });
+          }
+          if (!seen.has(b)) {
+            seen.add(b);
+            out.push({ form: trg, tip: src });
+          }
+        } else {
+          const form = src || trg;
+          if (!form) continue;
+          const k = form.toLowerCase();
+          if (seen.has(k)) continue;
+          seen.add(k);
+          out.push({ form, tip: "" });
+        }
+      }
+      out.sort((a, b) => b.form.length - a.form.length);
+      return out;
+    }
+
+    function termMatchRegex(term) {
+      const t = String(term || "").trim();
+      if (!t) return null;
+      if (/\s/.test(t)) {
+        const parts = t.split(/\s+/).map(escapeRegExp);
+        return new RegExp(`(?<![\\p{L}\\p{N}])${parts.join("\\s+")}(?![\\p{L}\\p{N}])`, "giu");
+      }
+      return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(t)}(?![\\p{L}\\p{N}])`, "giu");
+    }
+
+    function findVocabMatches(text) {
+      const occupied = new Array(String(text).length).fill(false);
+      const matches = [];
+      for (const { form, tip } of vocabLinkCandidates()) {
+        const re = termMatchRegex(form);
+        if (!re) continue;
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+          const start = m.index;
+          const end = start + m[0].length;
+          if (start === end) {
+            re.lastIndex += 1;
+            continue;
+          }
+          let overlap = false;
+          for (let i = start; i < end; i++) {
+            if (occupied[i]) {
+              overlap = true;
+              break;
+            }
+          }
+          if (overlap) continue;
+          for (let i = start; i < end; i++) occupied[i] = true;
+          matches.push({ start, end, text: m[0], tip });
+        }
+      }
+      matches.sort((a, b) => a.start - b.start);
+      return matches;
+    }
+
+    function fillBodyWithTermLinks(body, text, opts) {
+      const matches = findVocabMatches(text);
+      const focusable = !opts || opts.focusable !== false;
+      if (!matches.length) {
+        body.textContent = text;
+        return;
+      }
+      let cursor = 0;
+      for (const match of matches) {
+        if (match.start > cursor) {
+          body.append(document.createTextNode(text.slice(cursor, match.start)));
+        }
+        const link = document.createElement("span");
+        link.className = "term-link";
+        link.textContent = match.text;
+        if (focusable) link.tabIndex = 0;
+        if (match.tip) {
+          link.setAttribute("aria-label", `${match.text}: ${match.tip}`);
+          link.title = match.tip;
+          link.addEventListener("mouseenter", () => showTermTip(link, match.tip));
+          link.addEventListener("mouseleave", hideTermTip);
+          if (focusable) {
+            link.addEventListener("focus", () => showTermTip(link, match.tip));
+            link.addEventListener("blur", hideTermTip);
+          }
+        }
+        body.append(link);
+        cursor = match.end;
+      }
+      if (cursor < text.length) {
+        body.append(document.createTextNode(text.slice(cursor)));
+      }
+    }
+
+    function appendBubble(role, text) {
+      const empty = el("chat-empty");
+      if (empty) empty.remove();
+      const log = el("chat-log");
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + (role === "user" ? "user" : "bot");
+      const who = document.createElement("div");
+      who.className = "who";
+      who.textContent =
+        role === "user"
+          ? "you"
+          : state.scenario?.persona?.name
+            ? `${state.scenario.persona.name}`
+            : "Reverso agent";
+      const body = document.createElement("div");
+      body.className = "body";
+      fillBodyWithTermLinks(body, String(text || ""));
+      bubble.append(who, body);
+      log.append(bubble);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function normalizeSpeechText(text) {
+      return String(text || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[’']/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function escapeRegExp(s) {
+      return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function textContainsTerm(haystack, term) {
+      const needle = normalizeSpeechText(term);
+      if (!needle || !haystack) return false;
+      // Multi-word / phrase: allow flexible whitespace
+      if (/\s/.test(needle)) {
+        const parts = needle.split(/\s+/).map(escapeRegExp);
+        const re = new RegExp(`(?:^|[^\\p{L}\\p{N}])${parts.join("\\s+")}(?=$|[^\\p{L}\\p{N}])`, "iu");
+        return re.test(haystack);
+      }
+      const re = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRegExp(needle)}(?=$|[^\\p{L}\\p{N}])`, "iu");
+      return re.test(haystack);
+    }
+
+    function tokenizeSpeech(text) {
+      return normalizeSpeechText(text)
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 2);
+    }
+
+    function levenshtein(a, b) {
+      if (a === b) return 0;
+      if (!a.length) return b.length;
+      if (!b.length) return a.length;
+      const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+      for (let i = 1; i <= a.length; i++) {
+        let prev = i - 1;
+        row[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+          const cur = row[j];
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + cost);
+          prev = cur;
+        }
+      }
+      return row[b.length];
+    }
+
+    function tokensMatch(a, b) {
+      if (a === b) return true;
+      const n = Math.min(a.length, b.length);
+      if (n < 4) return false;
+      return levenshtein(a, b) <= Math.max(1, Math.floor(n / 6));
+    }
+
+    function preparedReplyScore(prepared, spoken) {
+      const a = tokenizeSpeech(prepared);
+      const b = tokenizeSpeech(spoken);
+      if (!a.length || !b.length) return 0;
+      if (b.length < 4 && b.length < Math.ceil(a.length * 0.5)) return 0;
+      const used = new Array(b.length).fill(false);
+      let hits = 0;
+      for (const word of a) {
+        const found = b.findIndex((cand, i) => !used[i] && tokensMatch(word, cand));
+        if (found < 0) continue;
+        used[found] = true;
+        hits += 1;
+      }
+      if (!hits) return 0;
+      const precision = hits / b.length;
+      const recall = hits / a.length;
+      return (2 * precision * recall) / (precision + recall);
+    }
+
+    function matchPreparedReply(spokenText) {
+      if (state.lastGuidance.selected === "invent") return null;
+      const hints = state.lastGuidance.hintAnswers || [];
+      if (!hints.length) return null;
+      const selected = state.lastGuidance.selected;
+      const scored = hints
+        .map((hint, index) => ({
+          index,
+          label: hint.label,
+          text: hint.text,
+          score: preparedReplyScore(hint.text, spokenText),
+          minScore: selected === index ? 0.45 : 0.55,
+        }))
+        .sort((x, y) => y.score - x.score);
+      const best = scored[0];
+      const second = scored[1];
+      if (!best || best.score < best.minScore) return null;
+      if (second && second.score >= second.minScore && best.score - second.score < 0.08) {
+        if (Number.isInteger(selected) && scored.find((s) => s.index === selected)?.score >= 0.45) {
+          return hints[selected] ? { index: selected, ...hints[selected] } : null;
+        }
+        return null;
+      }
+      return { index: best.index, label: best.label, text: best.text };
+    }
+
+    function resolveUserReply(rawText) {
+      const spoken = String(rawText || "").trim();
+      if (!spoken) return spoken;
+      const match = matchPreparedReply(spoken);
+      if (!match) return spoken;
+      setReplySelection(match.index);
+      return match.text;
+    }
+
+    function termKeys(term) {
+      const src = String(term.srcText || "").trim().toLowerCase();
+      const trg = String(term.trgText || "").trim().toLowerCase();
+      return [src, trg].filter(Boolean);
+    }
+
+    function termSpeakers(term) {
+      const keys = termKeys(term);
+      return {
+        user: keys.some((k) => state.spokenBy.user.has(k)),
+        ai: keys.some((k) => state.spokenBy.ai.has(k)),
+      };
+    }
+
+    function addSpokenKeys(keys, speaker) {
+      const set = state.spokenBy[speaker];
+      if (!set) return false;
+      let changed = false;
+      for (const raw of keys || []) {
+        const key = String(raw || "").trim().toLowerCase();
+        if (!key || set.has(key)) continue;
+        set.add(key);
+        changed = true;
+      }
+      return changed;
+    }
+
+    function renderVocabChips() {
+      const wrap = el("vocab-chips");
+      wrap.innerHTML = "";
+      if (!state.vocabulary.length) {
+        wrap.innerHTML = '<span class="note">No terms loaded</span>';
+        return;
+      }
+      for (const term of state.vocabulary) {
+        const src = term.srcText || "";
+        const trg = term.trgText || "";
+        // Show the saved term (source); fall back to translation if missing.
+        const label = src || trg;
+        if (!label) continue;
+        const speakers = termSpeakers(term);
+        const spoken = speakers.user || speakers.ai;
+        const translation = src && trg ? (label === src ? trg : src) : "";
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className =
+          "chip" +
+          (spoken ? " spoken" : "") +
+          (speakers.user ? " spoken-user" : "") +
+          (speakers.ai ? " spoken-ai" : "");
+
+        const labelEl = document.createElement("span");
+        labelEl.className = "chip-label";
+        labelEl.textContent = label;
+        chip.append(labelEl);
+
+        if (spoken && translation) {
+          const trEl = document.createElement("span");
+          trEl.className = "chip-tr";
+          trEl.textContent = translation;
+          chip.append(trEl);
+        }
+
+        chip.addEventListener("click", () => {
+          const banner = el("hint-banner");
+          if (src && trg) {
+            banner.textContent = `${src} → ${trg}`;
+          } else if (trg) {
+            banner.textContent = trg;
+          } else {
+            banner.textContent = "No translation for this term.";
+          }
+          banner.classList.add("show");
+          chip.classList.add("hint");
+          setTimeout(() => chip.classList.remove("hint"), 1200);
+        });
+        wrap.append(chip);
+      }
+    }
+
+    function markUsedTerms(terms) {
+      let changed = false;
+      for (const t of terms || []) {
+        const key = String(t || "").trim().toLowerCase();
+        if (!key) continue;
+        if (addSpokenKeys([key], "ai")) changed = true;
+        for (const v of state.vocabulary) {
+          const src = String(v.srcText || "").trim().toLowerCase();
+          const trg = String(v.trgText || "").trim().toLowerCase();
+          const srcHit = src && (src === key || key.includes(src) || src.includes(key));
+          const trgHit = trg && (trg === key || key.includes(trg) || trg.includes(key));
+          if (srcHit || trgHit) {
+            if (addSpokenKeys([src, trg], "ai")) changed = true;
+          }
+        }
+      }
+      if (changed) renderVocabChips();
+    }
+
+    /** Highlight list chips whose source or target form appears in spoken / written text. */
+    function markTermsFromSpeech(text, speaker) {
+      const who = speaker === "user" ? "user" : "ai";
+      const haystack = normalizeSpeechText(text);
+      if (!haystack) return;
+      let changed = false;
+      for (const v of state.vocabulary) {
+        const src = String(v.srcText || "").trim();
+        const trg = String(v.trgText || "").trim();
+        const hit =
+          (src && textContainsTerm(haystack, src)) ||
+          (trg && textContainsTerm(haystack, trg));
+        if (!hit) continue;
+        if (addSpokenKeys([src, trg], who)) changed = true;
+      }
+      if (changed) renderVocabChips();
+    }
+
+    function voiceForLang(lang) {
+      const cfg = window.READ_ALOUD_VOICE_CONFIG || {};
+      const code = String(lang || "").toLowerCase();
+      const map = cfg.byLanguage || {};
+      return map[code] || map[code.slice(0, 2)] || cfg.defaultVoice || "en_paul_neutral";
+    }
+
+    async function speak(text) {
+      const voice = voiceForLang(state.practiceLang);
+      const res = await fetch("/read-aloud/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "audio/mpeg" },
+        body: JSON.stringify({ text, format: "mp3", voice, language: state.practiceLang }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        let msg = errText.slice(0, 200);
+        try {
+          const j = JSON.parse(errText);
+          msg = j.error || msg;
+        } catch (_e) { /* keep */ }
+        throw new Error("TTS failed: " + msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (state.audioEl) {
+        state.audioEl.pause();
+        URL.revokeObjectURL(state.audioEl.src);
+      }
+      const audio = new Audio(url);
+      state.audioEl = audio;
+      await new Promise((resolve, reject) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Audio playback failed."));
+        };
+        audio.play().catch(reject);
+      });
+    }
+
+    function normalizeHintAnswers(raw) {
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .map((item, i) => {
+          if (item && typeof item === "object") {
+            return {
+              label: String(item.label || "").trim() || (i === 0 ? "This way" : "Another way"),
+              text: String(item.text || "").trim(),
+            };
+          }
+          return {
+            label: i === 0 ? "This way" : "Another way",
+            text: String(item || "").trim(),
+          };
+        })
+        .filter((h) => h.text)
+        .slice(0, 2);
+    }
+
+    function setReplySelection(selected) {
+      state.lastGuidance.selected = selected;
+      const cards = el("reply-choices")?.querySelectorAll(".reply-choice") || [];
+      cards.forEach((card, i) => {
+        const on = selected === i;
+        card.classList.toggle("selected", on);
+        card.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      const invent = el("btn-invent");
+      if (invent) {
+        const on = selected === "invent";
+        invent.classList.toggle("selected", on);
+        invent.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    }
+
+    function chooseReadyReply(index) {
+      const hint = state.lastGuidance.hintAnswers[index];
+      if (!hint) return;
+      setReplySelection(index);
+      const input = el("type-answer");
+      if (input) input.value = hint.text;
+      setTalkStatus("Hold the mic and read it — or send the typed line.", "run");
+    }
+
+    function chooseInventReply() {
+      setReplySelection("invent");
+      const input = el("type-answer");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+      setTalkStatus("Invent your own — hold the mic or type.", "run");
+    }
+
+    function clearGuidance() {
+      state.lastGuidance = { suggestedWords: [], hintAnswers: [], selected: null };
+      const panel = el("guidance-panel");
+      const choices = el("reply-choices");
+      const invent = el("btn-invent");
+      if (panel) panel.classList.remove("show");
+      if (choices) choices.innerHTML = "";
+      if (invent) {
+        invent.classList.remove("selected");
+        invent.setAttribute("aria-pressed", "false");
+      }
+    }
+
+    function renderGuidance(suggestedWords, hintAnswers) {
+      const words = (suggestedWords || []).map((w) => String(w || "").trim()).filter(Boolean);
+      const hints = normalizeHintAnswers(hintAnswers);
+      state.lastGuidance = { suggestedWords: words, hintAnswers: hints, selected: null };
+
+      const panel = el("guidance-panel");
+      const choicesEl = el("reply-choices");
+      const invent = el("btn-invent");
+      if (!panel || !choicesEl || !invent) return;
+
+      choicesEl.innerHTML = "";
+      invent.classList.remove("selected");
+      invent.setAttribute("aria-pressed", "false");
+
+      if (!hints.length) {
+        panel.classList.remove("show");
+        return;
+      }
+
+      panel.classList.add("show");
+      hints.forEach((hint, i) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "reply-choice";
+        card.setAttribute("aria-pressed", "false");
+
+        const kicker = document.createElement("span");
+        kicker.className = "reply-choice-kicker";
+        kicker.textContent = hint.label;
+
+        const body = document.createElement("span");
+        body.className = "reply-choice-text";
+        fillBodyWithTermLinks(body, hint.text, { focusable: false });
+
+        const cta = document.createElement("span");
+        cta.className = "reply-choice-cta";
+        cta.textContent = "Read this aloud";
+
+        card.append(kicker, body, cta);
+        card.addEventListener("click", () => chooseReadyReply(i));
+        choicesEl.append(card);
+      });
+      invent.onclick = () => chooseInventReply();
+      setTalkInputsEnabled(state.active && !state.busy);
+    }
+
+    function countUserVocabHits() {
+      let n = 0;
+      for (const term of state.vocabulary) {
+        if (termSpeakers(term).user) n += 1;
+      }
+      return n;
+    }
+
+    function resetScores() {
+      const vocabTarget = Math.max(1, Math.min(VOCAB_HIT_TARGET, state.vocabulary.length || VOCAB_HIT_TARGET));
+      state.scores = {
+        talkChars: 0,
+        talkTurns: 0,
+        talkTarget: TALK_CHAR_TARGET,
+        vocabUsed: 0,
+        vocabTarget,
+        enough: false,
+        enoughAnnounced: false,
+      };
+      renderScores({ show: false });
+    }
+
+    function renderScores({ show } = {}) {
+      const panel = el("score-panel");
+      const done = el("score-done");
+      if (!panel) return;
+      if (typeof show === "boolean") panel.classList.toggle("show", show);
+
+      const s = state.scores;
+      const talkPct = Math.min(100, Math.round((s.talkChars / Math.max(1, s.talkTarget)) * 100));
+      const vocabPct = Math.min(100, Math.round((s.vocabUsed / Math.max(1, s.vocabTarget)) * 100));
+      const talkFill = el("score-talk-fill");
+      const vocabFill = el("score-vocab-fill");
+      const talkBar = el("score-talk-bar");
+      const vocabBar = el("score-vocab-bar");
+      if (talkFill) talkFill.style.width = `${talkPct}%`;
+      if (vocabFill) vocabFill.style.width = `${vocabPct}%`;
+      if (talkBar) talkBar.classList.toggle("done", talkPct >= 100);
+      if (vocabBar) vocabBar.classList.toggle("done", vocabPct >= 100);
+      const talkMeta = el("score-talk-meta");
+      const vocabMeta = el("score-vocab-meta");
+      if (talkMeta) talkMeta.textContent = `${Math.min(s.talkChars, s.talkTarget)}/${s.talkTarget}`;
+      if (vocabMeta) vocabMeta.textContent = `${Math.min(s.vocabUsed, s.vocabTarget)}/${s.vocabTarget}`;
+      if (done) done.classList.toggle("show", !!s.enough);
+    }
+
+    function updateScoresAfterUserTurn(userText) {
+      const text = String(userText || "").trim();
+      if (!text) return;
+      state.scores.talkTurns += 1;
+      state.scores.talkChars += text.replace(/\s+/g, " ").length;
+      state.scores.vocabUsed = countUserVocabHits();
+      const talkDone = state.scores.talkChars >= state.scores.talkTarget;
+      const vocabDone = state.scores.vocabUsed >= state.scores.vocabTarget;
+      state.scores.enough = talkDone && vocabDone;
+      renderScores({ show: true });
+      if (state.scores.enough && !state.scores.enoughAnnounced) {
+        state.scores.enoughAnnounced = true;
+        setRunStatus("Enough practice", "ok");
+      }
+    }
+
+    async function chatTurn(userText) {
+      if (userText) {
+        state.messages.push({ role: "user", content: userText });
+        appendBubble("user", userText);
+        markTermsFromSpeech(userText, "user");
+        updateScoresAfterUserTurn(userText);
+      }
+      clearGuidance();
+      setTalkStatus("Thinking…", "run");
+      const res = await fetch("/practice-talk/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: state.messages,
+          vocabulary: state.vocabulary,
+          practiceLang: state.practiceLang,
+          hintLang: state.hintLang,
+          scenario: state.scenario,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Chat failed (${res.status})`);
+      const reply = String(data.reply || "").trim();
+      if (!reply) throw new Error("Empty bot reply.");
+      state.messages.push({ role: "assistant", content: reply });
+      appendBubble("bot", reply);
+      markUsedTerms(data.usedTerms || []);
+      markTermsFromSpeech(reply, "ai");
+      renderGuidance(data.suggestedWords || [], data.hintAnswers || []);
+      setTalkStatus("Speaking…", "run");
+      try {
+        await speak(reply);
+      } catch (err) {
+        setTalkStatus(err.message + " (text shown above)", "err");
+        return;
+      }
+      setTalkStatus(state.active ? "Hold to talk" : "Idle", "");
+    }
+
+    async function fetchListVocabulary(listId) {
+      const items = [];
+      let start = 0;
+      const pageSize = 100;
+      while (items.length < MAX_VOCAB) {
+        const { data } = await apiGet("/user/favourites", {
+          listId,
+          length: pageSize,
+          start,
+          learningInfo: true,
+          includeDef: "YES",
+        });
+        const batch = Array.isArray(data.results) ? data.results : [];
+        for (const fav of batch) {
+          const srcText = String(fav.srcText || "").trim();
+          const trgText = String(fav.trgText || "").trim();
+          if (!srcText && !trgText) continue;
+          items.push({
+            srcText,
+            trgText,
+            srcContext: String(fav.srcContext || "").trim(),
+            srcLang: fav.srcLang || "",
+            trgLang: fav.trgLang || "",
+          });
+          if (items.length >= MAX_VOCAB) break;
+        }
+        if (batch.length < pageSize) break;
+        start += pageSize;
+      }
+      return items;
+    }
+
+    async function loadAccount() {
+      saveAuth();
+      if (!FavAuth.authReadyForLiveApi()) {
+        setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
+        el("auth-panel").open = true;
+        return;
+      }
+      setStatus(null, "Loading…", "");
+      try {
+        await FavAuth.ensureAccessToken();
+        FavAuth.updateJwtUi();
+        const listsRes = await apiGet("/user/favouritesLists", {
+          length: 100,
+          start: 0,
+          learningInfo: true,
+          includeDef: "YES",
+        });
+        state.lists = listsRes.data.results || [];
+        populateLists(state.lists);
+        setStatus(true, "OK", `${state.lists.length} lists`);
+        el("auth-panel").open = false;
+      } catch (err) {
+        setStatus(false, "Error", "");
+        setTalkStatus(err.message, "err");
+      }
+    }
+
+    function setTalkInputsEnabled(enabled) {
+      el("btn-talk").disabled = !enabled;
+      el("type-answer").disabled = !enabled;
+      el("btn-type-send").disabled = !enabled;
+      const invent = el("btn-invent");
+      if (invent) invent.disabled = !enabled;
+      const cards = el("reply-choices")?.querySelectorAll(".reply-choice") || [];
+      cards.forEach((card) => {
+        card.disabled = !enabled;
+      });
+    }
+
+    function setActiveUi(active) {
+      state.active = active;
+      el("btn-start").disabled = active;
+      el("btn-end").classList.toggle("hidden", !active);
+      el("btn-stop-chat")?.classList.toggle("hidden", !active);
+      el("vocabulary-list").disabled = active;
+      setTalkInputsEnabled(active && !state.busy);
+      el("type-test")?.classList.toggle("show", active);
+      el("btn-regen-scenarios").disabled = active || state.busy;
+      el("btn-begin-scenario").disabled = active || !state.scenario;
+      setRunStatus(active ? "In progress" : "Ready", active ? "run" : "");
+    }
+
+    function stopConversation() {
+      stopRecording(true);
+      if (state.audioEl) {
+        try {
+          state.audioEl.pause();
+        } catch (_e) {
+          /* ignore */
+        }
+      }
+      setActiveUi(false);
+      clearGuidance();
+      state.messages = [];
+      state.spokenBy = { user: new Set(), ai: new Set() };
+      resetScores();
+      clearChat();
+      releaseMic();
+      el("hint-banner").classList.remove("show");
+
+      if (state.scenarios.length) {
+        showScenarioPanel(true);
+        renderScenarioCards();
+        updateRoleBanner(state.scenario);
+        setTalkStatus(
+          state.scenario
+            ? `Stopped — pick another scenario or begin “${state.scenario.title}” again.`
+            : "Stopped — pick a scenario to begin.",
+          ""
+        );
+        setRunStatus("Pick scenario", "run");
+        el("btn-begin-scenario").disabled = !state.scenario;
+      } else {
+        showScenarioPanel(false);
+        updateRoleBanner(null);
+        setTalkStatus("Stopped — choose a list and scenarios when ready.", "");
+        setRunStatus("Ready", "");
+      }
+    }
+
+    function scenarioStorageKey(listId) {
+      return SCENARIO_STORAGE_PREFIX + String(listId || "");
+    }
+
+    function saveScenariosToSession(listId, scenarios) {
+      try {
+        sessionStorage.setItem(
+          scenarioStorageKey(listId),
+          JSON.stringify({ savedAt: Date.now(), scenarios })
+        );
+      } catch (_e) {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function loadScenariosFromSession(listId) {
+      try {
+        const raw = sessionStorage.getItem(scenarioStorageKey(listId));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const scenarios = Array.isArray(parsed?.scenarios) ? parsed.scenarios : null;
+        return scenarios && scenarios.length ? scenarios : null;
+      } catch (_e) {
+        return null;
+      }
+    }
+
+    function updateRoleBanner(scenario) {
+      const banner = el("role-banner");
+      if (!banner) return;
+      if (!scenario) {
+        banner.classList.remove("show");
+        return;
+      }
+      const you = scenario.you || {};
+      const them = scenario.persona || {};
+      el("role-you-main").textContent = you.role || "You";
+      el("role-you-sub").textContent = you.brief || scenario.goal || "";
+      el("role-them-main").textContent = [them.name, them.role].filter(Boolean).join(" · ") || "Reverso agent";
+      el("role-them-sub").textContent = [them.personality, them.tone].filter(Boolean).join(" · ");
+      banner.classList.add("show");
+    }
+
+    function renderScenarioCards() {
+      const grid = el("scenario-grid");
+      grid.innerHTML = "";
+      if (!state.scenarios.length) {
+        grid.innerHTML = '<span class="note">No scenarios yet.</span>';
+        el("btn-begin-scenario").disabled = true;
+        return;
+      }
+      for (const sc of state.scenarios) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "scenario-card" + (state.scenario?.id === sc.id ? " selected" : "");
+        btn.dataset.id = sc.id;
+
+        const title = document.createElement("div");
+        title.className = "sc-title";
+        title.textContent = sc.title;
+
+        const goal = document.createElement("div");
+        goal.className = "sc-goal";
+        goal.textContent = sc.goal;
+
+        const you = document.createElement("div");
+        you.className = "sc-you";
+        const youLabel = document.createElement("strong");
+        youLabel.textContent = "You play:";
+        you.append(youLabel, document.createTextNode(` ${sc.you?.role || "everyday learner"}`));
+
+        const persona = document.createElement("div");
+        persona.className = "sc-persona";
+        const p = sc.persona || {};
+        const nameEl = document.createElement("strong");
+        nameEl.textContent = `Talking with: ${p.name || "Someone"}`;
+        persona.append(nameEl, document.createTextNode(` · ${p.role || "role"}`));
+        if (p.tone || p.personality) {
+          persona.append(
+            document.createElement("br"),
+            document.createTextNode([p.personality, p.tone].filter(Boolean).join(" · "))
+          );
+        }
+
+        btn.append(title, goal, you, persona);
+        btn.addEventListener("click", () => selectScenario(sc.id));
+        grid.append(btn);
+      }
+      el("btn-begin-scenario").disabled = state.active || !state.scenario;
+    }
+
+    function selectScenario(id) {
+      const sc = state.scenarios.find((s) => String(s.id) === String(id)) || null;
+      state.scenario = sc;
+      renderScenarioCards();
+      if (sc) {
+        setTalkStatus(`Selected: ${sc.title}`, "");
+        el("scenario-meta").textContent =
+          `You: ${sc.you?.role || "—"} · with ${sc.persona?.name || "someone"}` +
+          (Array.isArray(sc.beats) && sc.beats.length ? ` · ${sc.beats.length} vocab topics` : "");
+        updateRoleBanner(sc);
+      }
+    }
+
+    function showScenarioPanel(show) {
+      el("scenario-panel").classList.toggle("hidden", !show);
+    }
+
+    async function fetchScenarios({ force } = {}) {
+      const listId = state.listId;
+      if (!force) {
+        const cached = loadScenariosFromSession(listId);
+        if (cached && cached.length >= 5) {
+          state.scenarios = cached.slice(0, 5);
+          state.scenario = null;
+          return state.scenarios;
+        }
+      }
+      setTalkStatus("Generating scenarios…", "run");
+      const res = await fetch("/practice-talk/scenarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vocabulary: state.vocabulary,
+          practiceLang: state.practiceLang,
+          hintLang: state.hintLang,
+          listName: state.listName,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Scenario generation failed (${res.status})`);
+      const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
+      if (scenarios.length < 5) {
+        throw new Error(`Expected 5 scenarios, got ${scenarios.length}.`);
+      }
+      state.scenarios = scenarios.slice(0, 5);
+      state.scenario = null;
+      saveScenariosToSession(listId, state.scenarios);
+      return state.scenarios;
+    }
+
+    async function prepareScenarios({ forceRegen } = {}) {
+      if (state.active || state.busy) return;
+      if (!LIVE_API_ENABLED) {
+        setTalkStatus("Start the local server (npm start).", "err");
+        return;
+      }
+      if (!FavAuth.authReadyForLiveApi()) {
+        setTalkStatus("Paste a refresh token in Auth & load first.", "err");
+        return;
+      }
+      const list = getSelectedList();
+      if (!list) {
+        setTalkStatus("Pick a vocabulary list.", "err");
+        return;
+      }
+      const { sourceLang, targetLang } = listLangs(list);
+      if (!sourceLang) {
+        setTalkStatus("Selected list is missing srcLang.", "err");
+        return;
+      }
+
+      state.busy = true;
+      el("btn-start").disabled = true;
+      el("btn-regen-scenarios").disabled = true;
+      el("btn-begin-scenario").disabled = true;
+      setTalkStatus("Loading list…", "run");
+      clearChat();
+      state.messages = [];
+      state.spokenBy = { user: new Set(), ai: new Set() };
+      state.scenario = null;
+      el("hint-banner").classList.remove("show");
+      clearGuidance();
+
+      try {
+        await FavAuth.ensureAccessToken();
+        const listId = String(list.id ?? list.listId);
+        const vocab = await fetchListVocabulary(listId);
+        if (!vocab.length) {
+          throw new Error("This list has no favourites to practice.");
+        }
+        state.vocabulary = vocab;
+        state.practiceLang = sourceLang;
+        state.hintLang = targetLang || "";
+        state.listId = listId;
+        state.listName = listDisplayName(list);
+        setHeroTitle(`Conversation about ${state.listName}`);
+        renderVocabChips();
+
+        await fetchScenarios({ force: !!forceRegen });
+        showScenarioPanel(true);
+        renderScenarioCards();
+        updateRoleBanner(null);
+        el("scenario-meta").textContent = "5 easy situations — you play a simple role; they have the personality";
+        setTalkStatus("Pick a scenario to begin.", "");
+        setRunStatus("Pick scenario", "run");
+      } catch (err) {
+        showScenarioPanel(false);
+        setTalkStatus(err.message, "err");
+        setRunStatus("Error", "err");
+      } finally {
+        state.busy = false;
+        el("btn-start").disabled = state.active;
+        el("btn-regen-scenarios").disabled = state.active;
+        el("btn-begin-scenario").disabled = state.active || !state.scenario;
+      }
+    }
+
+    async function beginWithScenario() {
+      if (state.active || state.busy) return;
+      if (!state.scenario) {
+        setTalkStatus("Select a scenario first.", "err");
+        return;
+      }
+      if (!state.vocabulary.length) {
+        setTalkStatus("Load scenarios for a list first.", "err");
+        return;
+      }
+
+      state.busy = true;
+      el("btn-begin-scenario").disabled = true;
+      el("btn-regen-scenarios").disabled = true;
+      el("btn-start").disabled = true;
+      clearChat();
+      state.messages = [];
+      state.spokenBy = { user: new Set(), ai: new Set() };
+      el("hint-banner").classList.remove("show");
+      clearGuidance();
+      resetScores();
+
+      try {
+        setHeroTitle(`${state.scenario.title}`);
+        el("scenario-meta").textContent = `You: ${state.scenario.you?.role || "—"} · with ${state.scenario.persona?.name || ""}`.trim();
+        updateRoleBanner(state.scenario);
+        setActiveUi(true);
+        renderScores({ show: true });
+        await chatTurn(null);
+      } catch (err) {
+        setActiveUi(false);
+        setTalkStatus(err.message, "err");
+        setRunStatus("Error", "err");
+      } finally {
+        state.busy = false;
+        el("btn-talk").disabled = !state.active;
+        el("btn-start").disabled = state.active;
+        el("btn-regen-scenarios").disabled = state.active;
+        el("btn-begin-scenario").disabled = state.active || !state.scenario;
+        setTalkInputsEnabled(state.active && !state.busy);
+      }
+    }
+
+    async function regenerateScenarios() {
+      if (state.active || state.busy) return;
+      if (!state.vocabulary.length || !state.listId) {
+        await prepareScenarios({ forceRegen: true });
+        return;
+      }
+      state.busy = true;
+      el("btn-regen-scenarios").disabled = true;
+      el("btn-begin-scenario").disabled = true;
+      try {
+        await fetchScenarios({ force: true });
+        renderScenarioCards();
+        el("scenario-meta").textContent = "New set ready — pick one to begin";
+        setTalkStatus("Pick a scenario to begin.", "");
+      } catch (err) {
+        setTalkStatus(err.message, "err");
+      } finally {
+        state.busy = false;
+        el("btn-regen-scenarios").disabled = state.active;
+        el("btn-begin-scenario").disabled = state.active || !state.scenario;
+      }
+    }
+
+    function endConversation() {
+      stopConversation();
+    }
+
+    function releaseMic() {
+      if (state.mediaStream) {
+        for (const track of state.mediaStream.getTracks()) track.stop();
+        state.mediaStream = null;
+      }
+      state.mediaRecorder = null;
+      state.chunks = [];
+    }
+
+    async function ensureMic() {
+      if (state.mediaStream) return state.mediaStream;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Microphone not supported in this browser.");
+      }
+      state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      return state.mediaStream;
+    }
+
+    async function startRecording() {
+      if (!state.active || state.busy) return;
+      if (state.mediaRecorder && state.mediaRecorder.state === "recording") return;
+      try {
+        const stream = await ensureMic();
+        const mimeCandidates = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+        ];
+        const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported?.(m)) || "";
+        state.chunks = [];
+        state.mediaRecorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+        state.mediaRecorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size) state.chunks.push(ev.data);
+        };
+        state.mediaRecorder.onstop = () => {
+          void handleRecordingStop();
+        };
+        state.recordStartedAt = Date.now();
+        state.mediaRecorder.start();
+        el("btn-talk").classList.add("recording");
+        el("btn-talk").textContent = "Listening…";
+        setTalkStatus("Listening…", "run");
+      } catch (err) {
+        setTalkStatus(err.message, "err");
+      }
+    }
+
+    function stopRecording(discard) {
+      const rec = state.mediaRecorder;
+      el("btn-talk").classList.remove("recording");
+      el("btn-talk").textContent = "Hold to talk";
+      if (!rec || rec.state !== "recording") return;
+      if (discard) {
+        rec.onstop = null;
+        try { rec.stop(); } catch (_e) { /* ignore */ }
+        state.chunks = [];
+        return;
+      }
+      try { rec.stop(); } catch (_e) { /* ignore */ }
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          const b64 = result.includes(",") ? result.split(",")[1] : result;
+          resolve(b64);
+        };
+        reader.onerror = () => reject(new Error("Failed to read audio."));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function handleRecordingStop() {
+      const elapsed = Date.now() - state.recordStartedAt;
+      const chunks = state.chunks.slice();
+      state.chunks = [];
+      el("btn-talk").classList.remove("recording");
+      el("btn-talk").textContent = "Hold to talk";
+
+      if (!state.active) return;
+      if (elapsed < MIN_RECORD_MS || !chunks.length) {
+        setTalkStatus("Too short — hold a bit longer.", "err");
+        return;
+      }
+
+      const mimeType = state.mediaRecorder?.mimeType || "audio/webm";
+      const blob = new Blob(chunks, { type: mimeType });
+      state.busy = true;
+      setTalkInputsEnabled(false);
+
+      try {
+        setTalkStatus("Transcribing…", "run");
+        const audioBase64 = await blobToBase64(blob);
+        const biasTerms = [
+          ...(state.lastGuidance.hintAnswers || []).map((h) => h.text),
+          ...state.vocabulary.map((v) => v.srcText),
+        ]
+          .filter(Boolean)
+          .slice(0, 100);
+        const sttRes = await fetch("/practice-talk/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audioBase64,
+            mimeType,
+            language: state.practiceLang,
+            biasTerms,
+          }),
+        });
+        const sttData = await sttRes.json().catch(() => ({}));
+        if (!sttRes.ok) throw new Error(sttData.error || `Transcription failed (${sttRes.status})`);
+        const transcript = String(sttData.text || "").trim();
+        if (!transcript) throw new Error("Heard nothing — try again.");
+        const resolved = resolveUserReply(transcript);
+        await chatTurn(resolved);
+      } catch (err) {
+        setTalkStatus(err.message, "err");
+      } finally {
+        state.busy = false;
+        setTalkInputsEnabled(state.active);
+      }
+    }
+
+    async function sendTypedAnswer() {
+      if (!state.active || state.busy) return;
+      const input = el("type-answer");
+      const text = String(input?.value || "").trim();
+      if (!text) {
+        setTalkStatus("Type a reply first.", "err");
+        return;
+      }
+      state.busy = true;
+      setTalkInputsEnabled(false);
+      try {
+        const resolved = resolveUserReply(text);
+        input.value = "";
+        await chatTurn(resolved);
+      } catch (err) {
+        setTalkStatus(err.message, "err");
+      } finally {
+        state.busy = false;
+        setTalkInputsEnabled(state.active);
+      }
+    }
+
+    function bindTalkButton() {
+      const btn = el("btn-talk");
+      let pressed = false;
+
+      const down = (ev) => {
+        ev.preventDefault();
+        if (btn.disabled || pressed) return;
+        pressed = true;
+        void startRecording();
+      };
+      const up = (ev) => {
+        if (!pressed) return;
+        pressed = false;
+        ev.preventDefault();
+        stopRecording(false);
+      };
+
+      btn.addEventListener("pointerdown", down);
+      btn.addEventListener("pointerup", up);
+      btn.addEventListener("pointercancel", up);
+      btn.addEventListener("pointerleave", (ev) => {
+        if (pressed) up(ev);
+      });
+      window.addEventListener("pointerup", () => {
+        if (pressed) {
+          pressed = false;
+          stopRecording(false);
+        }
+      });
+    }
+
+    function init() {
+      FavAuth.initAuthUi();
+      el("btn-load-account").onclick = () => void loadAccount();
+      el("btn-start").onclick = () => void prepareScenarios({ forceRegen: false });
+      el("btn-regen-scenarios").onclick = () => void regenerateScenarios();
+      el("btn-begin-scenario").onclick = () => void beginWithScenario();
+      el("btn-end").onclick = stopConversation;
+      el("btn-stop-chat").onclick = stopConversation;
+      el("vocabulary-list").addEventListener("change", () => {
+        updateListLangHint();
+        if (!state.active) {
+          showScenarioPanel(false);
+          state.scenarios = [];
+          state.scenario = null;
+          state.vocabulary = [];
+          renderVocabChips();
+        }
+      });
+      bindTalkButton();
+      el("btn-type-send").onclick = () => void sendTypedAnswer();
+      el("type-answer").addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" && !ev.shiftKey) {
+          ev.preventDefault();
+          void sendTypedAnswer();
+        }
+      });
+      clearChat();
+
+      if (!LIVE_API_ENABLED) {
+        setTalkStatus("Deployed build: run locally (npm start) to use lists + voice.", "err");
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
