@@ -958,7 +958,26 @@ button {
 .premium-panel__actions .btn {
   width: 100%;
   max-width: 100%;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  height: auto;
+  min-height: 48px;
+  padding: 12px 16px;
+}
+
+.premium-panel__actions .btn--outline {
+  border-color: var(--yellow-premium-1000);
+  color: var(--yellow-premium-1000);
+}
+
+.premium-panel__actions .btn--outline:hover {
+  background: var(--yellow-premium-150);
+  border-color: var(--yellow-premium-1000);
+  color: var(--yellow-premium-1000);
+}
+
+.premium-panel__actions .btn[hidden] {
+  display: none;
 }
 
 .btn--premium {
@@ -1082,6 +1101,56 @@ button {
   border-radius: 16px;
   padding: 32px 28px;
   box-shadow: 0 12px 40px rgba(34, 44, 49, 0.08);
+}
+
+.demo-notice {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--yellow-premium-150);
+  border: 1px solid var(--yellow-premium-200);
+  color: var(--grey-1000);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+}
+
+.demo-notice strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--yellow-premium-1000);
+  font-weight: 700;
+}
+
+.redirect-notice {
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.redirect-notice[hidden] {
+  display: none;
+}
+
+#authFlow[hidden] {
+  display: none;
+}
+
+.redirect-notice__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--grey-1200);
+  margin-bottom: 10px;
+}
+
+.redirect-notice__body {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--grey-1000);
+}
+
+.redirect-notice__body a {
+  font-weight: 500;
+  word-break: break-all;
 }
 
 .auth-tabs {

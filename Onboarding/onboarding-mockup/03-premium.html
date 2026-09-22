@@ -24,8 +24,9 @@
 
         <ul class="feature-list" id="featureList"></ul>
 
-        <div class="premium-panel__actions">
-          <a class="btn btn--premium" href="#" id="premiumBtn">Become Premium</a>
+        <div class="premium-panel__actions" id="premiumActions">
+          <a class="btn btn--premium" href="#" id="premiumBtn">Become Premium — 50% off</a>
+          <a class="btn btn--outline btn--block" href="#" id="eduBtn" hidden>Student? Claim a 75% Education discount</a>
           <a class="link-secondary" href="04-account.html" id="freeLink">Continue for free</a>
         </div>
       </div>
@@ -154,21 +155,26 @@
 
       var hooks = {
         work: "Get more productivity with Premium",
-        study: "Get more from your learning with Premium",
+        learn: "Get more from your learning with Premium",
         teach: "Get more teaching power with Premium",
         discover: "Get more from every search with Premium"
       };
 
       var discounts = {
-        study: { label: "For students", offer: "75% off Premium" },
-        teach: { label: "For teachers", offer: "75% off Premium" }
+        work: { offer: "Welcome offer — 50% off" },
+        learn: { offer: "Welcome offer — 50% off" },
+        discover: { offer: "Welcome offer — 50% off" },
+        teach: { offer: "75% off Premium", label: "For teachers" }
       };
 
       var params = new URLSearchParams(window.location.search);
       var usecase = (params.get("usecase") || "").toLowerCase();
+      if (usecase === "study") usecase = "learn";
+      if (!usecase || !hooks[usecase]) usecase = "discover";
       var variant = variants[usecase] || variants.default;
       var freeLink = document.getElementById("freeLink");
       var premiumBtn = document.getElementById("premiumBtn");
+      var eduBtn = document.getElementById("eduBtn");
       var hook = document.getElementById("premiumHook");
       var title = document.getElementById("premiumTitle");
       var featureList = document.getElementById("featureList");
@@ -206,26 +212,48 @@
           '<span class="discount-banner__offer">' +
           discounts[usecase].offer +
           "</span>" +
-          '<span class="discount-banner__label">' +
-          discounts[usecase].label +
-          "</span>";
+          (discounts[usecase].label
+            ? '<span class="discount-banner__label">' + discounts[usecase].label + "</span>"
+            : "");
+      }
+
+      if (usecase === "teach") {
+        premiumBtn.textContent = "Become Premium";
+      } else {
+        premiumBtn.textContent = "Become Premium — 50% off";
+      }
+
+      if (usecase === "learn") {
+        eduBtn.hidden = false;
       }
 
       if (usecase === "work") {
         document.getElementById("teamCard").hidden = false;
       }
 
-      if (usecase) {
-        freeLink.href = "04-account.html?usecase=" + encodeURIComponent(usecase);
+      freeLink.href = "04-account.html?usecase=" + encodeURIComponent(usecase);
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("is-visible");
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(function () {
+          toast.classList.remove("is-visible");
+        }, 2200);
       }
 
       premiumBtn.addEventListener("click", function (e) {
         e.preventDefault();
-        toast.classList.add("is-visible");
-        clearTimeout(premiumBtn._toastTimer);
-        premiumBtn._toastTimer = setTimeout(function () {
-          toast.classList.remove("is-visible");
-        }, 2200);
+        showToast(
+          usecase === "teach"
+            ? "Mock only — Premium checkout TBD"
+            : "Mock only — Welcome offer 50% off TBD"
+        );
+      });
+
+      eduBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        showToast("Mock only — 75% Education discount TBD");
       });
     })();
   </script>

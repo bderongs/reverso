@@ -15,62 +15,77 @@
   <div class="page">
     <header class="page__header">
       <h1 aria-label="Reverso">
-        <img class="page__logo" src="../welcome_original_files/logo.svg" width="156" height="36" alt="Reverso logo">
+        <img class="page__logo" src="logo.svg" width="156" height="36" alt="Reverso logo">
       </h1>
       <h2 class="page__subtitle">Create an account</h2>
     </header>
 
     <main class="page__main">
       <div class="auth-card">
-        <div class="auth-tabs" role="tablist" aria-label="Account">
-          <button type="button" class="auth-tabs__btn is-active" role="tab" aria-selected="true" id="tabSignup"
-            data-panel="signupForm">Sign up</button>
-          <button type="button" class="auth-tabs__btn" role="tab" aria-selected="false" id="tabLogin"
-            data-panel="loginForm">Log in</button>
+        <div id="authFlow">
+          <div class="demo-notice" role="note">
+            <strong>Demo only — fake login.</strong>
+            Feel free to try signing up or logging in; nothing is sent to a real account service.
+          </div>
+
+          <div class="auth-tabs" role="tablist" aria-label="Account">
+            <button type="button" class="auth-tabs__btn is-active" role="tab" aria-selected="true" id="tabSignup"
+              data-panel="signupForm">Sign up</button>
+            <button type="button" class="auth-tabs__btn" role="tab" aria-selected="false" id="tabLogin"
+              data-panel="loginForm">Log in</button>
+          </div>
+
+          <form class="auth-form" id="signupForm" autocomplete="off">
+            <div class="field">
+              <label for="signupName">Full name</label>
+              <input id="signupName" name="name" type="text" placeholder="Enter full name" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="signupEmail">Email</label>
+              <input id="signupEmail" name="email" type="email" placeholder="Enter email" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="signupPassword">Password</label>
+              <input id="signupPassword" name="password" type="password" placeholder="Create a password"
+                autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">Sign up</button>
+          </form>
+
+          <form class="auth-form" id="loginForm" hidden autocomplete="off">
+            <div class="field">
+              <label for="loginEmail">Email</label>
+              <input id="loginEmail" name="email" type="email" placeholder="Enter email" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="loginPassword">Password</label>
+              <input id="loginPassword" name="password" type="password" placeholder="Enter password"
+                autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">Log in</button>
+          </form>
+
+          <div class="auth-divider">or</div>
+
+          <div class="social-stack">
+            <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Google">Continue with Google</button>
+            <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Apple">Continue with Apple</button>
+            <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Facebook">Continue with Facebook</button>
+          </div>
+
+          <p class="auth-disclaimer">
+            By signing in, you agree to our
+            <a href="https://www.reverso.net/terms-of-use" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
+          </p>
         </div>
 
-        <form class="auth-form" id="signupForm" autocomplete="off">
-          <div class="field">
-            <label for="signupName">Full name</label>
-            <input id="signupName" name="name" type="text" placeholder="Enter full name" autocomplete="name">
-          </div>
-          <div class="field">
-            <label for="signupEmail">Email</label>
-            <input id="signupEmail" name="email" type="email" placeholder="Enter email" autocomplete="email">
-          </div>
-          <div class="field">
-            <label for="signupPassword">Password</label>
-            <input id="signupPassword" name="password" type="password" placeholder="Create a password"
-              autocomplete="new-password">
-          </div>
-          <button type="submit" class="btn btn--primary btn--block">Sign up</button>
-        </form>
-
-        <form class="auth-form" id="loginForm" hidden autocomplete="off">
-          <div class="field">
-            <label for="loginEmail">Email</label>
-            <input id="loginEmail" name="email" type="email" placeholder="Enter email" autocomplete="email">
-          </div>
-          <div class="field">
-            <label for="loginPassword">Password</label>
-            <input id="loginPassword" name="password" type="password" placeholder="Enter password"
-              autocomplete="current-password">
-          </div>
-          <button type="submit" class="btn btn--primary btn--block">Log in</button>
-        </form>
-
-        <div class="auth-divider">or</div>
-
-        <div class="social-stack">
-          <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Google">Continue with Google</button>
-          <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Apple">Continue with Apple</button>
-          <button type="button" class="btn btn--outline btn--block social-btn" data-provider="Facebook">Continue with Facebook</button>
+        <div class="redirect-notice" id="redirectNotice" hidden role="status">
+          <p class="redirect-notice__title">Login successful (demo)</p>
+          <p class="redirect-notice__body">
+            The page would be redirected to
+            <a id="redirectLink" href="#" target="_blank" rel="noopener noreferrer"></a>.
+          </p>
         </div>
-
-        <p class="auth-disclaimer">
-          By signing in, you agree to our
-          <a href="https://www.reverso.net/terms-of-use" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
-        </p>
       </div>
 
       <div class="page__footer">
@@ -84,24 +99,35 @@
     </main>
   </div>
 
-  <div class="toast" id="toast" role="status">Mock only — no account created</div>
-
   <script>
     (function () {
+      var redirects = {
+        learn: "https://www.reverso.net/vocabulary",
+        teach: "https://www.reverso.net/vocabulary",
+        work: "https://www.reverso.net/context",
+        discover: "https://www.reverso.net/context"
+      };
+
+      var params = new URLSearchParams(window.location.search);
+      var usecase = (params.get("usecase") || "").toLowerCase();
+      if (usecase === "study") usecase = "learn";
+      var returnUrl = redirects[usecase] || redirects.discover;
+
       var tabs = document.querySelectorAll(".auth-tabs__btn");
       var signupForm = document.getElementById("signupForm");
       var loginForm = document.getElementById("loginForm");
       var subtitle = document.querySelector(".page__subtitle");
-      var toast = document.getElementById("toast");
-      var toastTimer;
+      var authFlow = document.getElementById("authFlow");
+      var redirectNotice = document.getElementById("redirectNotice");
+      var redirectLink = document.getElementById("redirectLink");
 
-      function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add("is-visible");
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () {
-          toast.classList.remove("is-visible");
-        }, 2200);
+      redirectLink.href = returnUrl;
+      redirectLink.textContent = returnUrl.replace(/^https:\/\//, "");
+
+      function showRedirectNotice() {
+        authFlow.hidden = true;
+        redirectNotice.hidden = false;
+        subtitle.textContent = "You're in";
       }
 
       tabs.forEach(function (tab) {
@@ -121,22 +147,19 @@
         });
       });
 
-      function handleSubmit(e, message) {
-        e.preventDefault();
-        showToast(message);
-      }
-
       signupForm.addEventListener("submit", function (e) {
-        handleSubmit(e, "Mock only — no account created");
+        e.preventDefault();
+        showRedirectNotice();
       });
 
       loginForm.addEventListener("submit", function (e) {
-        handleSubmit(e, "Mock only — login not connected");
+        e.preventDefault();
+        showRedirectNotice();
       });
 
       document.querySelectorAll(".social-btn").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          showToast("Mock only — " + btn.getAttribute("data-provider") + " sign-in TBD");
+          showRedirectNotice();
         });
       });
     })();

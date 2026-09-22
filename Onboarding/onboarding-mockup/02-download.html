@@ -15,7 +15,7 @@
   <div class="page">
     <header class="page__header">
       <h1 aria-label="Reverso">
-        <img class="page__logo" src="../welcome_original_files/logo.svg" width="156" height="36" alt="Reverso logo">
+        <img class="page__logo" src="logo.svg" width="156" height="36" alt="Reverso logo">
       </h1>
       <h2 class="page__subtitle" id="pageSubtitle">Get the right app for you</h2>
     </header>
@@ -81,13 +81,13 @@
               body: "Select a sentence, email or post and click the floating quill. Reverso corrects errors and suggests AI-powered rephrases."
             },
             {
-              title: "Look up words while you read",
-              body: "Double-click any word in your browser, emails, messengers or documents. Save favorites and practice with flashcards."
+              title: "Translate your documents in seconds",
+              body: "Upload any document & get a professional translation in 29 languages with your layout carefully preserved."
             }
           ],
           ctas: [{ type: "desktop", label: "Get our productivity app", primary: true }]
         },
-        study: {
+        learn: {
           subtitle: "Reverso mobile app",
           title: "Reverso for learning",
           lead: "The free Reverso app brings translation in context and learning tools together in one place.",
@@ -160,6 +160,7 @@
 
       var params = new URLSearchParams(window.location.search);
       var usecase = (params.get("usecase") || "").toLowerCase();
+      if (usecase === "study") usecase = "learn";
       var data = content[usecase] || content.discover;
       if (!content[usecase]) usecase = "discover";
 
