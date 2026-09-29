@@ -193,6 +193,68 @@
     return payload.exp - Date.now() / 1000 <= TOKEN_SKEW_SEC;
   }
 
+  function htmlToPlainText(html) {
+    return String(html || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /**
+   * Build a long, readable error from an upstream/proxy response.
+   * Prefer bodyText / JSON fields; fall back to stripped HTML; keep a large slice.
+   */
+  function formatUpstreamError(res, data, text, pathLabel) {
+    const status = res?.status ?? "?";
+    const ct = res?.headers?.get?.("content-type") || "";
+    const upstreamUrl = res?.headers?.get?.("x-proxy-upstream-url") || "";
+    const parts = [`${status} ${pathLabel || ""}`.trim()];
+    if (upstreamUrl) parts.push(`upstream ${upstreamUrl}`);
+    if (ct) parts.push(`content-type ${ct}`);
+
+    let detail = "";
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      if (data.bodyText) detail = String(data.bodyText);
+      else if (data.message || data.error || data.title) {
+        detail = [data.error, data.message, data.title, data.bodyText]
+          .filter(Boolean)
+          .map(String)
+          .join(" — ");
+        // Also append full JSON for auditability
+        try {
+          const full = JSON.stringify(data, null, 2);
+          if (full.length < 12000) detail = `${detail}\n${full}`;
+          else detail = `${detail}\n${full.slice(0, 12000)}\n…[truncated]`;
+        } catch {
+          /* ignore */
+        }
+      } else {
+        try {
+          detail = JSON.stringify(data, null, 2);
+        } catch {
+          detail = String(data);
+        }
+      }
+    } else if (typeof data === "string") {
+      detail = /^\s*</.test(data) ? htmlToPlainText(data) : data;
+    } else if (text) {
+      detail = /^\s*</.test(text) ? htmlToPlainText(text) : String(text);
+    }
+
+    detail = String(detail || "").trim();
+    if (detail.length > 12000) detail = `${detail.slice(0, 12000)}\n…[truncated ${detail.length} chars]`;
+    const msg = detail ? `${parts.join(" · ")}\n${detail}` : parts.join(" · ");
+    // Keep full text on the Error for console / callers that inspect .upstreamBody
+    const err = new Error(msg);
+    err.status = status;
+    err.upstreamUrl = upstreamUrl;
+    err.upstreamBody = typeof data === "string" ? data : (text || data);
+    err.upstreamJson = data && typeof data === "object" ? data : null;
+    return err;
+  }
+
   async function refreshAccessToken() {
     const refreshToken = getRefreshTokenValue();
     if (!refreshToken) throw new Error("No refresh token — paste one in Auth & load.");
@@ -218,8 +280,9 @@
       data = text;
     }
     if (!res.ok) {
-      const msg = typeof data === "object" ? JSON.stringify(data) : String(data);
-      throw new Error(`Refresh failed (${res.status}): ${msg.slice(0, 300)}`);
+      const err = formatUpstreamError(res, data, text, ACCOUNT_TOKEN_PATH);
+      console.error("[FavAuth] refresh failed", err.upstreamJson || err.upstreamBody || err.message);
+      throw err;
     }
     if (!data?.accessToken) {
       throw new Error("Refresh response missing accessToken.");
@@ -283,8 +346,9 @@
       data = text;
     }
     if (!res.ok) {
-      const msg = typeof data === "object" ? JSON.stringify(data) : String(data);
-      throw new Error(`${res.status} ${pathLabel}: ${msg.slice(0, 300)}`);
+      const err = formatUpstreamError(res, data, text, pathLabel);
+      console.error("[FavAuth] API error", err.upstreamJson || err.upstreamBody || err.message);
+      throw err;
     }
     return data;
   }
@@ -303,6 +367,11 @@
         await refreshAccessToken();
       } catch (err) {
         updateJwtUi();
+        const warn = el("jwt-warn-inline");
+        if (warn) {
+          warn.textContent = err.message;
+          warn.classList.add("show", "err");
+        }
         window.alert(err.message);
       }
     });
@@ -325,6 +394,7 @@
     authReadyForLiveApi,
     fetchWithAuth,
     readJsonResponse,
+    formatUpstreamError,
     initAuthUi,
     hasRefreshToken,
   };

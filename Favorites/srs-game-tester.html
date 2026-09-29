@@ -180,6 +180,8 @@
       margin-top: 0.45rem; font-size: 0.78rem; padding: 0.45rem 0.6rem;
       border-radius: 8px; background: var(--warn-bg); color: #9a3412;
       border: 1px solid #fed7aa; display: none;
+      white-space: pre-wrap; word-break: break-word; max-height: 14rem; overflow: auto;
+      font-family: var(--mono);
     }
     .jwt-warn-inline.show { display: block; }
     .jwt-warn-inline.err { background: var(--err-bg); color: var(--err); border-color: #fecaca; }
@@ -600,9 +602,10 @@
       <div class="stats-bar" id="stats-bar"></div>
       <div class="log-wrap">
         <div class="log-toolbar">
-          <span class="note" id="log-meta">Session logs are saved locally as JSON + a readable transcript.</span>
+          <span class="note" id="log-meta">Session logs save locally when on localhost. Use <strong>Export all</strong> anywhere (incl. deployed) for a full LLM audit pack.</span>
           <button type="button" class="btn ghost" id="btn-copy-log">Copy JSON</button>
-          <button type="button" class="btn ghost" id="btn-download-log">Download</button>
+          <button type="button" class="btn ghost" id="btn-download-log">Download session</button>
+          <button type="button" class="btn" id="btn-export-all" title="Full audit pack for LLM review (works when deployed)">Export all</button>
         </div>
         <div class="log" id="log">Waiting…</div>
       </div>
@@ -2704,7 +2707,10 @@
       return `  · ${card.word} · ${card.bucket} · ${card.answer} · SRS ${srs} · seen ${seen}${mem}${issues}`;
     }
 
-    function buildGameLog({ gameIndex, cards, entries, updatedCards, quizMs, requested, skipped, reason, poolSnap }) {
+    function buildGameLog({
+      gameIndex, cards, entries, updatedCards, quizMs, requested, skipped, reason, poolSnap,
+      quizRequest, quizResponse, updateRequest, updateResponse,
+    }) {
       const specById = new Map(
         (state.specReport?.plays || [])
           .filter((play) => play.gameIndex === gameIndex)
@@ -2725,11 +2731,14 @@
         return {
           id: before.id,
           word: wordWithId(before, 40),
+          sourceText: before.sourceText || before.srcText || "",
+          targetText: before.targetText || before.trgText || "",
           answer,
           bucket,
           inPool: spec ? !!spec.inPool : null,
           before: compactLearn(before),
           after: compactLearn(after),
+          expectedAfter: expectedAfterSpec(before, answer),
           issues,
         };
       });
@@ -2744,6 +2753,12 @@
         pool: poolSnap,
         cards: cardLogs,
         hasIssues: cardLogs.some((card) => card.issues.length),
+        api: {
+          quizRequest: quizRequest || null,
+          quizResponse: quizResponse || null,
+          updateRequest: updateRequest || null,
+          updateResponse: updateResponse || null,
+        },
       };
     }
 
@@ -2907,7 +2922,294 @@
       };
       log.runContext = state.runContext ? { ...state.runContext } : null;
       persistSessionLog(true);
+      archiveFinishedSession(log);
       renderRunReview();
+    }
+
+    const AUDIT_ARCHIVE_KEY = "srs-audit-sessions.v1";
+    const AUDIT_ARCHIVE_MAX = 12;
+
+    function readArchivedSessions() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(AUDIT_ARCHIVE_KEY) || "[]");
+        return Array.isArray(raw) ? raw : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function archiveFinishedSession(log) {
+      if (!log?.sessionId) return;
+      try {
+        const compact = JSON.parse(JSON.stringify({
+          sessionId: log.sessionId,
+          startedAt: log.startedAt,
+          endedAt: log.endedAt,
+          status: log.status,
+          scenarioId: log.scenarioId,
+          scenarioName: log.scenarioName,
+          summary: log.summary,
+          params: log.params,
+          stats: log.stats,
+          srsAggregates: log.srsAggregates,
+          spec: log.spec,
+          runContext: log.runContext,
+          steps: log.steps,
+          games: (log.games || []).map((g) => ({
+            ...g,
+            // Drop bulky raw API payloads from the archive ring; full session export keeps them.
+            api: g.api
+              ? {
+                  quizRequest: g.api.quizRequest || null,
+                  updateRequest: g.api.updateRequest || null,
+                  quizResponseSummary: g.api.quizResponse
+                    ? {
+                        resultsCount: Array.isArray(g.api.quizResponse.results)
+                          ? g.api.quizResponse.results.length
+                          : null,
+                        reason: g.api.quizResponse.reason || g.api.quizResponse.message || null,
+                      }
+                    : null,
+                }
+              : null,
+          })),
+          events: (log.events || []).slice(-200),
+        }));
+        const prev = readArchivedSessions().filter((s) => s.sessionId !== compact.sessionId);
+        prev.unshift(compact);
+        localStorage.setItem(AUDIT_ARCHIVE_KEY, JSON.stringify(prev.slice(0, AUDIT_ARCHIVE_MAX)));
+      } catch (err) {
+        console.warn("Could not archive session for audit export", err);
+      }
+    }
+
+    function safeJsonParseText(text) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text || null;
+      }
+    }
+
+    function readDomJson(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const text = el.textContent;
+      if (!text || text === "—") return null;
+      return safeJsonParseText(text);
+    }
+
+    function serializeSpecReport(report) {
+      if (!report) return null;
+      return {
+        mix: { ...(report.mix || {}) },
+        selectionOk: report.selectionOk,
+        selectionBad: report.selectionBad,
+        updateOk: report.updateOk,
+        updateBad: report.updateBad,
+        masteredUnjustified: report.masteredUnjustified,
+        masteredFiller: report.masteredFiller,
+        seenIds: [...(report.seenIds || [])],
+        plays: report.plays || [],
+      };
+    }
+
+    function currentUiSettings() {
+      return {
+        sourceLang: document.getElementById("source-lang")?.value || "",
+        targetLang: document.getElementById("target-lang")?.value || "",
+        sourceStrategy: document.getElementById("source-strategy")?.value || "",
+        learningStrategy: document.getElementById("learning-strategy")?.value || "",
+        vocabularyListId: document.getElementById("vocabulary-list")?.value || "",
+        nbTerms: document.getElementById("nb-terms")?.value || "",
+        gameCount: document.getElementById("game-count")?.value || "",
+        delayMs: document.getElementById("delay-ms")?.value || "",
+        answerMode: document.querySelector('input[name="answer-mode"]:checked')?.value || "",
+        correctRatio: document.getElementById("correct-ratio")?.value || "",
+        expertMode: isExpertMode(),
+        origin: document.getElementById("origin-header")?.value || "",
+        scenarioId: document.getElementById("scenario-select")?.value || "",
+        keepWordTotals: keepWordTotalsAcrossRuns(),
+      };
+    }
+
+    function buildLlmBrief(pack) {
+      const lines = [];
+      const session = pack.currentSession;
+      const verdict = pack.runReview?.verdict;
+      lines.push("# SRS game tester — audit brief");
+      lines.push("");
+      lines.push("Use this file to audit whether the SRS quiz selection and update behaviour match the product specs.");
+      lines.push("Full structured data is in the same JSON under `currentSession`, `srsReport`, `specReport`, `corpus`, and `recentSessions`.");
+      lines.push("");
+      lines.push("## Environment");
+      lines.push(`- Exported: ${pack.exportedAt}`);
+      lines.push(`- URL: ${pack.environment?.href || "—"}`);
+      lines.push(`- Live API (localhost proxy): ${pack.environment?.liveApiEnabled ? "yes" : "no"}`);
+      lines.push(`- User: ${pack.user?.label || "—"} (${pack.user?.userId || "—"})`);
+      lines.push(`- Expert corpus loaded: ${pack.corpus?.loaded ? `yes (${pack.corpus.favCount} favs / ${pack.corpus.historyCount} history)` : "no"}`);
+      lines.push("");
+      if (verdict) {
+        lines.push("## Verdict");
+        lines.push(`- **${verdict.badge}** — ${verdict.meta || ""}`);
+        for (const chip of verdict.chips || []) lines.push(`  - [${chip.cls}] ${chip.text}`);
+        lines.push("");
+      }
+      if (session?.summary) {
+        lines.push("## Session summary");
+        lines.push("```json");
+        lines.push(JSON.stringify(session.summary, null, 2));
+        lines.push("```");
+        lines.push("");
+      }
+      if (session?.scenarioId) {
+        lines.push(`## Scenario: ${session.scenarioName || session.scenarioId}`);
+        lines.push("");
+      }
+      if (pack.runReview?.expectedRows?.length) {
+        lines.push("## Expected vs actual");
+        for (const row of pack.runReview.expectedRows) {
+          lines.push(`- ${row.metric}: expected ${row.expected} → actual ${row.actual} (${row.match})`);
+        }
+        lines.push("");
+      }
+      const issues = pack.runReview?.issues || [];
+      if (issues.length) {
+        lines.push(`## Issues (${issues.length})`);
+        for (const issue of issues.slice(0, 80)) {
+          const word = issue.before?.sourceText || issue.before?.srcText || issue.before?.id || "?";
+          lines.push(
+            `- [${issue.severity}/${issue.source}] game ${issue.gameIndex} · ${word} · ${issue.answer} · ${(issue.texts || []).join("; ")}`
+          );
+        }
+        if (issues.length > 80) lines.push(`- … +${issues.length - 80} more`);
+        lines.push("");
+      }
+      const games = session?.games || [];
+      if (games.length) {
+        lines.push(`## Games (${games.length})`);
+        for (const g of games) {
+          if (g.skipped) {
+            lines.push(`- Game ${g.gameIndex}: SKIPPED — ${g.reason || "?"}`);
+            continue;
+          }
+          lines.push(
+            `- Game ${g.gameIndex}: ${g.returned}/${g.requested} cards · mix ${formatMix(g.mix) || "—"} · quiz ${g.quizMs}ms${g.hasIssues ? " · HAS ISSUES" : ""}`
+          );
+          for (const card of g.cards || []) {
+            if (!card.issues?.length) continue;
+            lines.push(
+              `  - ${card.word} · ${card.bucket} · ${card.answer} · SRS ${card.before?.srsCounter}→${card.after?.srsCounter ?? "?"} · ${card.issues.join("; ")}`
+            );
+          }
+        }
+        lines.push("");
+      }
+      if (pack.scenarioDefinition) {
+        lines.push("## Scenario definition");
+        lines.push("```json");
+        lines.push(JSON.stringify(pack.scenarioDefinition, null, 2));
+        lines.push("```");
+        lines.push("");
+      }
+      lines.push("## Audit checklist for the LLM");
+      lines.push("1. Did Know answers increase SRS (or master at SRS≥4)?");
+      lines.push("2. Did Don’t know leave SRS unchanged and set LastStatus failed?");
+      lines.push("3. Were short/ineligible terms excluded from draws?");
+      lines.push("4. For SRS, was mix roughly new/fresh/old on target when the pool allowed?");
+      lines.push("5. Were mastered cards only drawn as filler when the learning pool was exhausted?");
+      lines.push("6. Flag any update/selection FAIL issues and quote the card ids.");
+      lines.push("");
+      return lines.join("\n");
+    }
+
+    function buildAuditExportPack() {
+      let verdict = null;
+      try { verdict = buildRunVerdict(); } catch { /* ignore */ }
+      const identity = currentUserIdentity();
+      const session = serializeSessionLog();
+      const pack = {
+        exportVersion: 1,
+        exportKind: "srs-game-tester-audit-pack",
+        exportedAt: new Date().toISOString(),
+        purpose: "Full audit dump for LLM / human review of SRS quiz behaviour",
+        environment: {
+          href: location.href,
+          hostname: location.hostname,
+          liveApiEnabled: LIVE_API_ENABLED,
+          userAgent: navigator.userAgent,
+        },
+        user: {
+          userId: state.corpus.userId || identity.userId || "",
+          label: state.corpus.userLabel || identity.label || "",
+        },
+        uiSettings: currentUiSettings(),
+        scenarioDefinition: state.currentScenario || null,
+        scenariosIndex: state.scenariosIndex || [],
+        currentSession: session,
+        runReview: {
+          verdict,
+          expectedRows: verdict?.expectedRows || [],
+          kpis: verdict?.kpis || [],
+          issues: collectReviewIssues(),
+          runContext: state.runContext ? { ...state.runContext } : null,
+        },
+        srsReport: state.srsReport
+          ? {
+              aggregates: { ...(state.srsReport.aggregates || {}) },
+              plays: state.srsReport.plays || [],
+            }
+          : null,
+        specReport: serializeSpecReport(state.specReport),
+        wordTotals: [...state.wordTotals.values()],
+        activityLog: state.activityLog.slice(),
+        lists: state.lists || [],
+        countMap: state.countMap || state.corpus.countMap || {},
+        corpus: {
+          loaded: !!state.corpus.loaded,
+          loading: !!state.corpus.loading,
+          syncedAt: state.corpus.syncedAt || null,
+          syncedAtIso: state.corpus.syncedAt ? new Date(state.corpus.syncedAt).toISOString() : null,
+          favCount: (state.corpus.favs || []).length,
+          historyCount: (state.corpus.history || []).length,
+          favTotal: state.corpus.favTotal || 0,
+          historyTotal: state.corpus.historyTotal || 0,
+          deltaFavs: state.corpus.deltaFavs || 0,
+          deltaHistory: state.corpus.deltaHistory || 0,
+          errors: state.corpus.errors || [],
+          favs: state.corpus.favs || [],
+          history: state.corpus.history || [],
+        },
+        lastApi: {
+          quiz: readDomJson("raw-quiz"),
+          update: readDomJson("raw-update"),
+        },
+        recentSessions: readArchivedSessions(),
+        liveConsoleText: document.getElementById("log")?.innerText || "",
+      };
+      pack.llmBrief = buildLlmBrief(pack);
+      return pack;
+    }
+
+    function downloadAuditExport() {
+      const pack = buildAuditExportPack();
+      const stamp = pack.exportedAt.replace(/[:.]/g, "-").slice(0, 19);
+      const sid = pack.currentSession?.sessionId || "no-session";
+      const name = `srs-audit-${sid}-${stamp}.json`;
+      const blob = new Blob([JSON.stringify(pack, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      const bytes = blob.size;
+      const mb = bytes > 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+      updateLogMeta(`Exported audit pack ${name} (${mb})`);
+      logLine(
+        `Exported full audit pack → ${name} (${mb}) · session ${sid} · ${pack.corpus.favCount} favs / ${pack.corpus.historyCount} history · ${pack.recentSessions.length} archived run(s)`,
+        "ok"
+      );
+      return pack;
     }
 
     async function copySessionLog() {
@@ -3470,6 +3772,8 @@
           skipped: true,
           reason,
           poolSnap,
+          quizRequest: params,
+          quizResponse: quiz,
         }));
         state.stats.gamesSkipped += 1;
         renderStats();
@@ -3507,6 +3811,10 @@
         requested,
         skipped: false,
         poolSnap,
+        quizRequest: params,
+        quizResponse: quiz,
+        updateRequest: updateBody,
+        updateResponse: updateRes.data,
       });
       const mixSummary = formatMix(gameLog.mix);
       const statusCls = cards.length < requested || gameLog.hasIssues ? "warn" : "ok";
@@ -4521,6 +4829,14 @@
       });
       document.getElementById("btn-copy-log").onclick = () => copySessionLog().catch((err) => updateLogMeta(err.message));
       document.getElementById("btn-download-log").onclick = downloadSessionLog;
+      document.getElementById("btn-export-all").onclick = () => {
+        try {
+          downloadAuditExport();
+        } catch (err) {
+          updateLogMeta(err.message);
+          logLine(`Export all failed: ${err.message}`, "err");
+        }
+      };
       document.querySelectorAll('input[name="answer-mode"]').forEach((el) => {
         el.addEventListener("change", syncAnswerRatioUi);
       });

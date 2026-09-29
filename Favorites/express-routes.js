@@ -128,9 +128,49 @@ function proxyRequest(req, res, targetPathWithQuery, bodyBuf, baseUrl) {
     up.on("data", (c) => out.push(c));
     up.on("end", () => {
       const buf = Buffer.concat(out);
-      res.writeHead(up.statusCode || 502, {
+      const status = up.statusCode || 502;
+      const upstreamCt = String(up.headers["content-type"] || "");
+      const wantsJson =
+        String(req.headers.accept || "").includes("application/json")
+        || String(headers.accept || "").includes("application/json");
+      const looksHtml =
+        /text\/html/i.test(upstreamCt)
+        || /^\s*<(!DOCTYPE|html)/i.test(buf.toString("utf8", 0, 64));
+
+      // HTML error pages (Cloudflare / Reverso WAF) are opaque in DevTools;
+      // wrap them as JSON so the UI can show the full upstream payload.
+      if (status >= 400 && looksHtml && wantsJson) {
+        const raw = buf.toString("utf8");
+        const bodyText = raw
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        const payload = JSON.stringify({
+          error: "Upstream returned an HTML error page",
+          status,
+          upstream: String(targetUrl),
+          method: req.method,
+          contentType: upstreamCt || "text/html",
+          bodyText: bodyText.slice(0, 8000),
+          body: raw.length > 100000 ? `${raw.slice(0, 100000)}\n…[truncated ${raw.length} chars]` : raw,
+        }, null, 2);
+        res.writeHead(status, {
+          ...corsHeaders(),
+          "Content-Type": "application/json;charset=UTF-8",
+          "X-Proxy-Upstream-Status": String(status),
+          "X-Proxy-Upstream-Url": String(targetUrl),
+          "X-Proxy-Upstream-Content-Type": upstreamCt || "text/html",
+        });
+        return res.end(payload);
+      }
+
+      res.writeHead(status, {
         ...corsHeaders(),
-        "Content-Type": up.headers["content-type"] || "application/json",
+        "Content-Type": upstreamCt || "application/json",
+        "X-Proxy-Upstream-Status": String(status),
+        "X-Proxy-Upstream-Url": String(targetUrl),
       });
       res.end(buf);
     });
