@@ -7,6 +7,8 @@
   const STORAGE_KEY = "fav-api-tester.v1";
   const ACCOUNT_TOKEN_PATH = "/account-proxy/api/v1/account/accessToken";
   const TOKEN_SKEW_SEC = 60;
+  /** Fixed client origin for all Favourites/SRS testers — not user-editable. */
+  const REVERSO_ORIGIN = "reverso-internal-tester";
 
   let refreshInFlight = null;
 
@@ -41,7 +43,7 @@
   }
 
   function getOriginValue() {
-    return el("origin-header")?.value.trim() || loadAuth().origin || "mainweb";
+    return REVERSO_ORIGIN;
   }
 
   function setAccessTokenValue(token) {
@@ -262,7 +264,7 @@
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
-      "X-Reverso-Origin": getOriginValue() || "mainweb",
+      "X-Reverso-Origin": getOriginValue(),
     };
     const current = getAccessTokenValue();
     if (current) headers.Authorization = normalizeBearer(current);
@@ -357,7 +359,6 @@
     const saved = loadAuth();
     if (saved.refreshToken) setRefreshTokenValue(saved.refreshToken);
     if (saved.authToken) setAccessTokenValue(saved.authToken);
-    if (saved.origin && el("origin-header")) el("origin-header").value = saved.origin;
 
     el("auth-token")?.addEventListener("input", updateJwtUi);
     el("refresh-token")?.addEventListener("input", updateJwtUi);
@@ -382,6 +383,7 @@
 
   global.FavAuth = {
     STORAGE_KEY,
+    REVERSO_ORIGIN,
     loadAuth,
     saveAuth,
     decodeJwtPayload,

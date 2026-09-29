@@ -49,7 +49,7 @@ function proxyRequest(req, res, targetPathWithQuery) {
   const targetUrl = new URL(relative, base);
 
   const headers = {};
-  for (const name of ["authorization", "content-type", "x-reverso-origin", "accept"]) {
+  for (const name of ["authorization", "content-type", "x-reverso-origin", "accept", "user-agent"]) {
     if (req.headers[name]) headers[name] = req.headers[name];
   }
   if (!headers.accept) headers.accept = "application/json";
@@ -57,7 +57,7 @@ function proxyRequest(req, res, targetPathWithQuery) {
   if (!headers["content-type"] && req.method !== "GET" && req.method !== "HEAD") {
     headers["content-type"] = "application/json;charset=UTF-8";
   }
-  // Cloudflare / edge rejects default curl/Node user-agents with 403.
+  // Prefer the caller's User-Agent; Cloudflare / edge rejects bare Node/curl agents.
   if (!headers["user-agent"]) {
     headers["user-agent"] =
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
