@@ -1,0 +1,181 @@
+{
+  "id": "interleaved-seed-quiz",
+  "name": "Interleaved seed + quiz waves",
+  "description": "Start with ~10 new favourites, play 1 SRS quiz, then keep alternating small random seed batches (2–5) with single quizzes — 10 waves total. Stresses pool growth, mix, and delta corpus refresh between games.",
+  "defaults": {
+    "sourceLang": "en",
+    "targetLang": "fr",
+    "delayMs": 250,
+    "source": 0
+  },
+  "steps": [
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "count": 10,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 500 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.75
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.7
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.65
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.7
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "MIXED",
+      "nbTerms": 7,
+      "correctRatio": 0.6
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.75
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.55
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.8
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "MIXED",
+      "nbTerms": 7,
+      "correctRatio": 0.5
+    },
+
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "countMin": 2,
+      "countMax": 5,
+      "onlyNew": true
+    },
+    { "type": "delay", "ms": 400 },
+    {
+      "type": "play",
+      "games": 1,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.7
+    }
+  ]
+}

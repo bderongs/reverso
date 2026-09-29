@@ -1,0 +1,31 @@
+{
+  "id": "search-then-history-play",
+  "name": "Search words then play from History",
+  "description": "Write N new history lookups from the common bank (skip existing), then play with sourceStrategy=HISTORY.",
+  "defaults": {
+    "sourceLang": "en",
+    "targetLang": "fr",
+    "delayMs": 400,
+    "source": 0
+  },
+  "steps": [
+    {
+      "type": "search",
+      "wordBank": "en-fr-common",
+      "count": 10,
+      "onlyNew": true
+    },
+    {
+      "type": "delay",
+      "ms": 600
+    },
+    {
+      "type": "play",
+      "games": 10,
+      "sourceStrategy": "HISTORY",
+      "learningStrategy": "MIXED",
+      "nbTerms": 7,
+      "correctRatio": 0.7
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "id": "seed-favs-then-srs",
+  "name": "Seed favourites then play SRS",
+  "description": "Pick N new en→fr pairs from the common word bank (skip already favourited), pause, then play SRS then MIXED games.",
+  "defaults": {
+    "sourceLang": "en",
+    "targetLang": "fr",
+    "delayMs": 400,
+    "source": 0
+  },
+  "steps": [
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "count": 12,
+      "onlyNew": true
+    },
+    {
+      "type": "delay",
+      "ms": 800
+    },
+    {
+      "type": "play",
+      "games": 15,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.8
+    },
+    {
+      "type": "play",
+      "games": 5,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "MIXED",
+      "nbTerms": 7,
+      "correctRatio": 0.5
+    }
+  ]
+}

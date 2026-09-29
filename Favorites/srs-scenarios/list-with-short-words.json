@@ -1,0 +1,48 @@
+{
+  "id": "list-with-short-words",
+  "name": "List with short (ignored) words",
+  "description": "Create a uniquely named vocabulary list each run, seed it with very short terms (normally ineligible / ignored) plus normal bank words, then play SRS on that list only.",
+  "defaults": {
+    "sourceLang": "en",
+    "targetLang": "fr",
+    "delayMs": 400,
+    "source": 0
+  },
+  "steps": [
+    {
+      "type": "createList",
+      "listNamePrefix": "SRS short-words",
+      "emoji": "U+1F9EA",
+      "sharing": "private",
+      "description": "Simulator list: short terms + normal favourites"
+    },
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "count": 12,
+      "onlyNew": true,
+      "listId": "$lastListId",
+      "words": [
+        { "srcText": "I", "trgText": "je" },
+        { "srcText": "a", "trgText": "un" },
+        { "srcText": "to", "trgText": "à" },
+        { "srcText": "of", "trgText": "de" },
+        { "srcText": "me", "trgText": "moi" },
+        { "srcText": "ok", "trgText": "ok" }
+      ]
+    },
+    {
+      "type": "delay",
+      "ms": 800
+    },
+    {
+      "type": "play",
+      "games": 10,
+      "sourceStrategy": "VOCABULARYLIST",
+      "vocabularyListId": "$lastListId",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.7
+    }
+  ]
+}

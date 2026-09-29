@@ -151,7 +151,7 @@ Worked example after one flashcard game:
 | punch / spike | 0/5 new | Know | 1/5 | Correct | 1 day |
 | laugh / split / hunch | 0/5 new | Don’t know | 0/5 | Wrong | 0s |
 
-\*The example leaves colander at 2/5. The **update table in §8** says Don’t know always does `SRScounter − 1` (floored at 0). Treat §8 as the field-level rule; the example is the interval illustration.
+\*The example leaves colander at 2/5. Don’t know does **not** demote `SRScounter` (see §11); it sets `LastStatus` to failed while SRS stays put. The example is the interval illustration.
 
 Next session example in the spec: 4 terms with timer = 0, need 3 more. If there are no new terms, take the timers **closest to finishing**.
 
@@ -217,11 +217,11 @@ Almost every action: **`TimesSeen + 1`** and refresh **`LastSeen`**.
 
 | Action | Card state | LastStatus | SRScounter | isMemorized |
 |---|---|---|---|---|
-| Don’t know | counter 0–3, not memorized | False | **−1** | unchanged (False) |
+| Don’t know | counter 0–3, not memorized | False | **unchanged** | unchanged (False) |
 | Know | counter 0–3, not memorized | True | **+1** | unchanged (False) |
-| Don’t know | counter **4**, not memorized | False | **−1** | unchanged (False) |
+| Don’t know | counter **4**, not memorized | False | **unchanged** | unchanged (False) |
 | Know | counter **4**, not memorized | True | set to **0** | **True** (mastered) |
-| Any | already `isMemorized = True` | same as Know / Don’t know above | same as above | **stays True** even after a wrong answer |
+| Any | already `isMemorized = True` | same as Know / Don’t know above | same as above (Don’t know does **not** demote) | **stays True** even after a wrong answer |
 
 Desired mastery: the user should see the card **5 times** (5 successful Know steps), not “2 Know on the last iteration”.
 

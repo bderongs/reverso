@@ -1,0 +1,27 @@
+[
+  {
+    "id": "seed-favs-then-srs",
+    "name": "Seed favourites then play SRS",
+    "file": "seed-favs-then-srs.json"
+  },
+  {
+    "id": "search-then-history-play",
+    "name": "Search words then play from History",
+    "file": "search-then-history-play.json"
+  },
+  {
+    "id": "high-error-srs-stress",
+    "name": "High-error SRS stress",
+    "file": "high-error-srs-stress.json"
+  },
+  {
+    "id": "list-with-short-words",
+    "name": "List with short (ignored) words",
+    "file": "list-with-short-words.json"
+  },
+  {
+    "id": "interleaved-seed-quiz",
+    "name": "Interleaved seed + quiz waves",
+    "file": "interleaved-seed-quiz.json"
+  }
+]

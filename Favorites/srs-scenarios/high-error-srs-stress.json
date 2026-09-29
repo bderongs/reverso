@@ -1,0 +1,31 @@
+{
+  "id": "high-error-srs-stress",
+  "name": "High-error SRS stress",
+  "description": "Seed N new favourites from the common bank, then hammer SRS with mostly incorrect answers.",
+  "defaults": {
+    "sourceLang": "en",
+    "targetLang": "fr",
+    "delayMs": 300,
+    "source": 0
+  },
+  "steps": [
+    {
+      "type": "favorite",
+      "wordBank": "en-fr-common",
+      "count": 12,
+      "onlyNew": true
+    },
+    {
+      "type": "delay",
+      "ms": 500
+    },
+    {
+      "type": "play",
+      "games": 20,
+      "sourceStrategy": "FAVOURITES",
+      "learningStrategy": "SRS",
+      "nbTerms": 7,
+      "correctRatio": 0.2
+    }
+  ]
+}

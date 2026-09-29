@@ -1,0 +1,32 @@
+CONFIG_IDS
+id
+658
+659
+660
+698
+702
+706
+737
+738
+652
+654
+655
+703
+707
+656
+704
+700
+746
+770
+769
+771
+772
+
+SUMMARY_HEADERS_APPEND_FROM_H
+Strong favoriters (30 days)	Strong learners (30 days)	Strong readers (30 days, >3 texts)	Search → Save rate (30 days)	Total premium subscribers	Premium rate — active users (30 days)	Active rate — premium subscribers (30 days)	Premium rate — favoriters (30 days)	Premium rate — learners (30 days)	Learn rate — premium subscribers (30 days)	% users — learn cards created but never seen (30 days)	Avg learn cards per learner (30 days)	Created but not played Cards	Being Learned cards	Mastered this month
+
+AUG13_ROW_A_TO_K
+2026-08-13	820702	817853	94715	39875	1551		10127	24515	95	0.115809
+
+PRIOR_SOURCE
+Dashboard 49 MoM Prior columns (queried 2026-09-25)

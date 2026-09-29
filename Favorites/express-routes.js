@@ -52,7 +52,36 @@ const DEFAULT_ACCOUNT_BASE =
 
 const FAV_DIR = __dirname;
 const SRS_LOG_DIR = path.join(FAV_DIR, "srs-logs");
+const SRS_SCENARIOS_DIR = path.join(FAV_DIR, "srs-scenarios");
 const SRS_LOG_KEEP = 30;
+
+function safeScenarioBasename(id) {
+  const cleaned = String(id || "")
+    .replace(/[^a-zA-Z0-9._-]/g, "")
+    .slice(0, 80);
+  return cleaned;
+}
+
+function resolveScenarioFile(idOrFile) {
+  const indexPath = path.join(SRS_SCENARIOS_DIR, "index.json");
+  if (!fs.existsSync(indexPath)) return null;
+  let index;
+  try {
+    index = JSON.parse(fs.readFileSync(indexPath, "utf8"));
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(index)) return null;
+  const key = String(idOrFile || "");
+  const entry = index.find((item) => item && (item.id === key || item.file === key));
+  if (!entry || !entry.file) return null;
+  const base = path.basename(String(entry.file));
+  if (!base.endsWith(".json") || base === "index.json") return null;
+  const full = path.join(SRS_SCENARIOS_DIR, base);
+  if (!full.startsWith(SRS_SCENARIOS_DIR + path.sep)) return null;
+  if (!fs.existsSync(full)) return null;
+  return full;
+}
 
 function corsHeaders() {
   return {
@@ -221,6 +250,31 @@ function mountFavoritesRoutes(app) {
   app.get("/srs-log/latest", (_req, res) => {
     const file = path.join(SRS_LOG_DIR, "latest.json");
     if (!fs.existsSync(file)) return res.status(404).json({ error: "No log yet" });
+    res.sendFile(file);
+  });
+
+  app.get("/srs-scenarios", (_req, res) => {
+    const indexPath = path.join(SRS_SCENARIOS_DIR, "index.json");
+    if (!fs.existsSync(indexPath)) return res.status(404).json({ error: "No scenarios index" });
+    res.sendFile(indexPath);
+  });
+
+  app.get("/srs-scenarios/word-banks/:id", (req, res) => {
+    const id = safeScenarioBasename(req.params.id);
+    if (!id) return res.status(400).json({ error: "Invalid word-bank id" });
+    const full = path.join(SRS_SCENARIOS_DIR, "word-banks", `${id}.json`);
+    if (!full.startsWith(path.join(SRS_SCENARIOS_DIR, "word-banks") + path.sep)) {
+      return res.status(400).json({ error: "Invalid word-bank path" });
+    }
+    if (!fs.existsSync(full)) return res.status(404).json({ error: "Word bank not found" });
+    res.sendFile(full);
+  });
+
+  app.get("/srs-scenarios/:id", (req, res) => {
+    const id = safeScenarioBasename(req.params.id);
+    if (!id) return res.status(400).json({ error: "Invalid scenario id" });
+    const file = resolveScenarioFile(id);
+    if (!file) return res.status(404).json({ error: "Scenario not found" });
     res.sendFile(file);
   });
 
