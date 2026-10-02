@@ -650,7 +650,7 @@
 
   <script src="/fav-auth.js"></script>
   <script>
-    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const LIVE_API_ENABLED = true;
     const GAME_SIZE = 7;
     const DAY_MS = 86400000;
     const SRS_INTERVAL_DAYS = { 1: 1, 2: 3, 3: 7, 4: 14 };
@@ -726,8 +726,7 @@
     }
 
     async function apiGet(path, params) {
-      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
-      const url = "/proxy" + path + "?" + qs(params);
+      const url = FavAuth.favApiUrl(path + "?" + qs(params));
       const res = await FavAuth.fetchWithAuth(url);
       return FavAuth.readJsonResponse(res, path);
     }

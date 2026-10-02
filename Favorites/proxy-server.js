@@ -1,6 +1,8 @@
 /**
- * Local proxy for the Favourites API tester.
- * Avoids CORS when calling context.reverso.net from the browser.
+ * Local static server + optional CORS proxy for Favourites API testers.
+ *
+ * Proxy behaviour is set aside: the HTML clients call Reverso APIs directly.
+ * /proxy routes remain available for manual debugging only.
  *
  * Usage: node Favorites/proxy-server.js
  * Then open http://localhost:3847/

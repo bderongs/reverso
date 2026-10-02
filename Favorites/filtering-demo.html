@@ -1314,12 +1314,12 @@
       return sp.toString();
     }
 
-    // Live API only on local relay — Vercel/production must not hit /proxy (firewall).
-    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    // Direct calls to production Favourites API (local /proxy set aside).
+    const LIVE_API_ENABLED = true;
 
     async function apiGet(path, params) {
       if (!LIVE_API_ENABLED) return null;
-      const url = "/proxy" + path + "?" + qs(params);
+      const url = FavAuth.favApiUrl(path + "?" + qs(params));
       const res = await FavAuth.fetchWithAuth(url);
       const data = await FavAuth.readJsonResponse(res, path);
       return { url, data };
@@ -1873,7 +1873,7 @@
 
         document.getElementById("raw-favs").textContent = JSON.stringify(state.favs, null, 2);
         document.getElementById("raw-lists").textContent = JSON.stringify(state.lists, null, 2);
-        setStatus(true, "OK", `${favsRes.url.replace("/proxy", "")}`);
+        setStatus(true, "OK", `${favsRes.url}`);
         collapseAuthPanel();
       } catch (err) {
         setStatus(false, "Error", "");

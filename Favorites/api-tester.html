@@ -394,8 +394,8 @@
         </div>
         <div class="actions" style="display:flex; gap:0.5rem; align-items:center;">
           <label style="display:flex; gap:0.4rem; align-items:center; font-size:0.85rem; color:var(--muted);">
-            <input type="checkbox" id="use-relay" checked>
-            Use local relay
+            <input type="checkbox" id="use-relay" disabled>
+            Use local relay (set aside — calls go direct)
           </label>
           <button type="button" class="btn" id="btn-save-auth">Save</button>
           <button type="button" class="btn ghost" id="btn-clear-auth">Clear</button>
@@ -810,7 +810,8 @@
     }
 
     function useRelay() {
-      return document.getElementById("use-relay").checked;
+      // Proxy set aside — always call Reverso directly from the browser.
+      return false;
     }
 
     /** Build the real API URL, and the fetch URL (relay or direct). */
@@ -839,6 +840,8 @@
         }
       }
       headers["X-Reverso-Origin"] = FIXED_ORIGIN;
+      headers["X-Reverso-Client"] = "reverso-internal-tester";
+      headers["User-Agent"] = "reverso-internal-tester";
       return headers;
     }
 

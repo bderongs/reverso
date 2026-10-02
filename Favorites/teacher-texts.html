@@ -513,8 +513,8 @@
           <button type="button" class="btn" id="btn-load-account">Load account</button>
         </div>
         <p class="note" style="margin-top:0.55rem;">
-          Local server only: lists go through <code>/proxy</code>. Paste your refresh token once;
-          the page refreshes the JWT via <code>POST /api/v1/account/accessToken</code>.
+          Direct API calls to production. Paste your refresh token once;
+          the page refreshes the access token via account.reverso.net when needed.
         </p>
       </div>
     </details>
@@ -671,7 +671,7 @@
 
   <script src="/fav-auth.js"></script>
   <script>
-    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const LIVE_API_ENABLED = true;
     const MAX_VOCAB = 80;
     const ICON_READING = "/Onboarding/ReversoExtension_3.14.415/dist/assets/icons/svg/add-to-reading-list.svg";
 
@@ -719,8 +719,7 @@
     }
 
     async function apiGet(path, params) {
-      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
-      const url = "/proxy" + path + "?" + qs(params);
+      const url = FavAuth.favApiUrl(path + "?" + qs(params));
       const res = await FavAuth.fetchWithAuth(url);
       const data = await FavAuth.readJsonResponse(res, path);
       return { url, data };

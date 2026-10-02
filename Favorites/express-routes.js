@@ -322,7 +322,8 @@ function mountFavoritesRoutes(app) {
     res.sendFile(file);
   });
 
-  // Express 4: mount at /proxy so /proxy/user/... → req.url = /user/...
+  // --- Proxy routes set aside (clients call Reverso APIs directly) ---
+  // Kept for optional local debugging; not used by the Favourites/SRS pages.
   app.use("/proxy", async (req, res) => {
     if (req.method === "OPTIONS") {
       res.writeHead(204, corsHeaders());
@@ -337,7 +338,7 @@ function mountFavoritesRoutes(app) {
     }
   });
 
-  // Account GAS API — refresh token → access token
+  // Account GAS API — set aside; clients call account.reverso.net directly.
   app.use("/account-proxy", async (req, res) => {
     if (req.method === "OPTIONS") {
       res.writeHead(204, corsHeaders());

@@ -1,11 +1,17 @@
 /**
  * Shared auth helpers for Favourites / SRS local testers.
  * Stores a long-lived refreshToken and exchanges it for access tokens via
- * POST /api/v1/account/accessToken (proxied as /account-proxy/...).
+ * POST https://account.reverso.net/api/v1/account/accessToken (direct from the browser).
+ *
+ * Proxy routes (/proxy, /account-proxy) are set aside — clients call Reverso APIs directly.
  */
 (function (global) {
   const STORAGE_KEY = "fav-api-tester.v1";
-  const ACCOUNT_TOKEN_PATH = "/account-proxy/api/v1/account/accessToken";
+  const ACCOUNT_API_BASE = "https://account.reverso.net";
+  const ACCOUNT_TOKEN_PATH = `${ACCOUNT_API_BASE}/api/v1/account/accessToken`;
+  const FAV_API_BASE = "https://context.reverso.net/bst-web-user";
+  /** Preferred User-Agent; browsers often forbid overriding it on fetch. */
+  const CLIENT_UA = "reverso-internal-tester";
   const TOKEN_SKEW_SEC = 60;
   /** Fixed client origin for all Favourites / SRS local testers. */
   const FIXED_ORIGIN = "reverso.app.ios";
@@ -52,6 +58,13 @@
       input.value = FIXED_ORIGIN;
       input.readOnly = true;
     }
+  }
+
+  /** Absolute Favourites API URL for a path like `/user/favourites?...`. */
+  function favApiUrl(pathWithQuery) {
+    const path = String(pathWithQuery || "");
+    const normalized = path.startsWith("/") ? path : `/${path}`;
+    return FAV_API_BASE.replace(/\/$/, "") + normalized;
   }
 
   function setAccessTokenValue(token) {
@@ -187,11 +200,15 @@
   }
 
   function authHeaders() {
-    const headers = { Accept: "application/json" };
+    const headers = {
+      Accept: "application/json",
+      "X-Reverso-Origin": FIXED_ORIGIN,
+      // Browsers usually strip User-Agent; X-Reverso-Client still identifies the tester.
+      "User-Agent": CLIENT_UA,
+      "X-Reverso-Client": CLIENT_UA,
+    };
     const token = getAccessTokenValue();
-    const origin = getOriginValue();
     if (token) headers.Authorization = normalizeBearer(token);
-    if (origin) headers["X-Reverso-Origin"] = origin;
     return headers;
   }
 
@@ -213,7 +230,7 @@
   }
 
   /**
-   * Build a long, readable error from an upstream/proxy response.
+   * Build a long, readable error from an upstream response.
    * Prefer bodyText / JSON fields; fall back to stripped HTML; keep a large slice.
    */
   function formatUpstreamError(res, data, text, pathLabel) {
@@ -232,7 +249,6 @@
           .filter(Boolean)
           .map(String)
           .join(" — ");
-        // Also append full JSON for auditability
         try {
           const full = JSON.stringify(data, null, 2);
           if (full.length < 12000) detail = `${detail}\n${full}`;
@@ -256,7 +272,6 @@
     detail = String(detail || "").trim();
     if (detail.length > 12000) detail = `${detail.slice(0, 12000)}\n…[truncated ${detail.length} chars]`;
     const msg = detail ? `${parts.join(" · ")}\n${detail}` : parts.join(" · ");
-    // Keep full text on the Error for console / callers that inspect .upstreamBody
     const err = new Error(msg);
     err.status = status;
     err.upstreamUrl = upstreamUrl;
@@ -273,6 +288,8 @@
       Accept: "application/json",
       "Content-Type": "application/json",
       "X-Reverso-Origin": FIXED_ORIGIN,
+      "User-Agent": CLIENT_UA,
+      "X-Reverso-Client": CLIENT_UA,
     };
     const current = getAccessTokenValue();
     if (current) headers.Authorization = normalizeBearer(current);
@@ -394,6 +411,10 @@
   global.FavAuth = {
     STORAGE_KEY,
     FIXED_ORIGIN,
+    CLIENT_UA,
+    FAV_API_BASE,
+    ACCOUNT_API_BASE,
+    favApiUrl,
     loadAuth,
     saveAuth,
     decodeJwtPayload,

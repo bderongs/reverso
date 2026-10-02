@@ -469,9 +469,8 @@
             </span>
           </label>
           <p class="note" style="margin-top:0.55rem;">
-            Local server only: requests go through <code>/proxy</code> → production API.
-            Paste your refresh token once; the page calls
-            <code>POST /api/v1/account/accessToken</code> when the JWT expires.
+            Direct API calls to production (no local proxy). Paste your refresh token once; the page calls
+            <code>POST https://account.reverso.net/api/v1/account/accessToken</code> when the JWT expires.
           </p>
         </div>
       </details>
@@ -715,7 +714,9 @@
 
   <script src="/fav-auth.js"></script>
   <script>
-    const LIVE_API_ENABLED = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    // API calls go direct to Reverso (no /proxy). Local host still needed for /srs-log disk saves.
+    const LOCAL_SERVER = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+    const LIVE_API_ENABLED = true;
 
     const EXPERT_PAGE_SIZE = 100;
     const EXPERT_MAX_PAGES = 80;
@@ -2605,17 +2606,15 @@
     }
 
     async function apiGet(path, params) {
-      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
-      const url = "/proxy" + path + "?" + qs(params);
+      const url = FavAuth.favApiUrl(path + "?" + qs(params));
       const res = await FavAuth.fetchWithAuth(url);
       const data = await FavAuth.readJsonResponse(res, path);
       return { url, data };
     }
 
     async function apiPost(path, body, queryParams) {
-      if (!LIVE_API_ENABLED) throw new Error("Live API only works on localhost (use npm start).");
       const suffix = queryParams ? "?" + qs(queryParams) : "";
-      const url = "/proxy" + path + suffix;
+      const url = FavAuth.favApiUrl(path + suffix);
       const res = await FavAuth.fetchWithAuth(url, {
         method: "POST",
         headers: { "Content-Type": "application/json;charset=UTF-8" },
@@ -2808,7 +2807,7 @@
     function flushSessionLog() {
       const payload = serializeSessionLog();
       if (!payload) return;
-      if (!LIVE_API_ENABLED) {
+      if (!LOCAL_SERVER) {
         updateLogMeta(`${payload.sessionId} · in memory only (run locally to save files)`);
         return;
       }
@@ -3838,7 +3837,7 @@
     async function runGames() {
       if (state.running) return;
       if (!LIVE_API_ENABLED) {
-        logLine("Start the local server (npm start) — Vercel cannot proxy the live API.", "err");
+        logLine("Live API is disabled in this build.", "err");
         return;
       }
 
@@ -4696,7 +4695,7 @@
     async function runScenario() {
       if (state.running) return;
       if (!LIVE_API_ENABLED) {
-        logLine("Start the local server (npm start) — Vercel cannot proxy the live API.", "err");
+        logLine("Live API is disabled in this build.", "err");
         return;
       }
       if (!FavAuth.authReadyForLiveApi()) {
@@ -4906,7 +4905,7 @@
       loadScenariosIndex();
 
       if (!LIVE_API_ENABLED) {
-        logLine("Deployed build: auth UI works, but /proxy is disabled. Run locally to play games.", "warn");
+        logLine("CORS tip: if direct API calls fail in the browser, open DevTools Network for blocked requests.", "warn");
       }
     }
 
