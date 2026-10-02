@@ -411,6 +411,4 @@
     getOriginValue,
     forceOriginInput,
   };
-    hasRefreshToken,
-  };
 })(window);
