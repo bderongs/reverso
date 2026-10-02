@@ -50,8 +50,12 @@ const DEFAULT_BASE =
 const DEFAULT_ACCOUNT_BASE =
   process.env.ACCOUNT_API_BASE || "https://account.reverso.net";
 
-/** Forced on every proxied Favourites/Account request — client value is ignored. */
-const FIXED_REVERSO_ORIGIN = "reverso.app.ios";
+/** Auth (account.reverso.net) origin. */
+const AUTH_REVERSO_ORIGIN = "reverso.app.ios";
+/** bst-web-user origin. */
+const API_REVERSO_ORIGIN = "reverso.ext.chrome";
+/** @deprecated use API_REVERSO_ORIGIN */
+const FIXED_REVERSO_ORIGIN = API_REVERSO_ORIGIN;
 
 const FAV_DIR = __dirname;
 const SRS_LOG_DIR = path.join(FAV_DIR, "srs-logs");
@@ -103,7 +107,10 @@ function proxyRequest(req, res, targetPathWithQuery, bodyBuf, baseUrl) {
   for (const name of ["authorization", "content-type", "accept"]) {
     if (req.headers[name]) headers[name] = req.headers[name];
   }
-  headers["x-reverso-origin"] = FIXED_REVERSO_ORIGIN;
+  headers["x-reverso-origin"] =
+    String(baseUrl || DEFAULT_BASE).includes("account.reverso.net")
+      ? AUTH_REVERSO_ORIGIN
+      : API_REVERSO_ORIGIN;
   if (!headers.accept) headers.accept = "application/json";
   if (!headers["content-type"] && req.method !== "GET" && req.method !== "HEAD") {
     headers["content-type"] = "application/json;charset=UTF-8";
@@ -354,4 +361,11 @@ function mountFavoritesRoutes(app) {
   });
 }
 
-module.exports = { mountFavoritesRoutes, DEFAULT_BASE, DEFAULT_ACCOUNT_BASE, FIXED_REVERSO_ORIGIN };
+module.exports = {
+  mountFavoritesRoutes,
+  DEFAULT_BASE,
+  DEFAULT_ACCOUNT_BASE,
+  AUTH_REVERSO_ORIGIN,
+  API_REVERSO_ORIGIN,
+  FIXED_REVERSO_ORIGIN,
+};

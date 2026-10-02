@@ -17,8 +17,12 @@ const PORT = process.env.PORT || 3847;
 const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
   "https://context.reverso.net/bst-web-user";
-/** Forced on every proxied request — client X-Reverso-Origin is ignored. */
-const FIXED_REVERSO_ORIGIN = "reverso.app.ios";
+/** Auth (account) origin when proxying account-proxy. */
+const AUTH_REVERSO_ORIGIN = "reverso.app.ios";
+/** bst-web-user origin when proxying /proxy. */
+const API_REVERSO_ORIGIN = "reverso.ext.chrome";
+/** @deprecated use API_REVERSO_ORIGIN */
+const FIXED_REVERSO_ORIGIN = API_REVERSO_ORIGIN;
 
 const HTML_PATH = path.join(__dirname, "api-tester.html");
 const FILTER_DEMO_PATH = path.join(__dirname, "filtering-demo.html");
@@ -56,7 +60,7 @@ function proxyRequest(req, res, targetPathWithQuery) {
   for (const name of ["authorization", "content-type", "accept"]) {
     if (req.headers[name]) headers[name] = req.headers[name];
   }
-  headers["x-reverso-origin"] = FIXED_REVERSO_ORIGIN;
+  headers["x-reverso-origin"] = API_REVERSO_ORIGIN;
   if (!headers.accept) headers.accept = "application/json";
   // Spring expects a Content-Type even when params are query-string only.
   if (!headers["content-type"] && req.method !== "GET" && req.method !== "HEAD") {

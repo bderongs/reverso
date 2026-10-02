@@ -384,9 +384,9 @@
       </div>
       <div class="row" style="margin-top: 0.75rem;">
         <div class="field mid">
-          <label for="origin-header">X-Reverso-Origin</label>
-          <input id="origin-header" type="text" value="reverso.app.ios" readonly>
-          <p class="note" style="margin-top:0.35rem;">Fixed to <code>reverso.app.ios</code> (proxy also forces this).</p>
+          <label for="origin-header">X-Reverso-Origin (bst-web-user)</label>
+          <input id="origin-header" type="text" value="reverso.ext.chrome" readonly>
+          <p class="note" style="margin-top:0.35rem;">API: <code>reverso.ext.chrome</code> · auth token exchange: <code>reverso.app.ios</code></p>
         </div>
         <div class="field mid">
           <label for="api-base">API base URL</label>
@@ -823,7 +823,7 @@
       return { fetchUrl: "/proxy" + path, realUrl: real, via: "relay" };
     }
 
-    const FIXED_ORIGIN = "reverso.app.ios";
+    const API_ORIGIN = "reverso.ext.chrome";
 
     function authHeaders({ json = false } = {}) {
       let token = document.getElementById("auth-token").value.trim();
@@ -839,8 +839,7 @@
           headers.Authorization = token;
         }
       }
-      headers["X-Reverso-Origin"] = FIXED_ORIGIN;
-      headers["X-Reverso-Client"] = "reverso-internal-tester";
+      headers["X-Reverso-Origin"] = API_ORIGIN;
       headers["User-Agent"] = "reverso-internal-tester";
       return headers;
     }
@@ -1024,7 +1023,7 @@
     function initAuth() {
       const state = loadState();
       if (state.authToken) document.getElementById("auth-token").value = state.authToken;
-      document.getElementById("origin-header").value = FIXED_ORIGIN;
+      document.getElementById("origin-header").value = API_ORIGIN;
       if (state.apiBase) document.getElementById("api-base").value = state.apiBase;
       if (typeof state.useRelay === "boolean") document.getElementById("use-relay").checked = state.useRelay;
       if (state.authToken) {
@@ -1046,7 +1045,7 @@
       document.getElementById("btn-save-auth").onclick = () => {
         saveState({
           authToken: document.getElementById("auth-token").value.trim(),
-          origin: FIXED_ORIGIN,
+          origin: API_ORIGIN,
           apiBase: document.getElementById("api-base").value.trim(),
           useRelay: document.getElementById("use-relay").checked,
         });
@@ -1066,7 +1065,7 @@
       document.getElementById("auth-token").addEventListener("change", () => {
         saveState({
           authToken: document.getElementById("auth-token").value.trim(),
-          origin: FIXED_ORIGIN,
+          origin: API_ORIGIN,
           apiBase: document.getElementById("api-base").value.trim(),
           useRelay: document.getElementById("use-relay").checked,
         });

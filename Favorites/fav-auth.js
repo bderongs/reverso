@@ -13,8 +13,12 @@
   /** Preferred User-Agent; browsers often forbid overriding it on fetch. */
   const CLIENT_UA = "reverso-internal-tester";
   const TOKEN_SKEW_SEC = 60;
-  /** Fixed client origin for all Favourites / SRS local testers. */
-  const FIXED_ORIGIN = "reverso.app.ios";
+  /** Account / token exchange origin. */
+  const AUTH_ORIGIN = "reverso.app.ios";
+  /** bst-web-user (favourites, learn, history, …) origin. */
+  const API_ORIGIN = "reverso.ext.chrome";
+  /** @deprecated use AUTH_ORIGIN / API_ORIGIN — kept as API default for older callers */
+  const FIXED_ORIGIN = API_ORIGIN;
 
   let refreshInFlight = null;
 
@@ -48,14 +52,18 @@
     return el("refresh-token")?.value.trim() || loadAuth().refreshToken || "";
   }
 
+  function getAuthOriginValue() {
+    return AUTH_ORIGIN;
+  }
+
   function getOriginValue() {
-    return FIXED_ORIGIN;
+    return API_ORIGIN;
   }
 
   function forceOriginInput() {
     const input = el("origin-header");
     if (input) {
-      input.value = FIXED_ORIGIN;
+      input.value = API_ORIGIN;
       input.readOnly = true;
     }
   }
@@ -202,10 +210,9 @@
   function authHeaders() {
     const headers = {
       Accept: "application/json",
-      "X-Reverso-Origin": FIXED_ORIGIN,
-      // Browsers usually strip User-Agent; X-Reverso-Client still identifies the tester.
+      "X-Reverso-Origin": API_ORIGIN,
+      // Browsers usually strip User-Agent on fetch.
       "User-Agent": CLIENT_UA,
-      "X-Reverso-Client": CLIENT_UA,
     };
     const token = getAccessTokenValue();
     if (token) headers.Authorization = normalizeBearer(token);
@@ -287,9 +294,8 @@
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
-      "X-Reverso-Origin": FIXED_ORIGIN,
+      "X-Reverso-Origin": AUTH_ORIGIN,
       "User-Agent": CLIENT_UA,
-      "X-Reverso-Client": CLIENT_UA,
     };
     const current = getAccessTokenValue();
     if (current) headers.Authorization = normalizeBearer(current);
@@ -410,6 +416,8 @@
 
   global.FavAuth = {
     STORAGE_KEY,
+    AUTH_ORIGIN,
+    API_ORIGIN,
     FIXED_ORIGIN,
     CLIENT_UA,
     FAV_API_BASE,
@@ -430,6 +438,7 @@
     formatUpstreamError,
     initAuthUi,
     getOriginValue,
+    getAuthOriginValue,
     forceOriginInput,
   };
 })(window);
