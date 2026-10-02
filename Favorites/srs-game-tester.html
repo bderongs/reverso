@@ -361,6 +361,99 @@
       padding: 0.06rem 0.3rem; border-radius: 4px;
       background: #eef2f7; color: var(--muted); margin-right: 0.25rem;
     }
+    .token-lead {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      margin-bottom: 0.55rem;
+    }
+    .token-lead strong {
+      font-size: 1.15rem;
+      font-weight: 750;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    textarea.token-input {
+      min-height: 7rem;
+      font-size: 1rem;
+      line-height: 1.45;
+      padding: 0.8rem 0.9rem;
+      border: 2px solid var(--blue);
+      background: #f8fbff;
+      border-radius: 12px;
+    }
+    textarea.token-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.18);
+    }
+    .btn.block {
+      width: 100%;
+      margin-top: 0.65rem;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+    }
+    .path-intro { margin-bottom: 0.15rem; }
+    .path-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      border-width: 2px;
+    }
+    .path-copy { flex: 1 1 auto; min-width: 0; }
+    .path-panel.scenario-path.is-active {
+      border-color: #7c3aed;
+      background: #faf8ff;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+    }
+    .path-panel.automation-path.is-active {
+      border-color: #16a34a;
+      background: #f6fef9;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    }
+    .path-panel:not(.is-active) {
+      opacity: 0.62;
+      background: #f8fafc;
+    }
+    .path-panel:not(.is-active) .path-body { display: none; }
+    .path-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      cursor: pointer;
+    }
+    .path-head input { width: auto; margin-top: 0.28rem; accent-color: var(--blue); }
+    .path-title {
+      display: block;
+      font-size: 1.02rem;
+      font-weight: 750;
+      color: var(--ink);
+      margin-bottom: 0.1rem;
+    }
+    .path-kicker {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+    .scenario-path .path-kicker { color: #6d28d9; }
+    .automation-path .path-kicker { color: #15803d; }
+    .path-selected {
+      margin-left: auto;
+      align-self: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+    .automation-path .path-selected { background: var(--green-bg); color: #166534; }
+    .path-panel:not(.is-active) .path-selected { display: none; }
     .expert-toggle {
       display: flex;
       gap: 0.7rem;
@@ -427,51 +520,34 @@
     <section class="zone zone-config">
       <div class="zone-head">
         <span class="zone-label">Configuration</span>
-        <span class="zone-desc">Auth, load lists &amp; language pairs, then set game options</span>
+        <span class="zone-desc">Paste your token, load your account, then pick a scenario or automation</span>
       </div>
 
       <details class="panel auth-panel" id="auth-panel" open>
         <summary>
-          <span class="sum-title">Auth &amp; load</span>
+          <span class="sum-title">Your token</span>
           <span id="jwt-badge" class="jwt-badge">No token</span>
           <span id="status-pill" class="pill">Idle</span>
           <span id="status-meta" class="note"></span>
           <span class="sum-chev">▾</span>
         </summary>
         <div class="auth-body">
-          <div class="row">
-            <div class="field full">
-              <label for="refresh-token">Refresh token</label>
-              <textarea id="refresh-token" class="auth" spellcheck="false" placeholder="Long-lived refresh token (saved locally)"></textarea>
-            </div>
+          <div class="token-lead">
+            <strong>Paste your refresh token</strong>
+            <span class="note">Copy it, click the box, and paste. It stays saved on this computer.</span>
           </div>
-          <div class="row">
-            <div class="field full">
-              <label for="auth-token">Access token (auto)</label>
-              <textarea id="auth-token" class="auth" spellcheck="false" placeholder="Filled automatically from refresh token"></textarea>
-            </div>
-          </div>
+          <textarea id="refresh-token" class="auth token-input" spellcheck="false" placeholder="Paste your refresh token here"></textarea>
+          <button type="button" class="btn block" id="btn-load-account">Load account</button>
+          <textarea id="auth-token" class="hidden" spellcheck="false" aria-hidden="true" tabindex="-1"></textarea>
+          <input id="origin-header" class="hidden" type="text" value="reverso.app.ios" readonly aria-hidden="true" tabindex="-1">
           <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
-          <div class="row" style="margin-top:0.55rem;">
-            <div class="field">
-              <label for="origin-header">X-Reverso-Origin</label>
-              <input id="origin-header" type="text" value="reverso.app.ios" readonly>
-              <p class="note" style="margin-top:0.35rem;">Fixed to <code>reverso.app.ios</code> (proxy also forces this).</p>
-            </div>
-            <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
-            <button type="button" class="btn" id="btn-load-account">Load account</button>
-          </div>
-          <label class="expert-toggle" style="margin-top:0.65rem;">
+          <label class="expert-toggle" style="margin-top:0.85rem;">
             <input type="checkbox" id="expert-mode" checked>
             <span class="expert-copy">
               <strong>Load Favourites + History corpus</strong>
               <span class="note">On by default. Load account pages Favourites and History for mix / selection checks, then caches them on this computer per user. Next load of the same account only fetches items newer than the last save.</span>
             </span>
           </label>
-          <p class="note" style="margin-top:0.55rem;">
-            Direct API calls to production (no local proxy). Paste your refresh token once; the page calls
-            <code>POST https://account.reverso.net/api/v1/account/accessToken</code> when the JWT expires.
-          </p>
         </div>
       </details>
 
@@ -542,61 +618,79 @@
         </p>
       </div>
 
-      <div class="panel">
-        <h2>Automation</h2>
-        <div class="row">
-          <div class="field narrow">
-            <label for="game-count">Games to play</label>
-            <input id="game-count" type="number" min="1" max="500" value="10">
+      <p class="note path-intro">Choose one path. Only the highlighted box runs.</p>
+
+      <div class="panel path-panel scenario-path is-active" id="scenario-panel">
+        <label class="path-head">
+          <input type="radio" name="run-path" id="run-path-scenario" value="scenario" checked>
+          <span class="path-copy">
+            <span class="path-kicker">Scenario</span>
+            <span class="path-title">Follow a ready-made script</span>
+            <span class="note">Save words, search, and play games in a fixed order.</span>
+          </span>
+          <span class="path-selected">Selected</span>
+        </label>
+        <div class="path-body">
+          <div class="row">
+            <div class="field" style="flex:1.4;">
+              <label for="scenario-select">Which scenario</label>
+              <select id="scenario-select">
+                <option value="">— loading… —</option>
+              </select>
+            </div>
+            <button type="button" class="btn ghost" id="btn-reload-scenarios">Reload list</button>
           </div>
-          <div class="field narrow">
-            <label for="delay-ms">Delay (ms)</label>
-            <input id="delay-ms" type="number" min="0" max="10000" step="100" value="400">
-          </div>
-        </div>
-        <p class="note" style="margin:0.55rem 0;">Answer mode for every card in each game:</p>
-        <div class="radio-row" style="margin-top:0.35rem;">
-          <label><input type="radio" name="answer-mode" value="CORRECT" checked> All correct</label>
-          <label><input type="radio" name="answer-mode" value="INCORRECT"> All incorrect</label>
-          <label><input type="radio" name="answer-mode" value="RANDOM"> Random 50%</label>
-          <label><input type="radio" name="answer-mode" value="RATIO"> Ratio</label>
-        </div>
-        <div class="row" id="ratio-row" style="margin-top:0.45rem;">
-          <div class="field narrow">
-            <label for="correct-ratio">Correct ratio (0–1)</label>
-            <input id="correct-ratio" type="number" min="0" max="1" step="0.05" value="0.8" disabled>
-          </div>
+          <p class="note" id="scenario-desc" style="margin-top:0.55rem;"></p>
+          <pre class="raw" id="scenario-steps" style="max-height:10rem; margin-top:0.45rem;">—</pre>
         </div>
       </div>
 
-      <div class="panel">
-        <h2>Scenarios</h2>
-        <p class="note" style="margin:0 0 0.55rem;">
-          Versioned JSON scripts under <code>Favorites/srs-scenarios/</code> — favorite, search, play, delay.
-        </p>
-        <div class="row">
-          <div class="field" style="flex:1.4;">
-            <label for="scenario-select">Scenario</label>
-            <select id="scenario-select">
-              <option value="">— loading… —</option>
-            </select>
+      <div class="panel path-panel automation-path" id="automation-panel">
+        <label class="path-head">
+          <input type="radio" name="run-path" id="run-path-automation" value="automation">
+          <span class="path-copy">
+            <span class="path-kicker">Automation</span>
+            <span class="path-title">Play games with your own settings</span>
+            <span class="note">You choose how many games, the pause, and the answers.</span>
+          </span>
+          <span class="path-selected">Selected</span>
+        </label>
+        <div class="path-body">
+          <div class="row">
+            <div class="field narrow">
+              <label for="game-count">Games to play</label>
+              <input id="game-count" type="number" min="1" max="500" value="10">
+            </div>
+            <div class="field narrow">
+              <label for="delay-ms">Pause between games (ms)</label>
+              <input id="delay-ms" type="number" min="0" max="10000" step="100" value="400">
+            </div>
           </div>
-          <button type="button" class="btn ghost" id="btn-reload-scenarios">Reload</button>
-          <button type="button" class="btn success" id="btn-run-scenario">Run scenario</button>
+          <p class="note" style="margin:0.55rem 0;">How to answer every card:</p>
+          <div class="radio-row" style="margin-top:0.35rem;">
+            <label><input type="radio" name="answer-mode" value="CORRECT" checked> All correct</label>
+            <label><input type="radio" name="answer-mode" value="INCORRECT"> All incorrect</label>
+            <label><input type="radio" name="answer-mode" value="RANDOM"> Random 50%</label>
+            <label><input type="radio" name="answer-mode" value="RATIO"> Ratio</label>
+          </div>
+          <div class="row" id="ratio-row" style="margin-top:0.45rem;">
+            <div class="field narrow">
+              <label for="correct-ratio">Correct ratio (0–1)</label>
+              <input id="correct-ratio" type="number" min="0" max="1" step="0.05" value="0.8" disabled>
+            </div>
+          </div>
         </div>
-        <p class="note" id="scenario-desc" style="margin-top:0.55rem;"></p>
-        <pre class="raw" id="scenario-steps" style="max-height:10rem; margin-top:0.45rem;">—</pre>
       </div>
     </section>
 
     <section class="zone zone-run">
       <div class="zone-head">
         <span class="zone-label">Run</span>
-        <span class="zone-desc">Plays full games sequentially (start quiz → answer all cards → submit update)</span>
+        <span class="zone-desc">Starts the path you selected above</span>
         <span id="run-pill" class="pill">Ready</span>
       </div>
       <div class="row">
-        <button type="button" class="btn success" id="btn-run">Play games</button>
+        <button type="button" class="btn success" id="btn-run">Run scenario</button>
         <button type="button" class="btn danger hidden" id="btn-stop">Stop</button>
       </div>
       <div class="stats-bar" id="stats-bar"></div>
@@ -3577,7 +3671,7 @@
       const fullReload = !!options.fullReload;
       saveAuth();
       if (!FavAuth.authReadyForLiveApi()) {
-        setStatus(false, "Missing auth", "Paste a refresh token (or access token) first.");
+        setStatus(false, "Missing auth", "Paste your refresh token, then click Load account.");
         document.getElementById("auth-panel").open = true;
         return;
       }
@@ -3842,7 +3936,7 @@
       }
 
       if (!FavAuth.authReadyForLiveApi()) {
-        logLine("Paste a refresh token in Auth & load first.", "err");
+        logLine("Paste your refresh token, then click Load account.", "err");
         return;
       }
 
@@ -4699,7 +4793,7 @@
         return;
       }
       if (!FavAuth.authReadyForLiveApi()) {
-        logLine("Paste a refresh token in Auth & load first.", "err");
+        logLine("Paste your refresh token, then click Load account.", "err");
         return;
       }
       if (state.corpus.loading) {
@@ -4763,7 +4857,6 @@
       logLine(`Scenario “${scenario.name || scenario.id}” · ${scenario.steps.length} step(s)`);
 
       document.getElementById("btn-run").disabled = true;
-      document.getElementById("btn-run-scenario").disabled = true;
       document.getElementById("btn-stop").classList.remove("hidden");
       setRunStatus("Scenario…", "run");
 
@@ -4804,18 +4897,36 @@
         state.running = false;
         state.abort = null;
         document.getElementById("btn-run").disabled = false;
-        document.getElementById("btn-run-scenario").disabled = false;
         document.getElementById("btn-stop").classList.add("hidden");
         renderRunReview();
       }
+    }
+
+    function selectedRunPath() {
+      return document.querySelector('input[name="run-path"]:checked')?.value || "scenario";
+    }
+
+    function syncRunPathUi() {
+      const path = selectedRunPath();
+      document.getElementById("scenario-panel")?.classList.toggle("is-active", path === "scenario");
+      document.getElementById("automation-panel")?.classList.toggle("is-active", path === "automation");
+      const btn = document.getElementById("btn-run");
+      if (btn) btn.textContent = path === "scenario" ? "Run scenario" : "Play games";
+    }
+
+    function startSelectedPath() {
+      if (selectedRunPath() === "scenario") runScenario();
+      else runGames();
     }
 
     function init() {
       FavAuth.initAuthUi();
 
       document.getElementById("btn-load-account").onclick = () => loadAccount();
-      document.getElementById("btn-run").onclick = runGames;
-      document.getElementById("btn-run-scenario").onclick = runScenario;
+      document.getElementById("btn-run").onclick = startSelectedPath;
+      document.querySelectorAll('input[name="run-path"]').forEach((el) => {
+        el.addEventListener("change", syncRunPathUi);
+      });
       document.getElementById("btn-reload-scenarios").onclick = () => loadScenariosIndex();
       document.getElementById("scenario-select").addEventListener("change", () => {
         updateScenarioPreview().catch((err) => logLine(err.message, "warn"));
@@ -4898,6 +5009,7 @@
 
       syncSourceFieldsVisibility();
       syncAnswerRatioUi();
+      syncRunPathUi();
       syncExpertUi();
       renderStats();
       renderRunReview();
