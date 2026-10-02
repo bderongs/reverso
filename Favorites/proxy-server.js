@@ -15,6 +15,8 @@ const PORT = process.env.PORT || 3847;
 const DEFAULT_BASE =
   process.env.FAV_API_BASE ||
   "https://context.reverso.net/bst-web-user";
+/** Forced on every proxied request — client X-Reverso-Origin is ignored. */
+const FIXED_REVERSO_ORIGIN = "reverso.app.ios";
 
 const HTML_PATH = path.join(__dirname, "api-tester.html");
 const FILTER_DEMO_PATH = path.join(__dirname, "filtering-demo.html");
@@ -49,19 +51,19 @@ function proxyRequest(req, res, targetPathWithQuery) {
   const targetUrl = new URL(relative, base);
 
   const headers = {};
-  for (const name of ["authorization", "content-type", "x-reverso-origin", "accept", "user-agent"]) {
+  for (const name of ["authorization", "content-type", "accept"]) {
     if (req.headers[name]) headers[name] = req.headers[name];
   }
+  headers["x-reverso-origin"] = FIXED_REVERSO_ORIGIN;
   if (!headers.accept) headers.accept = "application/json";
   // Spring expects a Content-Type even when params are query-string only.
   if (!headers["content-type"] && req.method !== "GET" && req.method !== "HEAD") {
     headers["content-type"] = "application/json;charset=UTF-8";
   }
-  // Prefer the caller's User-Agent; Cloudflare / edge rejects bare Node/curl agents.
-  if (!headers["user-agent"]) {
-    headers["user-agent"] =
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
-  }
+  // Always use a browser-like UA — do not forward the caller's agent.
+  // Cloudflare / edge rejects default Node/curl user-agents with 403.
+  headers["user-agent"] =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
   const chunks = [];
   req.on("data", (c) => chunks.push(c));

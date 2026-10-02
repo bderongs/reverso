@@ -453,12 +453,14 @@
           </div>
           <div id="jwt-warn-inline" class="jwt-warn-inline" role="status"></div>
           <div class="row" style="margin-top:0.55rem;">
+            <div class="field">
+              <label for="origin-header">X-Reverso-Origin</label>
+              <input id="origin-header" type="text" value="reverso.app.ios" readonly>
+              <p class="note" style="margin-top:0.35rem;">Fixed to <code>reverso.app.ios</code> (proxy also forces this).</p>
+            </div>
             <button type="button" class="btn ghost" id="btn-refresh-token">Refresh access token</button>
             <button type="button" class="btn" id="btn-load-account">Load account</button>
           </div>
-          <p class="note" style="margin-top:0.45rem;">
-            Sends <code>X-Reverso-Origin: reverso-internal-tester</code> on every request.
-          </p>
           <label class="expert-toggle" style="margin-top:0.65rem;">
             <input type="checkbox" id="expert-mode" checked>
             <span class="expert-copy">
@@ -3026,7 +3028,7 @@
         answerMode: document.querySelector('input[name="answer-mode"]:checked')?.value || "",
         correctRatio: document.getElementById("correct-ratio")?.value || "",
         expertMode: isExpertMode(),
-        origin: (typeof FavAuth !== "undefined" && FavAuth.REVERSO_ORIGIN) || "reverso-internal-tester",
+        origin: document.getElementById("origin-header")?.value || "",
         scenarioId: document.getElementById("scenario-select")?.value || "",
         keepWordTotals: keepWordTotalsAcrossRuns(),
       };

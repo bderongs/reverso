@@ -153,7 +153,7 @@
    */
   async function favFilterDiscoverAuth(opts = {}) {
     const base = opts.baseUrl || DEFAULT_BASE;
-    const origin = opts.origin || "mainweb";
+    const origin = opts.origin || "reverso.app.ios";
     const cookies = getCookieMap();
     const accessCookie = ACCESS_COOKIE_NAMES.map((n) => ({ name: n, value: cookies[n] })).find(
       (c) => c.value
@@ -240,7 +240,7 @@
   }
 
   async function resolveAuth(opts) {
-    const origin = opts.origin || "mainweb";
+    const origin = opts.origin || "reverso.app.ios";
     const base = opts.baseUrl || DEFAULT_BASE;
     // Default: cookie session on Reverso hosts (what favFilterDiscoverAuth confirms works).
     const host = String(global.location?.hostname || "");
@@ -982,7 +982,7 @@
    * @param {string} [opts.token] Authorization header (Bearer …) — skips cookie auth
    * @param {"cookie"|"auto"|"bearer"} [opts.auth] default "cookie" on *.reverso.net
    * @param {string} [opts.baseUrl] API base (default prod bst-web-user)
-   * @param {string} [opts.origin] X-Reverso-Origin (default mainweb)
+   * @param {string} [opts.origin] X-Reverso-Origin (default reverso.app.ios)
    * @param {string} [opts.languagePairs] e.g. "en-ar"
    * @param {string} [opts.listId]
    * @param {string} [opts.learningStatus] IN_PROGRESS | MEMORIZED | IGNORED | NOT_STARTED

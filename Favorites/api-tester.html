@@ -385,13 +385,8 @@
       <div class="row" style="margin-top: 0.75rem;">
         <div class="field mid">
           <label for="origin-header">X-Reverso-Origin</label>
-          <input id="origin-header" type="text" value="mainweb" list="origin-options">
-          <datalist id="origin-options">
-            <option value="mainweb"></option>
-            <option value="contextweb"></option>
-            <option value="mobileweb"></option>
-            <option value="extension"></option>
-          </datalist>
+          <input id="origin-header" type="text" value="reverso.app.ios" readonly>
+          <p class="note" style="margin-top:0.35rem;">Fixed to <code>reverso.app.ios</code> (proxy also forces this).</p>
         </div>
         <div class="field mid">
           <label for="api-base">API base URL</label>
@@ -827,9 +822,10 @@
       return { fetchUrl: "/proxy" + path, realUrl: real, via: "relay" };
     }
 
+    const FIXED_ORIGIN = "reverso.app.ios";
+
     function authHeaders({ json = false } = {}) {
       let token = document.getElementById("auth-token").value.trim();
-      const origin = document.getElementById("origin-header").value.trim();
       const headers = { Accept: "application/json" };
       if (json) headers["Content-Type"] = "application/json;charset=UTF-8";
       // Accept raw JWT or full "Bearer …" — normalize to Bearer for GAS JWTs.
@@ -842,7 +838,7 @@
           headers.Authorization = token;
         }
       }
-      if (origin) headers["X-Reverso-Origin"] = origin;
+      headers["X-Reverso-Origin"] = FIXED_ORIGIN;
       return headers;
     }
 
@@ -1025,7 +1021,7 @@
     function initAuth() {
       const state = loadState();
       if (state.authToken) document.getElementById("auth-token").value = state.authToken;
-      if (state.origin) document.getElementById("origin-header").value = state.origin;
+      document.getElementById("origin-header").value = FIXED_ORIGIN;
       if (state.apiBase) document.getElementById("api-base").value = state.apiBase;
       if (typeof state.useRelay === "boolean") document.getElementById("use-relay").checked = state.useRelay;
       if (state.authToken) {
@@ -1047,7 +1043,7 @@
       document.getElementById("btn-save-auth").onclick = () => {
         saveState({
           authToken: document.getElementById("auth-token").value.trim(),
-          origin: document.getElementById("origin-header").value.trim(),
+          origin: FIXED_ORIGIN,
           apiBase: document.getElementById("api-base").value.trim(),
           useRelay: document.getElementById("use-relay").checked,
         });
@@ -1067,7 +1063,7 @@
       document.getElementById("auth-token").addEventListener("change", () => {
         saveState({
           authToken: document.getElementById("auth-token").value.trim(),
-          origin: document.getElementById("origin-header").value.trim(),
+          origin: FIXED_ORIGIN,
           apiBase: document.getElementById("api-base").value.trim(),
           useRelay: document.getElementById("use-relay").checked,
         });

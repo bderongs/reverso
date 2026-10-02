@@ -50,6 +50,9 @@ const DEFAULT_BASE =
 const DEFAULT_ACCOUNT_BASE =
   process.env.ACCOUNT_API_BASE || "https://account.reverso.net";
 
+/** Forced on every proxied Favourites/Account request — client value is ignored. */
+const FIXED_REVERSO_ORIGIN = "reverso.app.ios";
+
 const FAV_DIR = __dirname;
 const SRS_LOG_DIR = path.join(FAV_DIR, "srs-logs");
 const SRS_SCENARIOS_DIR = path.join(FAV_DIR, "srs-scenarios");
@@ -97,19 +100,18 @@ function proxyRequest(req, res, targetPathWithQuery, bodyBuf, baseUrl) {
   const targetUrl = new URL(relative, base);
 
   const headers = {};
-  for (const name of ["authorization", "content-type", "x-reverso-origin", "accept", "user-agent"]) {
+  for (const name of ["authorization", "content-type", "accept"]) {
     if (req.headers[name]) headers[name] = req.headers[name];
   }
+  headers["x-reverso-origin"] = FIXED_REVERSO_ORIGIN;
   if (!headers.accept) headers.accept = "application/json";
   if (!headers["content-type"] && req.method !== "GET" && req.method !== "HEAD") {
     headers["content-type"] = "application/json;charset=UTF-8";
   }
-  // Prefer the caller's User-Agent (browser / custom). Fallback only if absent —
+  // Always use a browser-like UA — do not forward the caller's agent.
   // Cloudflare often 403s bare Node/curl agents.
-  if (!headers["user-agent"]) {
-    headers["user-agent"] =
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
-  }
+  headers["user-agent"] =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
   const body = bodyBuf || Buffer.alloc(0);
   const opts = {
@@ -351,4 +353,4 @@ function mountFavoritesRoutes(app) {
   });
 }
 
-module.exports = { mountFavoritesRoutes, DEFAULT_BASE, DEFAULT_ACCOUNT_BASE };
+module.exports = { mountFavoritesRoutes, DEFAULT_BASE, DEFAULT_ACCOUNT_BASE, FIXED_REVERSO_ORIGIN };

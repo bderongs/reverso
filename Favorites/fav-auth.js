@@ -7,8 +7,8 @@
   const STORAGE_KEY = "fav-api-tester.v1";
   const ACCOUNT_TOKEN_PATH = "/account-proxy/api/v1/account/accessToken";
   const TOKEN_SKEW_SEC = 60;
-  /** Fixed client origin for all Favourites/SRS testers — not user-editable. */
-  const REVERSO_ORIGIN = "reverso-internal-tester";
+  /** Fixed client origin for all Favourites / SRS local testers. */
+  const FIXED_ORIGIN = "reverso.app.ios";
 
   let refreshInFlight = null;
 
@@ -43,7 +43,15 @@
   }
 
   function getOriginValue() {
-    return REVERSO_ORIGIN;
+    return FIXED_ORIGIN;
+  }
+
+  function forceOriginInput() {
+    const input = el("origin-header");
+    if (input) {
+      input.value = FIXED_ORIGIN;
+      input.readOnly = true;
+    }
   }
 
   function setAccessTokenValue(token) {
@@ -264,7 +272,7 @@
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
-      "X-Reverso-Origin": getOriginValue(),
+      "X-Reverso-Origin": FIXED_ORIGIN,
     };
     const current = getAccessTokenValue();
     if (current) headers.Authorization = normalizeBearer(current);
@@ -359,6 +367,8 @@
     const saved = loadAuth();
     if (saved.refreshToken) setRefreshTokenValue(saved.refreshToken);
     if (saved.authToken) setAccessTokenValue(saved.authToken);
+    forceOriginInput();
+    saveAuth();
 
     el("auth-token")?.addEventListener("input", updateJwtUi);
     el("refresh-token")?.addEventListener("input", updateJwtUi);
@@ -383,7 +393,7 @@
 
   global.FavAuth = {
     STORAGE_KEY,
-    REVERSO_ORIGIN,
+    FIXED_ORIGIN,
     loadAuth,
     saveAuth,
     decodeJwtPayload,
@@ -398,6 +408,9 @@
     readJsonResponse,
     formatUpstreamError,
     initAuthUi,
+    getOriginValue,
+    forceOriginInput,
+  };
     hasRefreshToken,
   };
 })(window);
