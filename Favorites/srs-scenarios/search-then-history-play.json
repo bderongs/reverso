@@ -1,7 +1,7 @@
 {
   "id": "search-then-history-play",
   "name": "Search words then play from History",
-  "description": "Write N new history lookups from the common bank (skip existing), then play with sourceStrategy=HISTORY.",
+  "description": "Open N new words from the common bank on context.reverso.net (skip existing) so the site records History, then play with sourceStrategy=HISTORY. Stay logged in on the site as this account.",
   "defaults": {
     "sourceLang": "en",
     "targetLang": "fr",

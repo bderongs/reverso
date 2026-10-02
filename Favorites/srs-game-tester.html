@@ -288,6 +288,51 @@
     .srs-card.ok { border-color: #86efac; background: #f0fdf4; }
     .srs-card.err { border-color: #fca5a5; background: #fef2f2; }
     .srs-card.dim { opacity: 0.72; }
+    .srs-card.source-fav { background: #eff6ff; border-color: #bfdbfe; }
+    .srs-card.source-hist { background: #f5f3ff; border-color: #ddd6fe; }
+    .srs-grid { overflow: visible; }
+    .srs-card.has-terms { position: relative; cursor: help; }
+    .srs-card.has-terms:hover,
+    .srs-card.has-terms:focus-within { z-index: 6; }
+    .term-pop {
+      display: none;
+      position: absolute;
+      z-index: 7;
+      left: 0;
+      top: calc(100% + 0.35rem);
+      width: max(220px, 100%);
+      max-height: 16rem;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(15, 23, 36, 0.14);
+      padding: 0.5rem 0.65rem 0.55rem;
+    }
+    .srs-card.has-terms:hover .term-pop,
+    .srs-card.has-terms:focus-within .term-pop { display: block; }
+    .term-slot.is-expanded { max-height: 22rem; }
+    .term-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.18rem;
+      font-size: 0.78rem;
+    }
+    .term-more {
+      appearance: none;
+      background: none;
+      border: none;
+      color: var(--blue);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0.4rem 0 0.1rem;
+    }
+    .term-more:hover { text-decoration: underline; }
     .expected-table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
     table.expected-table {
       width: 100%; border-collapse: collapse; font-size: 0.78rem;
@@ -663,7 +708,7 @@
           <span class="path-copy">
             <span class="path-kicker">Scenario</span>
             <span class="path-title">Follow a ready-made script</span>
-            <span class="note">Save words, search, and play games in a fixed order.</span>
+            <span class="note">Save words, search, and play games in a fixed order. Search steps open each word on context.reverso.net — stay logged in there as this account.</span>
           </span>
           <span class="path-selected">Selected</span>
         </label>
@@ -1245,6 +1290,8 @@
         masteredUnjustified: 0,
         masteredFiller: 0,
         seenIds: new Set(),
+        // Highest new / fresh / old counts seen in the pool during the run.
+        poolPeak: { new: 0, fresh: 0, old: 0 },
       };
     }
 
@@ -1395,6 +1442,11 @@
       const pool = filteredCorpusItems(params, nowMs);
       const index = corpusIndex(pool);
       const poolCounts = bucketCounts(pool);
+      const peak = state.specReport.poolPeak || { new: 0, fresh: 0, old: 0 };
+      state.specReport.poolPeak = peak;
+      for (const key of ["new", "fresh", "old"]) {
+        peak[key] = Math.max(peak[key] || 0, poolCounts[key] || 0);
+      }
       const afterById = new Map();
       for (const card of updatedCards || []) {
         if (card?.id != null) afterById.set(card.id, snapshotCard(card));
@@ -1479,6 +1531,51 @@
       }[bucket] || bucket;
     }
 
+    const TERM_PREVIEW = 10;
+    let corpusTermCache = {};
+
+    function termLine(item) {
+      const src = String(item?.srcText || "").trim() || "(empty)";
+      const trg = String(item?.trgText || "").trim();
+      return trg ? `${src} → ${trg}` : src;
+    }
+
+    function termPreviewHtml(items, expanded) {
+      const list = Array.isArray(items) ? items : [];
+      if (!list.length) return `<p class="note">No words</p>`;
+      const shown = expanded ? list : list.slice(0, TERM_PREVIEW);
+      const rows = shown.map((item) => `<li>${escapeHtml(termLine(item))}</li>`).join("");
+      let action = "";
+      if (list.length > TERM_PREVIEW) {
+        action = expanded
+          ? `<button type="button" class="term-more" data-term-less>Show the first ${TERM_PREVIEW}</button>`
+          : `<button type="button" class="term-more" data-term-more>Show the other ${list.length - TERM_PREVIEW}</button>`;
+      }
+      return `<ul class="term-list">${rows}</ul>${action}`;
+    }
+
+    function itemsForCorpusCard(pool, id) {
+      if (id === "in-scope") return pool;
+      if (id === "skipped") {
+        return pool.filter((item) => item.bucket === "ineligible" || item.bucket === "excluded");
+      }
+      return pool.filter((item) => item.bucket === id);
+    }
+
+    function sourceItemsForDisplay(items, params) {
+      const src = String(params.sourceLang || "").toLowerCase();
+      const tgt = String(params.targetLang || "").toLowerCase();
+      return (items || []).filter((item) => {
+        if (src && String(item.srcLang || "").toLowerCase() !== src) return false;
+        if (tgt && String(item.trgLang || "").toLowerCase() !== tgt) return false;
+        return true;
+      });
+    }
+
+    function hideCorpusTermDetails() {
+      corpusTermCache = {};
+    }
+
     function renderCorpusSummary() {
       const statusEl = document.getElementById("corpus-status");
       const grid = document.getElementById("corpus-grid");
@@ -1492,12 +1589,14 @@
         statusEl.textContent = "Loading your words…";
         grid.innerHTML = "";
         note.textContent = "";
+        hideCorpusTermDetails();
         return;
       }
       if (!corpus.loaded) {
         statusEl.textContent = "Corpus not loaded. Click Load account.";
         grid.innerHTML = "";
         note.textContent = "";
+        hideCorpusTermDetails();
         return;
       }
       const who = corpus.userLabel ? `${corpus.userLabel} · ` : "";
@@ -1514,23 +1613,36 @@
       try { params = quizParams(); } catch { params = {}; }
       const pool = filteredCorpusItems(params, Date.now());
       const counts = bucketCounts(pool);
+      const favItems = sourceItemsForDisplay(corpus.favs, params);
+      const histItems = sourceItemsForDisplay(corpus.history, params);
       const cards = [
-        { title: "In scope", value: String(pool.length), sub: `${params.sourceStrategy || "—"} · ${(params.sourceLang || "?").toUpperCase()}→${(params.targetLang || "?").toUpperCase()}`, cls: "" },
-        { title: "New", value: String(counts.new), sub: "Not started / never seen", cls: counts.new ? "ok" : "" },
-        { title: "Mistakes", value: String(counts.mistake), sub: "LastStatus false · due now", cls: "" },
-        { title: "Fresh review", value: String(counts.fresh), sub: "Timer done ≤ 30 days ago", cls: "" },
-        { title: "Old review", value: String(counts.old), sub: "Timer done > 30 days ago", cls: counts.old > counts.fresh ? "warn" : "" },
-        { title: "Not yet due", value: String(counts.not_due), sub: "LastStatus true · timer remaining", cls: "" },
-        { title: "Mastered", value: String(counts.mastered), sub: "Should wait until learning is exhausted", cls: "" },
-        { title: "Skipped", value: String((counts.ineligible || 0) + (counts.excluded || 0)), sub: "Ignored, syn/mt, length <3 or >24", cls: "" },
+        { id: "favourites", title: "Favourites", value: String(favItems.length), sub: "Saved words", cls: "source-fav", terms: favItems },
+        { id: "history", title: "History", value: String(histItems.length), sub: "Looked-up words", cls: "source-hist", terms: histItems },
+        { id: "in-scope", title: "In scope", value: String(pool.length), sub: `${params.sourceStrategy || "—"} · ${(params.sourceLang || "?").toUpperCase()}→${(params.targetLang || "?").toUpperCase()}`, cls: "" },
+        { id: "new", title: "New", value: String(counts.new), sub: "Not started / never seen", cls: counts.new ? "ok" : "" },
+        { id: "mistake", title: "Mistakes", value: String(counts.mistake), sub: "LastStatus false · due now", cls: "" },
+        { id: "fresh", title: "Fresh review", value: String(counts.fresh), sub: "Timer done ≤ 30 days ago", cls: "" },
+        { id: "old", title: "Old review", value: String(counts.old), sub: "Timer done > 30 days ago", cls: counts.old > counts.fresh ? "warn" : "" },
+        { id: "not_due", title: "Not yet due", value: String(counts.not_due), sub: "LastStatus true · timer remaining", cls: "" },
+        { id: "mastered", title: "Mastered", value: String(counts.mastered), sub: "Should wait until learning is exhausted", cls: "" },
+        { id: "skipped", title: "Skipped", value: String((counts.ineligible || 0) + (counts.excluded || 0)), sub: "Ignored, syn/mt, length <3 or >24", cls: "" },
       ];
-      grid.innerHTML = cards.map((item) => `
-        <div class="srs-card ${item.cls}">
+      corpusTermCache = {};
+      grid.innerHTML = cards.map((item) => {
+        const terms = item.terms || itemsForCorpusCard(pool, item.id);
+        corpusTermCache[item.id] = terms;
+        const pop = terms.length
+          ? `<div class="term-pop term-slot">${termPreviewHtml(terms, false)}</div>`
+          : "";
+        const tip = terms.length ? ` tabindex="0"` : "";
+        return `
+        <div class="srs-card ${item.cls}${terms.length ? " has-terms" : ""}" data-term-host="${item.id}"${tip}>
           <div class="k">${item.title}</div>
           <div class="v">${item.value}</div>
           <div class="sub">${item.sub}</div>
-        </div>
-      `).join("");
+          ${pop}
+        </div>`;
+      }).join("");
       const targets = mixTargets(params.learningStrategy || "MIXED", getNbTerms());
       note.textContent = `Spec mix for ${params.learningStrategy} × ${getNbTerms()} cards: ~${targets.new} new · ${targets.fresh} fresh review · ${targets.old} old review (mistakes first). 21-card rule and “never mastered before learning” also apply. Delta sync pages newest first until items older than the last save; use Full reload if SRS on old cards looks stale.`;
     }
@@ -2354,6 +2466,40 @@
       return `${mix.new}n / ${mix.fresh}f / ${mix.old}o`;
     }
 
+    function mixCoreTotal(mix) {
+      return (mix?.new || 0) + (mix?.fresh || 0) + (mix?.old || 0);
+    }
+
+    /** Largest share gap, in percentage points, between two new/fresh/old mixes. */
+    function mixShareDelta(a, b) {
+      const aTotal = mixCoreTotal(a);
+      const bTotal = mixCoreTotal(b);
+      if (!aTotal && !bTotal) return 0;
+      if (!aTotal || !bTotal) return 100;
+      let max = 0;
+      for (const key of ["new", "fresh", "old"]) {
+        const delta = Math.abs((a[key] || 0) / aTotal - (b[key] || 0) / bTotal) * 100;
+        if (delta > max) max = delta;
+      }
+      return max;
+    }
+
+    function capMixToPool(ideal, pool) {
+      return {
+        new: Math.min(ideal?.new || 0, pool?.new || 0),
+        fresh: Math.min(ideal?.fresh || 0, pool?.fresh || 0),
+        old: Math.min(ideal?.old || 0, pool?.old || 0),
+      };
+    }
+
+    function formatMixRepeats(mix) {
+      const parts = [];
+      if (mix?.mistake) parts.push(`${mix.mistake} mistakes`);
+      if (mix?.not_due) parts.push(`${mix.not_due} not yet due`);
+      if (mix?.mastered) parts.push(`${mix.mastered} mastered`);
+      return parts.join(", ");
+    }
+
     function beginRunReview(ctx) {
       state.runContext = { ...emptyRunContext(), ...ctx, startedAt: Date.now() };
       state.srsReport = emptySrsReport();
@@ -2432,8 +2578,6 @@
       const unjustifiedMastered = spec?.masteredUnjustified || 0;
       const masteredFiller = spec?.masteredFiller || 0;
       const unjustifiedShare = a.totalPlays ? unjustifiedMastered / a.totalPlays : 0;
-      const fillerShare = a.totalPlays ? masteredFiller / a.totalPlays : 0;
-      const poolStarved = masteredFiller > 0 && fillerShare >= 0.2;
       const actualCorrectRate = answered ? a.correctAnswers / answered : null;
       const hasSpec = !!(spec?.plays?.length);
       const selJudged = hasSpec ? (spec.selectionOk + spec.selectionBad) : 0;
@@ -2445,40 +2589,31 @@
       let mixStatus = "skip";
       let mixLabel = null;
       let actualMix = null;
+      let availableMix = null;
       if (hasSpec && expectedMixTotal > 0 && a.totalPlays > 0) {
         actualMix = {
           new: spec.mix.new || 0,
           fresh: spec.mix.fresh || 0,
           old: spec.mix.old || 0,
         };
-        const actualCore = actualMix.new + actualMix.fresh + actualMix.old;
-        if (actualCore === 0 || poolStarved) {
+        availableMix = {
+          new: spec.poolPeak?.new || 0,
+          fresh: spec.poolPeak?.fresh || 0,
+          old: spec.poolPeak?.old || 0,
+        };
+        // Ideal is the recipe. Achievable is that recipe capped by cards the pool actually held.
+        const achievable = capMixToPool(ctx.expectedMix, availableMix);
+        const poolCannotSupply = mixShareDelta(ctx.expectedMix, achievable) > 20;
+        const drawMissesPool = mixShareDelta(actualMix, achievable) > 20;
+        if (drawMissesPool) {
           mixStatus = "warn";
-          mixLabel = "pool starved";
+          mixLabel = "off target";
+        } else if (poolCannotSupply) {
+          mixStatus = "ok";
+          mixLabel = "limited";
         } else {
-          const expShare = {
-            new: ctx.expectedMix.new / expectedMixTotal,
-            fresh: ctx.expectedMix.fresh / expectedMixTotal,
-            old: ctx.expectedMix.old / expectedMixTotal,
-          };
-          const actShare = {
-            new: actualMix.new / actualCore,
-            fresh: actualMix.fresh / actualCore,
-            old: actualMix.old / actualCore,
-          };
-          const mixDelta = {
-            new: Math.abs(actShare.new - expShare.new) * 100,
-            fresh: Math.abs(actShare.fresh - expShare.fresh) * 100,
-            old: Math.abs(actShare.old - expShare.old) * 100,
-          };
-          const maxDelta = Math.max(mixDelta.new, mixDelta.fresh, mixDelta.old);
-          if (maxDelta > 20) {
-            mixStatus = "warn";
-            mixLabel = poolStarved ? "pool starved" : "off target";
-          } else {
-            mixStatus = "ok";
-            mixLabel = "on target";
-          }
+          mixStatus = "ok";
+          mixLabel = "on target";
         }
       }
 
@@ -2543,7 +2678,9 @@
 
       if (mixStatus === "warn") {
         bump("warn");
-        chips.push({ text: mixLabel === "pool starved" ? "mix pool starved" : "mix off target", cls: "warn" });
+        chips.push({ text: "mix off target", cls: "warn" });
+      } else if (mixLabel === "limited") {
+        chips.push({ text: "mix limited by pool", cls: "info" });
       } else if (mixStatus === "ok") {
         chips.push({ text: "mix ok", cls: "ok" });
       }
@@ -2583,13 +2720,16 @@
         });
       }
       if (ctx.expectedMix && expectedMixTotal > 0) {
+        const repeats = formatMixRepeats(spec?.mix);
+        const drawnBit = actualMix
+          ? `drawn ${formatMixShort(actualMix)}${repeats ? `, then ${repeats}` : ""}`
+          : (hasSpec ? formatMixShort({ new: spec.mix.new, fresh: spec.mix.fresh, old: spec.mix.old }) : "n/a (enable expert + load corpus)");
+        const poolBit = availableMix ? ` · pool ${formatMixShort(availableMix)}` : "";
         expectedRows.push({
           metric: `Mix (${ctx.learningStrategy || "strategy"})`,
           expected: `~${formatMixShort(ctx.expectedMix)} across games`,
-          actual: actualMix
-            ? `${formatMixShort(actualMix)} (excl. mistakes/other)`
-            : (hasSpec ? formatMixShort({ new: spec.mix.new, fresh: spec.mix.fresh, old: spec.mix.old }) : "n/a (enable expert + load corpus)"),
-          match: mixStatus === "ok" ? "OK" : (mixStatus === "warn" ? (mixLabel === "pool starved" ? "STARVED" : "WARN") : "—"),
+          actual: `${drawnBit}${poolBit}`,
+          match: mixStatus === "ok" ? "OK" : (mixStatus === "warn" ? "WARN" : "—"),
           rowCls: mixStatus === "ok" ? "row-ok" : (mixStatus === "warn" ? "row-warn" : ""),
         });
       }
@@ -2662,14 +2802,22 @@
         cls: selCls,
       });
 
+      const mixValue = mixStatus === "skip"
+        ? (hasSpec ? formatMixShort({ new: spec.mix.new, fresh: spec.mix.fresh, old: spec.mix.old }) : "n/a")
+        : (mixLabel === "limited" ? "Limited by pool" : (mixLabel === "on target" ? "On target" : "Off target"));
+      const mixRepeats = formatMixRepeats(spec?.mix);
+      const mixSub = ctx.expectedMix
+        ? [
+          `Ideal ~${formatMixShort(ctx.expectedMix)}`,
+          availableMix ? `available ${formatMixShort(availableMix)}` : null,
+          actualMix ? `drawn ${formatMixShort(actualMix)}` : null,
+          mixRepeats ? `then ${mixRepeats}` : null,
+        ].filter(Boolean).join(" · ")
+        : "No mix target for this run";
       kpis.push({
         title: "Mix vs target",
-        value: mixStatus === "skip"
-          ? (hasSpec ? formatMixShort({ new: spec.mix.new, fresh: spec.mix.fresh, old: spec.mix.old }) : "n/a")
-          : (mixStatus === "ok" ? "On target" : (mixLabel === "pool starved" ? "Pool starved" : "Off target")),
-        sub: ctx.expectedMix
-          ? `Target ~${formatMixShort(ctx.expectedMix)} · actual ${actualMix ? formatMixShort(actualMix) : "—"}${mixLabel === "pool starved" ? " · learning pool too small" : ""}`
-          : "No mix target for this run",
+        value: mixValue,
+        sub: mixSub,
         cls: mixStatus === "ok" ? "ok" : (mixStatus === "warn" ? "warn" : "dim"),
       });
 
@@ -3165,6 +3313,7 @@
       if (state.specReport) {
         log.spec = {
           mix: { ...state.specReport.mix },
+          poolPeak: state.specReport.poolPeak ? { ...state.specReport.poolPeak } : null,
           selectionOk: state.specReport.selectionOk,
           selectionBad: state.specReport.selectionBad,
           updateOk: state.specReport.updateOk,
@@ -3270,6 +3419,7 @@
       if (!report) return null;
       return {
         mix: { ...(report.mix || {}) },
+        poolPeak: report.poolPeak ? { ...report.poolPeak } : null,
         selectionOk: report.selectionOk,
         selectionBad: report.selectionBad,
         updateOk: report.updateOk,
@@ -4260,20 +4410,96 @@
       return { body, res };
     }
 
-    async function searchWord(word, defaults) {
+    /** English path slugs used by context.reverso.net/translation/{src}-{trg}/{query}. */
+    const CONTEXT_LANG_SLUG = {
+      ar: "arabic", de: "german", en: "english", es: "spanish", fr: "french",
+      he: "hebrew", it: "italian", ja: "japanese", ko: "korean", nl: "dutch",
+      pl: "polish", pt: "portuguese", ro: "romanian", ru: "russian", sv: "swedish",
+      tr: "turkish", uk: "ukrainian", zh: "chinese",
+    };
+    /** Wait after navigation so the site can finish recording the lookup. */
+    const HISTORY_PAGE_DWELL_MS = 2500;
+    let historyWindow = null;
+    let historyWindowUsed = false;
+
+    function contextTranslationUrl(srcLang, trgLang, srcText) {
+      const src = CONTEXT_LANG_SLUG[String(srcLang || "").toLowerCase()];
+      const trg = CONTEXT_LANG_SLUG[String(trgLang || "").toLowerCase()];
+      if (!src || !trg) {
+        throw new Error(`No Reverso page for ${srcLang || "?"}→${trgLang || "?"}`);
+      }
+      const query = encodeURIComponent(String(srcText || "").trim()).replace(/%20/g, "+");
+      return `https://context.reverso.net/translation/${src}-${trg}/${query}`;
+    }
+
+    function scenarioNeedsHistoryPage(scenario) {
+      return (scenario?.steps || []).some((step) => step.type === "search");
+    }
+
+    /**
+     * Open during the Run click so the browser allows the tab.
+     * History is written by the translation page itself (logged-in session),
+     * not by POST /user/history.
+     */
+    function primeHistoryWindow() {
+      if (historyWindow && !historyWindow.closed) return historyWindow;
+      historyWindow = window.open("about:blank", "reverso-srs-history");
+      historyWindowUsed = false;
+      return historyWindow;
+    }
+
+    function releaseUnusedHistoryWindow() {
+      const win = historyWindow;
+      if (!win || win.closed || historyWindowUsed) return;
+      try { win.close(); } catch { /* ignore */ }
+      historyWindow = null;
+    }
+
+    async function waitForHistoryPage(win, signal) {
+      const started = Date.now();
+      while (Date.now() - started < 8000) {
+        if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+        if (!win || win.closed) throw new Error("History tab was closed");
+        let stillBlank = false;
+        try {
+          stillBlank = String(win.location.href || "").startsWith("about:");
+        } catch {
+          stillBlank = false;
+        }
+        if (!stillBlank) break;
+        await sleep(150, signal);
+      }
+      await sleep(HISTORY_PAGE_DWELL_MS, signal);
+      if (!win || win.closed) throw new Error("History tab was closed");
+      try {
+        if (String(win.location.href || "").startsWith("about:")) {
+          throw new Error("The history tab never opened the Reverso page");
+        }
+      } catch (err) {
+        if (String(err.message || "").includes("never opened")) throw err;
+      }
+    }
+
+    async function searchWord(word, defaults, signal) {
       const body = resolveWordPayload(word, defaults);
-      // History create: same core fields as favourites; drop favType if present.
-      const histBody = {
-        srcText: body.srcText,
-        trgText: body.trgText,
-        srcLang: body.srcLang,
-        trgLang: body.trgLang,
-        source: body.source,
+      const url = contextTranslationUrl(body.srcLang, body.trgLang, body.srcText);
+      const win = primeHistoryWindow();
+      if (!win) {
+        throw new Error("Popup blocked. Allow popups for this page, then run the scenario again.");
+      }
+      win.location.href = url;
+      historyWindowUsed = true;
+      await waitForHistoryPage(win, signal);
+      return {
+        body: {
+          srcText: body.srcText,
+          trgText: body.trgText,
+          srcLang: body.srcLang,
+          trgLang: body.trgLang,
+        },
+        url,
+        res: { data: { opened: url } },
       };
-      if (body.srcContext) histBody.srcContext = body.srcContext;
-      if (body.trgContext) histBody.trgContext = body.trgContext;
-      const res = await apiPost("/user/history", histBody);
-      return { body: histBody, res };
     }
 
     function summarizeScenarioSteps(scenario) {
@@ -4755,6 +4981,9 @@
         if (!toCreate.length && !resolved.alreadyCount) {
           logLine(`  nothing new to ${type} — pool exhausted or all already present`, "warn");
         }
+        if (type === "search" && toCreate.length) {
+          logLine("  Opening each word on context.reverso.net so the site records History. Stay logged in there as this account.", "dim");
+        }
 
         const favIdsForList = [];
 
@@ -4764,14 +4993,17 @@
           try {
             const result = type === "favorite"
               ? await favoriteWord(entry.word, defaults)
-              : await searchWord(entry.word, defaults);
+              : await searchWord(entry.word, defaults, signal);
             stepLog.ok += 1;
-            upsertCorpusFromCreate(type === "favorite" ? "favorite" : "search", result.body, result.res.data);
+            if (type === "favorite") {
+              upsertCorpusFromCreate("favorite", result.body, result.res.data);
+            }
             const favId = extractFavouriteId(result.res.data);
             if (favId != null) favIdsForList.push(favId);
             const shortTag = String(result.body.srcText || "").trim().length < 3 ? " · SHORT" : "";
             const label = `${result.body.srcText} → ${result.body.trgText}`;
-            logLine(`  ${type} ${i + 1}/${toCreate.length}: ${label}${shortTag}`, "ok");
+            const opened = result.url ? ` · ${result.url}` : "";
+            logLine(`  ${type} ${i + 1}/${toCreate.length}: ${label}${shortTag}${opened}`, "ok");
             document.getElementById("raw-update").textContent = JSON.stringify({
               step: type,
               request: result.body,
@@ -5073,6 +5305,7 @@
         state.abort = null;
         document.getElementById("btn-run").disabled = false;
         document.getElementById("btn-stop").classList.add("hidden");
+        releaseUnusedHistoryWindow();
         renderRunReview();
       }
     }
@@ -5090,8 +5323,15 @@
     }
 
     function startSelectedPath() {
-      if (selectedRunPath() === "scenario") runScenario();
-      else runGames();
+      if (selectedRunPath() === "scenario") {
+        const selectedId = document.getElementById("scenario-select")?.value;
+        const known = state.currentScenario;
+        const needsPage = !known || known.id !== selectedId || scenarioNeedsHistoryPage(known);
+        if (needsPage) primeHistoryWindow();
+        runScenario();
+      } else {
+        runGames();
+      }
     }
 
     function init() {
@@ -5125,6 +5365,19 @@
       };
       document.querySelectorAll('input[name="answer-mode"]').forEach((el) => {
         el.addEventListener("change", syncAnswerRatioUi);
+      });
+      document.getElementById("corpus-panel").addEventListener("click", (ev) => {
+        const more = ev.target.closest("[data-term-more], [data-term-less]");
+        if (!more) return;
+        ev.preventDefault();
+        const host = more.closest("[data-term-host]");
+        const slot = host?.querySelector(".term-slot");
+        if (!host || !slot) return;
+        const key = host.getAttribute("data-term-host");
+        const items = corpusTermCache[key] || [];
+        const expand = more.hasAttribute("data-term-more");
+        slot.innerHTML = termPreviewHtml(items, expand);
+        slot.classList.toggle("is-expanded", expand);
       });
       document.getElementById("btn-corpus-full-reload").onclick = () => {
         if (!isExpertMode()) {
