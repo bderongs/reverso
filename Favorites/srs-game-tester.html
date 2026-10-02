@@ -471,6 +471,76 @@
       color: var(--muted);
       font-family: var(--mono);
     }
+    .corpus-loading {
+      margin-top: 0.7rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .corpus-loading-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+    .corpus-loading-head strong { font-size: 0.98rem; }
+    .bar {
+      position: relative;
+      height: 12px;
+      border-radius: 999px;
+      background: #dbeafe;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: var(--blue);
+      transition: width 0.25s ease;
+    }
+    .bar.indeterminate .bar-fill {
+      position: absolute;
+      width: 38%;
+      transition: none;
+      animation: corpus-slide 1.15s ease-in-out infinite;
+    }
+    @keyframes corpus-slide {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+    .corpus-advanced { margin-top: 0.75rem; }
+    .corpus-advanced > summary {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 650;
+      color: var(--muted);
+      list-style: none;
+      user-select: none;
+    }
+    .corpus-advanced > summary::-webkit-details-marker { display: none; }
+    .corpus-advanced > summary::before { content: "▸ "; }
+    .corpus-advanced[open] > summary::before { content: "▾ "; }
+    .corpus-advanced-body {
+      margin-top: 0.55rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .path-section {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #15803d;
+      margin: 0.85rem 0 0.15rem;
+    }
+    .path-body > .path-section:first-child { margin-top: 0; }
     .issue-tag {
       display: inline-block;
       font-size: 0.68rem;
@@ -554,68 +624,35 @@
       <div class="panel" id="corpus-panel">
         <h2>Corpus</h2>
         <p class="progress-line" id="corpus-status">Corpus not loaded. Click Load account.</p>
-        <div class="row" style="margin-top:0.45rem;">
-          <button type="button" class="btn ghost" id="btn-corpus-full-reload">Full reload</button>
-          <button type="button" class="btn ghost" id="btn-corpus-export">Export corpus</button>
-          <button type="button" class="btn ghost" id="btn-corpus-forget">Forget this user</button>
+        <div id="corpus-loading" class="corpus-loading hidden" aria-live="polite">
+          <div class="corpus-loading-head">
+            <strong id="corpus-loading-title">Loading your words…</strong>
+            <span id="corpus-loading-meta" class="note"></span>
+          </div>
+          <div class="bar indeterminate" id="corpus-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="bar-fill" id="corpus-bar-fill"></div>
+          </div>
+          <p class="note" id="corpus-loading-detail">Favourites starting… · History starting…</p>
         </div>
-        <p class="note" style="margin-top:0.35rem;">
-          Export downloads a JSON snapshot — save it into the repo’s
-          <code>Android_testing/</code> folder (browser download is fine; move the file there).
-          Scoring will list those files and ask which corpus to use.
-          Export <em>before</em> playing on the phone; do not run web quizzes in between.
-        </p>
-        <div class="cache-list" id="cached-users"></div>
         <div class="srs-grid" id="corpus-grid" style="margin-top:0.55rem;"></div>
         <p class="note" id="corpus-filter-note" style="margin-top:0.45rem;"></p>
-      </div>
-
-      <div class="panel">
-        <h2>Game source</h2>
-        <div class="row">
-          <div class="field">
-            <label for="source-strategy">Source strategy</label>
-            <select id="source-strategy">
-              <option value="VOCABULARYLIST">Vocabulary list</option>
-              <option value="FAVOURITES">Favourites</option>
-              <option value="ALL">All</option>
-              <option value="HISTORY">History</option>
-            </select>
+        <details class="corpus-advanced hidden" id="corpus-advanced">
+          <summary>Advanced</summary>
+          <div class="corpus-advanced-body">
+            <div class="row">
+              <button type="button" class="btn ghost" id="btn-corpus-full-reload">Full reload</button>
+              <button type="button" class="btn ghost" id="btn-corpus-export">Export corpus</button>
+              <button type="button" class="btn ghost" id="btn-corpus-forget">Forget this user</button>
+            </div>
+            <p class="note">
+              Export downloads a JSON snapshot — save it into the repo’s
+              <code>Android_testing/</code> folder (browser download is fine; move the file there).
+              Scoring will list those files and ask which corpus to use.
+              Export <em>before</em> playing on the phone; do not run web quizzes in between.
+            </p>
+            <div class="cache-list" id="cached-users"></div>
           </div>
-          <div class="field" id="list-field">
-            <label for="vocabulary-list">List</label>
-            <select id="vocabulary-list">
-              <option value="">— load account first —</option>
-            </select>
-            <p class="note hidden" id="list-lang-hint" style="margin-top:0.35rem;"></p>
-          </div>
-          <div class="field" id="source-lang-field">
-            <label for="source-lang">Source lang</label>
-            <select id="source-lang"><option value="">—</option></select>
-          </div>
-          <div class="field" id="target-lang-field">
-            <label for="target-lang">Target lang</label>
-            <select id="target-lang"><option value="">—</option></select>
-          </div>
-        </div>
-        <div class="row" style="margin-top:0.55rem;">
-          <div class="field">
-            <label for="learning-strategy">Learning strategy</label>
-            <select id="learning-strategy">
-              <option value="SRS">SRS (review)</option>
-              <option value="NEW">NEW (new terms only)</option>
-              <option value="MIXED" selected>MIXED</option>
-            </select>
-          </div>
-          <div class="field narrow">
-            <label for="nb-terms">Cards / game</label>
-            <input id="nb-terms" type="number" min="1" max="20" value="7">
-          </div>
-        </div>
-        <p class="note" style="margin-top:0.35rem;">
-          Quiz uses <code>nbTerms</code> + <code>length</code> (pagination defaults to 6 without it).
-          MIXED fills up to the requested count; SRS/NEW may return fewer if not enough cards match.
-        </p>
+        </details>
       </div>
 
       <p class="note path-intro">Choose one path. Only the highlighted box runs.</p>
@@ -656,6 +693,52 @@
           <span class="path-selected">Selected</span>
         </label>
         <div class="path-body">
+          <p class="path-section">Where the cards come from</p>
+          <div class="row">
+            <div class="field">
+              <label for="source-strategy">Source strategy</label>
+              <select id="source-strategy">
+                <option value="VOCABULARYLIST">Vocabulary list</option>
+                <option value="FAVOURITES">Favourites</option>
+                <option value="ALL">All</option>
+                <option value="HISTORY">History</option>
+              </select>
+            </div>
+            <div class="field" id="list-field">
+              <label for="vocabulary-list">List</label>
+              <select id="vocabulary-list">
+                <option value="">— load account first —</option>
+              </select>
+              <p class="note hidden" id="list-lang-hint" style="margin-top:0.35rem;"></p>
+            </div>
+            <div class="field" id="source-lang-field">
+              <label for="source-lang">Source lang</label>
+              <select id="source-lang"><option value="">—</option></select>
+            </div>
+            <div class="field" id="target-lang-field">
+              <label for="target-lang">Target lang</label>
+              <select id="target-lang"><option value="">—</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:0.55rem;">
+            <div class="field">
+              <label for="learning-strategy">Learning strategy</label>
+              <select id="learning-strategy">
+                <option value="SRS">SRS (review)</option>
+                <option value="NEW">NEW (new terms only)</option>
+                <option value="MIXED" selected>MIXED</option>
+              </select>
+            </div>
+            <div class="field narrow">
+              <label for="nb-terms">Cards / game</label>
+              <input id="nb-terms" type="number" min="1" max="20" value="7">
+            </div>
+          </div>
+          <p class="note" style="margin-top:0.35rem;">
+            Quiz uses <code>nbTerms</code> + <code>length</code> (pagination defaults to 6 without it).
+            MIXED fills up to the requested count; SRS/NEW may return fewer if not enough cards match.
+          </p>
+          <p class="path-section">How to play</p>
           <div class="row">
             <div class="field narrow">
               <label for="game-count">Games to play</label>
@@ -842,6 +925,7 @@
       /** @type {Map<number, { id: number, sourceText: string, targetText: string, count: number, firstSrs: number, latestSrs: number, mastered: boolean }>} */
       wordTotals: new Map(),
       corpus: emptyCorpus(),
+      corpusLoad: { watch: [], favs: { done: 0, total: null, finished: false }, history: { done: 0, total: null, finished: false } },
       scenariosIndex: [],
       currentScenario: null,
       /** Vars set by scenario steps (e.g. lastListId) for $token substitution. */
@@ -1401,8 +1485,13 @@
       const note = document.getElementById("corpus-filter-note");
       if (!statusEl) return;
       const corpus = state.corpus;
+      renderCorpusProgress();
+      const advanced = document.getElementById("corpus-advanced");
+      if (advanced) advanced.classList.toggle("hidden", !corpus.loaded);
       if (corpus.loading && !corpus.loaded) {
-        statusEl.textContent = "Loading corpus…";
+        statusEl.textContent = "Loading your words…";
+        grid.innerHTML = "";
+        note.textContent = "";
         return;
       }
       if (!corpus.loaded) {
@@ -1418,9 +1507,8 @@
       const deltaBit = (corpus.deltaFavs || corpus.deltaHistory)
         ? ` · +${corpus.deltaFavs} favs / +${corpus.deltaHistory} history this sync`
         : "";
-      const updating = corpus.loading ? " · updating…" : "";
       const errBit = corpus.errors.length ? ` · ${corpus.errors.length} warning(s)` : "";
-      statusEl.textContent = `${who}${corpus.favs.length} favourites · ${corpus.history.length} history · ${cacheBit || "in memory"}${deltaBit}${updating}${errBit}`;
+      statusEl.textContent = `${who}${corpus.favs.length} favourites · ${corpus.history.length} history · ${cacheBit || "in memory"}${deltaBit}${errBit}`;
 
       let params;
       try { params = quizParams(); } catch { params = {}; }
@@ -1445,6 +1533,83 @@
       `).join("");
       const targets = mixTargets(params.learningStrategy || "MIXED", getNbTerms());
       note.textContent = `Spec mix for ${params.learningStrategy} × ${getNbTerms()} cards: ~${targets.new} new · ${targets.fresh} fresh review · ${targets.old} old review (mistakes first). 21-card rule and “never mastered before learning” also apply. Delta sync pages newest first until items older than the last save; use Full reload if SRS on old cards looks stale.`;
+    }
+
+    function beginCorpusLoad({ favs = true, history = true } = {}) {
+      const watch = [];
+      if (favs) watch.push("favs");
+      if (history) watch.push("history");
+      state.corpusLoad = {
+        watch,
+        favs: { done: 0, total: null, finished: !favs },
+        history: { done: 0, total: null, finished: !history },
+      };
+    }
+
+    function corpusLoadKey(label) {
+      const text = String(label || "").toLowerCase();
+      if (text.includes("hist")) return "history";
+      if (text.includes("fav")) return "favs";
+      return "";
+    }
+
+    function noteCorpusPage(label, done, total, finished) {
+      const key = corpusLoadKey(label);
+      const load = state.corpusLoad;
+      if (!load || !key || !load.watch?.includes(key)) return;
+      load[key] = {
+        done: Math.max(0, Number(done) || 0),
+        total: Number(total) > 0 ? Number(total) : null,
+        finished: !!finished,
+      };
+      renderCorpusProgress();
+    }
+
+    function renderCorpusProgress() {
+      const wrap = document.getElementById("corpus-loading");
+      if (!wrap) return;
+      const show = !!state.corpus.loading;
+      wrap.classList.toggle("hidden", !show);
+      if (!show) return;
+
+      const load = state.corpusLoad || { watch: [], favs: {}, history: {} };
+      const watch = load.watch?.length ? load.watch : ["favs", "history"];
+      const ratios = watch.map((key) => {
+        const part = load[key] || {};
+        if (part.finished) return 1;
+        if (part.total > 0) return Math.min(1, part.done / part.total);
+        return null;
+      });
+      const indeterminate = ratios.every((n) => n == null);
+      const pct = indeterminate
+        ? 0
+        : Math.round((ratios.reduce((sum, n) => sum + (n == null ? 0 : n), 0) / ratios.length) * 100);
+
+      const bar = document.getElementById("corpus-bar");
+      const fill = document.getElementById("corpus-bar-fill");
+      if (bar) {
+        bar.classList.toggle("indeterminate", indeterminate);
+        bar.setAttribute("aria-valuenow", String(pct));
+      }
+      if (fill) fill.style.width = indeterminate ? "" : `${pct}%`;
+
+      const title = document.getElementById("corpus-loading-title");
+      if (title) title.textContent = state.corpus.loaded ? "Updating your words…" : "Loading your words…";
+      const meta = document.getElementById("corpus-loading-meta");
+      if (meta) meta.textContent = indeterminate ? "" : `${pct}%`;
+
+      const labels = { favs: "Favourites", history: "History" };
+      const detail = document.getElementById("corpus-loading-detail");
+      if (detail) {
+        detail.textContent = watch.map((key) => {
+          const part = load[key] || {};
+          const name = labels[key] || key;
+          if (part.finished) return `${name} done`;
+          if (part.total) return `${name} ${part.done.toLocaleString()} of ${part.total.toLocaleString()}`;
+          if (part.done) return `${name} ${part.done.toLocaleString()}`;
+          return `${name} starting…`;
+        }).join(" · ");
+      }
     }
 
     function syncExpertUi() {
@@ -1701,7 +1866,9 @@
       const knownIds = options.knownIds || null;
       const knownCount = options.knownCount || 0;
       let deltaStopArmed = sinceMs != null;
+      let completed = false;
 
+      try {
       while (pages < (options.maxPages || EXPERT_MAX_PAGES)) {
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
         const { data } = await apiGet(path, {
@@ -1720,6 +1887,7 @@
         pages += 1;
         const mode = deltaStopArmed ? "delta" : "full";
         setStatus(null, "Loading corpus…", `${label} ${mode}: ${items.length}${reportedTotal ? "/" + reportedTotal : ""}`);
+        noteCorpusPage(label, items.length, reportedTotal, false);
         logLine(`${label}: page ${pages} · ${items.length}${reportedTotal ? "/" + reportedTotal : ""} (${mode})`);
 
         if (deltaStopArmed && batch.length) {
@@ -1740,7 +1908,11 @@
         start += EXPERT_PAGE_SIZE;
         if (EXPERT_PAGE_DELAY_MS) await sleep(EXPERT_PAGE_DELAY_MS, signal);
       }
+      completed = true;
       return { items, pages, total: reportedTotal ?? items.length, countMap };
+      } finally {
+        if (completed) noteCorpusPage(label, items.length, reportedTotal, true);
+      }
     }
 
     async function fetchHistoryCorpus(signal, options) {
@@ -1826,6 +1998,7 @@
       const mode = sinceMs != null ? "delta" : "full";
       logLine(`Refreshing expert corpus (${parts}, ${mode})…`);
       state.corpus.loading = true;
+      beginCorpusLoad({ favs, history });
       renderCorpusSummary();
 
       let nextFavs = state.corpus.favs || [];
@@ -3691,6 +3864,7 @@
         }
 
         if (expert) {
+          beginCorpusLoad({ favs: true, history: true });
           document.getElementById("btn-stop").classList.remove("hidden");
           document.getElementById("btn-load-account").disabled = true;
           document.getElementById("btn-run").disabled = true;
@@ -3724,6 +3898,7 @@
               ? "Expert mode: full reload (ignoring local cache)…"
               : "Expert mode: first save for this user, paging Favourites and History…");
           }
+          document.getElementById("corpus-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
           const sinceMs = !fullReload && cached?.syncedAt
             ? cached.syncedAt - CORPUS_DELTA_OVERLAP_MS
