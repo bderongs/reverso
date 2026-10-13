@@ -1,0 +1,29 @@
+---
+description: Persona site walkthrough experiments on Reverso — real-user browsing protocol and findings format
+alwaysApply: true
+---
+
+# Persona site walkthroughs
+
+When browsing reverso.net (or related) as a persona / user story:
+
+## Real-user navigation (hard rule)
+
+- Only navigate via **visible, clickable UI**: links, buttons, menus, tabs, form fields, submit.
+- **Never invent or type URLs** (no guessing `/readinglist/ar` from `/en`, no paste from product docs).
+- If a path is missing, record **not discoverable from this screen** — not a 404 from a hand-typed URL.
+- URL probes only when the user explicitly asks for a separate check outside the persona walk.
+
+## Session protocol
+
+1. Write a **persona card** before opening the site: who, language, job-to-be-done, their success, Reverso success, setup (logged out/in, viewport, UI locale, entry URL).
+2. Stay in character. Do **not** use product knowledge from this repo (Reader, Learn, favorites, etc.).
+3. Cap ~**8 steps**. Stop when they succeed, would leave, or hit a signup wall.
+4. Per step: URL, what they saw, what they did, one-line reaction in their voice.
+5. Score separately: **job_fit** (`met` | `partly_met` | `missed`) and **learning_pull** (`none` | `ignored` | `relevant` + exact moment).
+
+## After the walk
+
+- Write/update `persona-walkthroughs/scenarios/<id>.yaml` (plus/minus, steps, scores).
+- Add the same scenario object to the `SCENARIOS` array in `persona-walkthroughs/index.html` (team review page).
+- Do not only dump findings in chat.

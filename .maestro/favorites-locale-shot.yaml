@@ -1,0 +1,95 @@
+appId: com.softissimo.reverso.context
+name: Favorites — switch locale and screenshot
+tags:
+  - android
+  - favorites
+  - locale
+# From the Favorites screen, switch the interface language, reopen Favorites,
+# and save a screenshot. Language names stay in their native spelling.
+#   maestro test -e LANG=Español -e SHOT=favorites-es .maestro/favorites-locale-shot.yaml
+env:
+  LANG: ${LANG || "Français"}
+  SHOT: ${SHOT || "favorites-locale"}
+---
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_sharedList_backIcon
+    label: Leave Favorites
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_main_backButton
+    label: Leave Vocabulary
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Open menu"
+    label: Open the side menu
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/hamburgerSettingsLayout
+    label: Open Settings
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- scrollUntilVisible:
+    element:
+      id: com.softissimo.reverso.context:id/container_change_app_lang
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
+    label: Find Interface language
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/container_change_app_lang
+    label: Open the language picker
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: ${LANG}
+    label: Select the interface language
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Changing the interface language returns to Translate home.
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 15000
+    label: Wait for the home screen
+
+- tapOn:
+    text: "Open menu"
+    label: Open the side menu
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/hamburgerVocabularyLayout
+    label: Open Vocabulary
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: com.softissimo.reverso.context:id/multiList_main_favoritesCard
+    timeout: 10000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_main_favoritesCard
+    label: Open Favorites
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: com.softissimo.reverso.context:id/multiList_sharedList_movingBar_descriptionText
+    timeout: 10000
+    label: Wait for the Favorites header
+
+- takeScreenshot:
+    path: ${SHOT}
+    label: Screenshot Favorites in the new locale

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Persona walkthroughs · Reverso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0b1c2c;
+      --ink-soft: #1a3348;
+      --paper: #f3f0e8;
+      --paper-2: #e8e3d6;
+      --line: rgba(11, 28, 44, 0.12);
+      --muted: #5a6b7a;
+      --plus: #0f6b5c;
+      --plus-bg: #d8efe9;
+      --minus: #9b3b2e;
+      --minus-bg: #f5e0db;
+      --accent: #2f6fed;
+      --partial: #a86b1a;
+      --radius: 14px;
+      --font: "Manrope", system-ui, sans-serif;
+      --display: "Fraunces", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(47, 111, 237, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(15, 107, 92, 0.12), transparent 50%),
+        linear-gradient(180deg, #dfe8f2 0%, var(--paper) 32%, var(--paper) 100%);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2.5rem 0 4rem;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .brand {
+      font-family: var(--display);
+      font-size: clamp(2.4rem, 5vw, 3.4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin: 0;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .lede {
+      max-width: 38rem;
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin: 1.5rem 0 0;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
+
+    .stat b { color: var(--ink); font-weight: 700; margin-right: 0.25rem; }
+
+    .scenario-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.75rem 0 1.25rem;
+    }
+
+    .scenario-nav button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.65);
+      color: var(--ink-soft);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.95rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .scenario-nav button[aria-selected="true"] {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+      padding: 1.5rem 1.5rem 1.75rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+
+    .chip.job-met, .chip.pull-relevant { background: var(--plus-bg); color: var(--plus); }
+    .chip.job-partly_met, .chip.pull-ignored { background: #f7e9cf; color: var(--partial); }
+    .chip.job-missed, .chip.pull-none { background: var(--minus-bg); color: var(--minus); }
+
+    .date {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    h2.title {
+      font-family: var(--display);
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .persona {
+      color: var(--ink-soft);
+      margin: 0 0 0.75rem;
+      max-width: 48rem;
+    }
+
+    .setup {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin: 0 0 1.25rem;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    @media (max-width: 760px) {
+      .split { grid-template-columns: 1fr; }
+    }
+
+    .col {
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem 1.15rem;
+      border: 1px solid var(--line);
+    }
+
+    .col.plus { background: var(--plus-bg); border-color: rgba(15, 107, 92, 0.18); }
+    .col.minus { background: var(--minus-bg); border-color: rgba(155, 59, 46, 0.18); }
+
+    .col h3 {
+      margin: 0 0 0.75rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+
+    .col.plus h3 { color: var(--plus); }
+    .col.minus h3 { color: var(--minus); }
+
+    .col ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .col li {
+      position: relative;
+      padding-left: 1.15rem;
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+
+    .col.plus li::before {
+      content: "+";
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+      color: var(--plus);
+    }
+
+    .col.minus li::before {
+      content: "–";
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+      color: var(--minus);
+    }
+
+    .moment {
+      background: #e8effc;
+      border: 1px solid rgba(47, 111, 237, 0.22);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      margin: 0 0 1.5rem;
+    }
+
+    .moment strong {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+
+    .moment p { margin: 0; color: var(--ink-soft); }
+
+    .trail h3 {
+      font-family: var(--display);
+      font-size: 1.25rem;
+      margin: 0 0 1rem;
+    }
+
+    .steps {
+      display: grid;
+      gap: 0;
+      border-left: 2px solid var(--paper-2);
+      margin-left: 0.55rem;
+      padding-left: 1.1rem;
+    }
+
+    .step {
+      position: relative;
+      padding: 0 0 1.15rem;
+    }
+
+    .step::before {
+      content: "";
+      position: absolute;
+      left: -1.42rem;
+      top: 0.35rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+    }
+
+    .step .n {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+    }
+
+    .step .url {
+      font-size: 0.8rem;
+      color: var(--accent);
+      word-break: break-all;
+      margin-bottom: 0.35rem;
+    }
+
+    .step .line { margin: 0.15rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+    .step .line b { color: var(--ink); font-weight: 600; }
+    .step .quote {
+      margin: 0.4rem 0 0;
+      font-family: var(--display);
+      font-style: italic;
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    footer.note {
+      margin-top: 1.75rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <p class="brand">Reverso <span>persona walks</span></p>
+      <p class="lede">
+        Shared review of how real user stories land on the site — what works,
+        what’s missing, and whether we pull people toward learning.
+      </p>
+      <div class="stats" id="stats"></div>
+    </header>
+
+    <nav class="scenario-nav" id="nav" aria-label="Scenarios"></nav>
+
+    <article class="panel" id="detail" hidden></article>
+
+    <p class="note footer note" id="foot">
+      Data lives in <code>persona-walkthroughs/scenarios/</code>. Open this file locally
+      or host the folder to share with the team.
+    </p>
+  </div>
+
+  <script>
+    /** Keep in sync with scenarios/*.yaml after each walk. */
+    const SCENARIOS = [
+      {
+        id: "father-arabic-bedtime",
+        title: "Father — Arabic bedtime wording",
+        date: "2026-10-13",
+        persona:
+          "Father whose mother tongue is Arabic. Wants words and simple sentences so he can read stories to his children. Not looking for a course. Does not know Reverso product names.",
+        setup: {
+          logged_out: true,
+          viewport: "phone",
+          ui_locale: "en",
+          entry: "https://www.reverso.net",
+        },
+        scores: { job_fit: "partly_met", learning_pull: "ignored" },
+        learning_moment:
+          'Star on translation and Context "Add to list" both open signup with generic copy ("Access more results…"). Reader "Start Learning" is clear but catalog does not match his job (EN office texts).',
+        steps: [
+          {
+            url: "https://www.reverso.net/text-translation",
+            saw: "Empty translate box, English→French, app download banner",
+            did: "Opened target language picker",
+            reaction: "Okay, a translator. I need Arabic.",
+          },
+          {
+            url: "https://www.reverso.net/text-translation",
+            saw: "Language menu with Arabic",
+            did: "Set English→Arabic",
+            reaction: "Good, they have my language.",
+          },
+          {
+            url: "https://www.reverso.net/text-translation",
+            saw: "Arabic translation plus Latin transliteration",
+            did: "Typed a bedtime story sentence and translated",
+            reaction: "I can read this aloud with the romanization. This helps.",
+          },
+          {
+            url: "https://www.reverso.net/text-translation",
+            saw: "Sign up for free — Access more results and unlock advanced features",
+            did: "Tapped star to save the sentence",
+            reaction:
+              "I wanted to keep the sentence for tonight. The message is about more results, not saving my story words.",
+          },
+          {
+            url: "https://www.reverso.net/text-translation",
+            saw: "Product menu with Reader, Vocabulary, Context",
+            did: "Opened product menu; chose Reader (sounds like reading to kids)",
+            reaction: "Reader sounds like reading to my kids.",
+          },
+          {
+            url: "https://www.reverso.net/readinglist/en/",
+            saw: "Start Learning — It's free; short stories are EN office/career texts",
+            did: "Scanned catalog for Arabic or children's content (none visible)",
+            reaction: "This is for learning English at work. Not Arabic bedtime stories.",
+          },
+          {
+            url: "https://context.reverso.net/translation/english-arabic/rabbit",
+            saw: "أرنب, images, examples, pronunciation, Add to list",
+            did: "Looked up rabbit via Context",
+            reaction: "This is how I check a word before I say it to them.",
+          },
+          {
+            url: "https://context.reverso.net/translation/english-arabic/rabbit",
+            saw: "Same generic signup wall",
+            did: "Tapped Add to list; stopped",
+            reaction:
+              "Again asked to sign up without saying I keep this word for reading with my kids.",
+          },
+        ],
+        plus: [
+          "Fast English→Arabic on a full story sentence",
+          "Transliteration under the Arabic translation",
+          "Context gives translation, picture, examples, and pronunciation for story words",
+          'Reader "Start Learning — It\'s free" is clear once that product is open',
+        ],
+        minus: [
+          "Homepage/translate defaults to EN→FR with no cue for kids, stories, or Arabic-first entry",
+          'Signup after starring is generic ("more results"), not "save this for reading with your children"',
+          "Reader catalog on /readinglist/en/ is professional English only — no kids/family/Arabic texts discoverable",
+          "No visible path from Reader to Arabic reading content (not discoverable from that screen)",
+        ],
+      },
+    ];
+
+    const JOB_LABEL = {
+      met: "Job met",
+      partly_met: "Job partly met",
+      missed: "Job missed",
+    };
+    const PULL_LABEL = {
+      none: "Learning pull none",
+      ignored: "Learning pull ignored",
+      relevant: "Learning pull relevant",
+    };
+
+    function shortHost(url) {
+      try {
+        const u = new URL(url);
+        return u.host + (u.pathname === "/" ? "" : u.pathname);
+      } catch {
+        return url;
+      }
+    }
+
+    function renderStats() {
+      const jobMet = SCENARIOS.filter((s) => s.scores.job_fit === "met").length;
+      const jobPartly = SCENARIOS.filter((s) => s.scores.job_fit === "partly_met").length;
+      const jobMissed = SCENARIOS.filter((s) => s.scores.job_fit === "missed").length;
+      const pullRel = SCENARIOS.filter((s) => s.scores.learning_pull === "relevant").length;
+      const pullIgn = SCENARIOS.filter((s) => s.scores.learning_pull === "ignored").length;
+      document.getElementById("stats").innerHTML = [
+        ["Scenarios", SCENARIOS.length],
+        ["Job met", jobMet],
+        ["Partly met", jobPartly],
+        ["Missed", jobMissed],
+        ["Learning relevant", pullRel],
+        ["Learning ignored", pullIgn],
+      ]
+        .map(([label, n]) => `<div class="stat"><b>${n}</b>${label}</div>`)
+        .join("");
+    }
+
+    function renderNav(selectedId) {
+      const nav = document.getElementById("nav");
+      nav.innerHTML = SCENARIOS.map(
+        (s) =>
+          `<button type="button" aria-selected="${s.id === selectedId}" data-id="${s.id}">${s.title}</button>`
+      ).join("");
+      nav.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => select(btn.dataset.id));
+      });
+    }
+
+    function renderDetail(s) {
+      const el = document.getElementById("detail");
+      el.hidden = false;
+      el.innerHTML = `
+        <div class="meta">
+          <span class="chip job-${s.scores.job_fit}">${JOB_LABEL[s.scores.job_fit]}</span>
+          <span class="chip pull-${s.scores.learning_pull}">${PULL_LABEL[s.scores.learning_pull]}</span>
+          <span class="date">${s.date}</span>
+        </div>
+        <h2 class="title">${s.title}</h2>
+        <p class="persona">${s.persona}</p>
+        <p class="setup">
+          ${s.setup.logged_out ? "Logged out" : "Logged in"} · ${s.setup.viewport} · UI ${s.setup.ui_locale} ·
+          <a href="${s.setup.entry}" target="_blank" rel="noopener">${s.setup.entry}</a>
+        </p>
+        <div class="split">
+          <div class="col plus">
+            <h3>Plus · ${s.plus.length}</h3>
+            <ul>${s.plus.map((p) => `<li>${p}</li>`).join("")}</ul>
+          </div>
+          <div class="col minus">
+            <h3>Minus · ${s.minus.length}</h3>
+            <ul>${s.minus.map((m) => `<li>${m}</li>`).join("")}</ul>
+          </div>
+        </div>
+        <div class="moment">
+          <strong>Learning moment</strong>
+          <p>${s.learning_moment}</p>
+        </div>
+        <section class="trail">
+          <h3>Step trail</h3>
+          <div class="steps">
+            ${s.steps
+              .map(
+                (step, i) => `
+              <div class="step">
+                <div class="n">Step ${i + 1}</div>
+                <div class="url">${shortHost(step.url)}</div>
+                <p class="line"><b>Saw</b> — ${step.saw}</p>
+                <p class="line"><b>Did</b> — ${step.did}</p>
+                <p class="quote">“${step.reaction}”</p>
+              </div>`
+              )
+              .join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function select(id) {
+      const s = SCENARIOS.find((x) => x.id === id) || SCENARIOS[0];
+      if (!s) return;
+      renderNav(s.id);
+      renderDetail(s);
+      history.replaceState(null, "", "#" + s.id);
+    }
+
+    renderStats();
+    const fromHash = location.hash.replace(/^#/, "");
+    select(fromHash && SCENARIOS.some((s) => s.id === fromHash) ? fromHash : SCENARIOS[0].id);
+  </script>
+</body>
+</html>

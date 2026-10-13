@@ -1,0 +1,65 @@
+id: father-arabic-bedtime
+title: Father — Arabic bedtime wording
+date: 2026-10-13
+persona: >
+  Father whose mother tongue is Arabic. Wants words and simple sentences so he
+  can read stories to his children. Not looking for a course. Does not know
+  Reverso product names.
+setup:
+  logged_out: true
+  viewport: phone
+  ui_locale: en
+  entry: https://www.reverso.net
+scores:
+  job_fit: partly_met
+  learning_pull: ignored
+learning_moment: >
+  Star on translation and Context "Add to list" both open signup with generic
+  copy ("Access more results…"). Reader "Start Learning" is clear but catalog
+  does not match his job (EN office texts).
+steps:
+  - url: https://www.reverso.net/text-translation
+    saw: Empty translate box, English→French, app download banner
+    did: Opened target language picker
+    reaction: Okay, a translator. I need Arabic.
+  - url: https://www.reverso.net/text-translation
+    saw: Language menu with Arabic
+    did: Set English→Arabic
+    reaction: Good, they have my language.
+  - url: https://www.reverso.net/text-translation
+    saw: Arabic translation plus Latin transliteration
+    did: Typed a bedtime story sentence and translated
+    reaction: I can read this aloud with the romanization. This helps.
+  - url: https://www.reverso.net/text-translation
+    saw: Sign up for free — Access more results and unlock advanced features
+    did: Tapped star to save the sentence
+    reaction: I wanted to keep the sentence for tonight. The message is about more results, not saving my story words.
+  - url: https://www.reverso.net/text-translation
+    saw: Product menu with Reader, Vocabulary, Context
+    did: Opened product menu; chose Reader (sounds like reading to kids)
+    reaction: Reader sounds like reading to my kids.
+  - url: https://www.reverso.net/readinglist/en/
+    saw: Start Learning — It's free; short stories are EN office/career texts
+    did: Scanned catalog for Arabic or children's content (none visible)
+    reaction: This is for learning English at work. Not Arabic bedtime stories.
+  - url: https://context.reverso.net/translation/english-arabic/rabbit
+    saw: أرنب, images, examples, pronunciation, Add to list
+    did: Looked up rabbit via Context (from product discovery / search path)
+    reaction: This is how I check a word before I say it to them.
+  - url: https://context.reverso.net/translation/english-arabic/rabbit
+    saw: Same generic signup wall
+    did: Tapped Add to list; stopped
+    reaction: Again asked to sign up without saying I keep this word for reading with my kids.
+plus:
+  - Fast English→Arabic on a full story sentence
+  - Transliteration under the Arabic translation
+  - Context gives translation, picture, examples, and pronunciation for story words
+  - Reader "Start Learning — It's free" is clear once that product is open
+minus:
+  - Homepage/translate defaults to EN→FR with no cue for kids, stories, or Arabic-first entry
+  - Signup after starring is generic ("more results"), not "save this for reading with your children"
+  - Reader catalog on /readinglist/en/ is professional English only — no kids/family/Arabic texts discoverable
+  - No visible path from Reader to Arabic reading content (not discoverable from that screen)
+notes: >
+  An out-of-protocol typed URL /readinglist/ar returned 404; that is not a
+  persona finding. Persona finding is "Arabic reading list not discoverable."
