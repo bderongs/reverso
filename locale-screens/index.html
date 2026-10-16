@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Locale screen reviews · Reverso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --bg-2: #171e26;
+      --panel: #1c2530;
+      --panel-2: #243040;
+      --line: rgba(255, 255, 255, 0.08);
+      --ink: #e8eef4;
+      --muted: #8b9aab;
+      --accent: #3d9cf0;
+      --accent-soft: rgba(61, 156, 240, 0.15);
+      --issue: #f07178;
+      --issue-bg: rgba(240, 113, 120, 0.12);
+      --ux: #e6c07b;
+      --ux-bg: rgba(230, 192, 123, 0.12);
+      --ok: #7fd99a;
+      --high: #f07178;
+      --medium: #e6c07b;
+      --low: #8b9aab;
+      --radius: 12px;
+      --font: "DM Sans", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 480px at 0% 0%, rgba(61, 156, 240, 0.12), transparent 55%),
+        radial-gradient(700px 400px at 100% 10%, rgba(127, 217, 154, 0.06), transparent 50%),
+        linear-gradient(180deg, #121820 0%, var(--bg) 40%, var(--bg) 100%);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 4rem;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 0.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.75rem, 3.5vw, 2.35rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 0;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 40rem;
+      margin: 0;
+    }
+
+    .back {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      margin-bottom: 1.25rem;
+    }
+    .back:hover { border-color: var(--accent); color: var(--accent); }
+
+    .empty {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 2rem;
+      color: var(--muted);
+    }
+    .empty code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+
+    .run-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .run-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem 1.25rem;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      width: 100%;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .run-card:hover {
+      border-color: rgba(61, 156, 240, 0.45);
+      background: var(--panel-2);
+    }
+
+    .run-date {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+    .run-meta {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 0.2rem;
+    }
+    .run-meta span + span::before {
+      content: "·";
+      margin: 0 0.4rem;
+      opacity: 0.5;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: flex-end;
+    }
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.28rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .pill.issue { color: var(--issue); background: var(--issue-bg); border-color: transparent; }
+    .pill.ux { color: var(--ux); background: var(--ux-bg); border-color: transparent; }
+    .pill.ok { color: var(--ok); border-color: transparent; background: rgba(127, 217, 154, 0.12); }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0 0 1.5rem;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .stat b { color: var(--ink); font-weight: 700; margin-right: 0.25rem; }
+
+    .note {
+      background: var(--accent-soft);
+      border: 1px solid rgba(61, 156, 240, 0.25);
+      color: #c5ddf5;
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1.25rem;
+      padding: 0.25rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: fit-content;
+    }
+    .tabs button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    section.block { margin-bottom: 2rem; }
+    section.block h2 {
+      font-size: 1.15rem;
+      margin: 0 0 0.85rem;
+      letter-spacing: -0.02em;
+    }
+
+    .finding {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 0.85rem;
+    }
+    .finding-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.22rem 0.5rem;
+      border-radius: 6px;
+    }
+    .badge.kind-truncated,
+    .badge.kind-mixed_locale,
+    .badge.kind-error { background: var(--issue-bg); color: var(--issue); }
+    .badge.kind-too_small,
+    .badge.kind-unclear { background: var(--ux-bg); color: var(--ux); }
+    .badge.sev-high { color: var(--high); border: 1px solid rgba(240, 113, 120, 0.35); }
+    .badge.sev-medium { color: var(--medium); border: 1px solid rgba(230, 192, 123, 0.35); }
+    .badge.sev-low { color: var(--low); border: 1px solid var(--line); }
+
+    .finding h3 {
+      font-size: 1rem;
+      font-weight: 650;
+      margin: 0;
+      flex: 1 1 auto;
+    }
+    .finding p {
+      margin: 0.25rem 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .finding .evidence {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .shot-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+    }
+    .shot {
+      display: grid;
+      gap: 0.35rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .shot img {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+      object-position: top;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #000;
+      display: block;
+    }
+    .shot span {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .screen-grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+    .screen-block {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .screen-block h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+    }
+    .lang-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 40;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: min(420px, 100%);
+      max-height: 92vh;
+      border-radius: 10px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .lightbox button {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      .run-card {
+        grid-template-columns: 1fr;
+      }
+      .pills { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="app"></div>
+  </div>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" hidden>
+    <button type="button" id="lightbox-close">Close</button>
+    <img id="lightbox-img" alt="" />
+  </div>
+  <script src="./runs-data.js"></script>
+  <script>
+    const RUNS = Array.isArray(window.LOCALE_REVIEW_RUNS) ? window.LOCALE_REVIEW_RUNS : [];
+    const app = document.getElementById("app");
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightbox-img");
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "Unknown date";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "full",
+        timeStyle: "short",
+      }).format(d);
+    }
+
+    function langList(run) {
+      return (run.languages || []).map((l) => l.code || l).join(", ");
+    }
+
+    function shotUrl(runId, shot) {
+      return "runs/" + encodeURIComponent(runId) + "/" + String(shot).split("/").map(encodeURIComponent).join("/");
+    }
+
+    function shotMarkup(runId, shots) {
+      if (!shots || !shots.length) return "";
+      return (
+        '<div class="shot-row">' +
+        shots
+          .map((shot) => {
+            const code = String(shot).split("/")[0];
+            const url = shotUrl(runId, shot);
+            return (
+              '<a class="shot" href="' +
+              escapeHtml(url) +
+              '" data-full="' +
+              escapeHtml(url) +
+              '">' +
+              '<img src="' +
+              escapeHtml(url) +
+              '" alt="' +
+              escapeHtml(code) +
+              '" loading="lazy" />' +
+              "<span>" +
+              escapeHtml(code) +
+              "</span></a>"
+            );
+          })
+          .join("") +
+        "</div>"
+      );
+    }
+
+    function findingCard(runId, finding, index) {
+      return (
+        '<article class="finding">' +
+        '<div class="finding-head">' +
+        '<span class="badge kind-' +
+        escapeHtml(finding.kind) +
+        '">' +
+        escapeHtml(finding.kind) +
+        "</span>" +
+        '<span class="badge sev-' +
+        escapeHtml(finding.severity) +
+        '">' +
+        escapeHtml(finding.severity) +
+        "</span>" +
+        "<h3>" +
+        escapeHtml(index + ". " + finding.what) +
+        "</h3></div>" +
+        '<p class="evidence">“' +
+        escapeHtml(finding.evidence) +
+        '”</p>' +
+        "<p>Where: " +
+        escapeHtml(finding.where) +
+        "</p>" +
+        "<p>Languages: " +
+        escapeHtml((finding.languages || []).join(", ")) +
+        "</p>" +
+        shotMarkup(runId, finding.shots) +
+        "</article>"
+      );
+    }
+
+    function listView() {
+      if (!RUNS.length) {
+        return (
+          '<header class="hero">' +
+          '<p class="eyebrow">Reverso · Maestro</p>' +
+          "<h1>Locale screen reviews</h1>" +
+          '<p class="lede">No review runs yet.</p></header>' +
+          '<div class="empty">Run <code>node .maestro/scripts/review-locale-screens.js</code> after pulling locale screenshots. Then refresh this page.</div>'
+        );
+      }
+
+      const cards = RUNS.map((run) => {
+        const issuePill =
+          run.issueCount > 0
+            ? '<span class="pill issue">' + run.issueCount + " issues</span>"
+            : '<span class="pill ok">0 issues</span>';
+        const uxPill =
+          run.uxCount > 0
+            ? '<span class="pill ux">' + run.uxCount + " UX</span>"
+            : "";
+        return (
+          '<button type="button" class="run-card" data-run="' +
+          escapeHtml(run.id) +
+          '">' +
+          "<div><div class=\"run-date\">" +
+          escapeHtml(formatDate(run.generatedAt)) +
+          '</div><div class="run-meta"><span>' +
+          escapeHtml(langList(run)) +
+          "</span><span>" +
+          escapeHtml(run.model || "model?") +
+          "</span><span>" +
+          escapeHtml(String(run.findingCount || 0)) +
+          " findings</span></div></div>" +
+          '<div class="pills">' +
+          issuePill +
+          uxPill +
+          "</div></button>"
+        );
+      }).join("");
+
+      return (
+        '<header class="hero">' +
+        '<p class="eyebrow">Reverso · Maestro</p>' +
+        "<h1>Locale screen reviews</h1>" +
+        '<p class="lede">Vision reviews of Translate home, Vocabulary, Favorites, and Settings across interface languages. Newest runs first.</p></header>' +
+        '<div class="run-list">' +
+        cards +
+        "</div>"
+      );
+    }
+
+    function runView(run, tab) {
+      const active = tab || "top5";
+      const sections = {
+        top5: run.top5 || [],
+        issues: run.issues || [],
+        ux: run.ux || [],
+        screens: null,
+      };
+
+      let body = "";
+      if (active === "screens") {
+        body =
+          '<div class="screen-grid">' +
+          (run.screens || [])
+            .map((screen) => {
+              const shots = (run.languages || []).map(
+                (lang) => (lang.code || lang) + "/" + screen.file
+              );
+              return (
+                '<div class="screen-block"><h3>' +
+                escapeHtml(screen.what) +
+                "</h3>" +
+                shotMarkup(run.id, shots) +
+                "</div>"
+              );
+            })
+            .join("") +
+          "</div>";
+      } else {
+        const list = sections[active] || [];
+        if (!list.length) {
+          body = '<div class="empty">Nothing in this section.</div>';
+        } else {
+          body = list.map((f, i) => findingCard(run.id, f, i + 1)).join("");
+        }
+      }
+
+      return (
+        '<button type="button" class="back" data-back>← All runs</button>' +
+        '<header class="hero">' +
+        '<p class="eyebrow">Review run</p>' +
+        "<h1>" +
+        escapeHtml(formatDate(run.generatedAt)) +
+        "</h1>" +
+        '<p class="lede">' +
+        escapeHtml(langList(run)) +
+        " · " +
+        escapeHtml(run.model || "") +
+        "</p></header>" +
+        '<div class="stats">' +
+        "<div class=\"stat\"><b>" +
+        (run.issueCount || 0) +
+        "</b> issues</div>" +
+        "<div class=\"stat\"><b>" +
+        (run.uxCount || 0) +
+        "</b> UX</div>" +
+        "<div class=\"stat\"><b>" +
+        (run.findingCount || 0) +
+        "</b> findings</div>" +
+        "<div class=\"stat\"><b>" +
+        (run.screens || []).length +
+        "</b> screens</div>" +
+        "</div>" +
+        (run.note ? '<div class="note">' + escapeHtml(run.note) + "</div>" : "") +
+        '<div class="tabs" role="tablist">' +
+        '<button type="button" role="tab" data-tab="top5" aria-selected="' +
+        (active === "top5") +
+        '">Top 5</button>' +
+        '<button type="button" role="tab" data-tab="issues" aria-selected="' +
+        (active === "issues") +
+        '">Issues</button>' +
+        '<button type="button" role="tab" data-tab="ux" aria-selected="' +
+        (active === "ux") +
+        '">UX</button>' +
+        '<button type="button" role="tab" data-tab="screens" aria-selected="' +
+        (active === "screens") +
+        '">All screens</button>' +
+        "</div>" +
+        '<section class="block">' +
+        body +
+        "</section>"
+      );
+    }
+
+    function parseHash() {
+      const raw = location.hash.replace(/^#/, "");
+      if (!raw) return { view: "list" };
+      const [id, tab] = raw.split("/");
+      return { view: "run", id: decodeURIComponent(id), tab: tab || "top5" };
+    }
+
+    function render() {
+      const state = parseHash();
+      if (state.view === "run") {
+        const run = RUNS.find((r) => r.id === state.id);
+        if (!run) {
+          location.hash = "";
+          app.innerHTML = listView();
+          return;
+        }
+        app.innerHTML = runView(run, state.tab);
+        return;
+      }
+      app.innerHTML = listView();
+    }
+
+    app.addEventListener("click", (event) => {
+      const back = event.target.closest("[data-back]");
+      if (back) {
+        location.hash = "";
+        return;
+      }
+      const card = event.target.closest("[data-run]");
+      if (card) {
+        location.hash = encodeURIComponent(card.getAttribute("data-run"));
+        return;
+      }
+      const tab = event.target.closest("[data-tab]");
+      if (tab) {
+        const state = parseHash();
+        if (state.view === "run") {
+          location.hash =
+            encodeURIComponent(state.id) + "/" + tab.getAttribute("data-tab");
+        }
+        return;
+      }
+      const shot = event.target.closest("a.shot");
+      if (shot) {
+        event.preventDefault();
+        lightboxImg.src = shot.getAttribute("data-full");
+        lightbox.classList.add("open");
+        lightbox.hidden = false;
+      }
+    });
+
+    document.getElementById("lightbox-close").addEventListener("click", () => {
+      lightbox.classList.remove("open");
+      lightbox.hidden = true;
+      lightboxImg.src = "";
+    });
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) {
+        lightbox.classList.remove("open");
+        lightbox.hidden = true;
+        lightboxImg.src = "";
+      }
+    });
+
+    window.addEventListener("hashchange", render);
+    render();
+  </script>
+</body>
+</html>

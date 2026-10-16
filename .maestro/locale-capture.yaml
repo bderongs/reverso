@@ -1,0 +1,157 @@
+appId: com.softissimo.reverso.context
+---
+# Starts on Translate home. Switches the interface language, then snapshots
+# home, the Vocabulary hub, Favorites, and the top of Settings.
+# Language names stay in their native spelling.
+
+- runFlow:
+    file: dismiss-ad.yaml
+
+- tapOn:
+    text: "Open menu"
+    label: Open the side menu
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/hamburgerSettingsLayout
+    label: Open Settings
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- scrollUntilVisible:
+    element:
+      id: com.softissimo.reverso.context:id/container_change_app_lang
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
+    label: Find Interface language
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/container_change_app_lang
+    label: Open the language picker
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- scrollUntilVisible:
+    element:
+      text: ${output.lang}
+    direction: DOWN
+    timeout: 20000
+    label: Find the interface language
+
+- tapOn:
+    text: ${output.lang}
+    label: Select the interface language
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 20000
+    label: Wait for Translate home
+
+- takeScreenshot:
+    path: ${output.shotHome}
+    label: Screenshot Translate home
+
+- runFlow:
+    file: dismiss-ad.yaml
+
+- tapOn:
+    text: "Open menu"
+    label: Open the side menu
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/hamburgerVocabularyLayout
+    label: Open Vocabulary
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# A sync dialog covers the hub after sign-in. The favorites card is not
+# in the hierarchy until that dialog closes.
+- retry:
+    maxRetries: 2
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: com.softissimo.reverso.context:id/view_progress_dialog
+          timeout: 60000
+          label: Wait for synchronization to finish
+      - extendedWaitUntil:
+          visible:
+            id: com.softissimo.reverso.context:id/multiList_main_favoritesCard
+          timeout: 15000
+          label: Wait for the Vocabulary hub
+
+- takeScreenshot:
+    path: ${output.shotVocabulary}
+    label: Screenshot the Vocabulary hub
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_main_favoritesCard
+    label: Open Favorites
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: com.softissimo.reverso.context:id/multiList_sharedList_movingBar_descriptionText
+    timeout: 10000
+    label: Wait for the Favorites header
+
+- takeScreenshot:
+    path: ${output.shotFavorites}
+    label: Screenshot Favorites
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_sharedList_backIcon
+    label: Leave Favorites
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/multiList_main_backButton
+    label: Leave Vocabulary
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 10000
+    label: Wait for Translate home
+
+- tapOn:
+    text: "Open menu"
+    label: Open the side menu
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: com.softissimo.reverso.context:id/hamburgerSettingsLayout
+    label: Open Settings
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot:
+    path: ${output.shotSettings}
+    label: Screenshot Settings
+
+# Settings is a top-level screen: the system back button leaves the app.
+# Relaunch without clearing state to land on Translate home, still signed in.
+- launchApp:
+    appId: com.softissimo.reverso.context
+    clearState: false
+    stopApp: true
+    label: Return to Translate home
+- extendedWaitUntil:
+    notVisible:
+      id: com.softissimo.reverso.context:id/view_progress_dialog
+    timeout: 60000
+    label: Wait out sync after returning home
+- extendedWaitUntil:
+    visible: "Open menu"
+    timeout: 20000
+    label: Wait for Translate home before the next language

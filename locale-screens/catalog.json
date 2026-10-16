@@ -1,0 +1,60 @@
+{
+  "reviewDir": "locale-screens",
+  "artifactDir": "takeScreenshot",
+  "note": "Add a language by appending one object to languages. code is the folder name. picker is the exact label in the app's interface-language list. Each language folder then contains the files listed in screens. chrome and content notes guide the locale review script.",
+  "allowlist": [
+    "Reverso",
+    "Français",
+    "English",
+    "Español",
+    "Deutsch"
+  ],
+  "screens": [
+    {
+      "id": "home",
+      "file": "01-home.png",
+      "what": "Translate home",
+      "chrome": "Menus, tabs, buttons, and the translation input placeholder. All chrome should match the interface language.",
+      "content": "Language-pair names (e.g. French/English, Francés/Inglés, Französisch/Englisch, Français/Anglais) are localized forms of the selected translation languages — that is correct, not mixed_locale. Do not flag typed source text. Numbers, emails, and URLs are fine in any language."
+    },
+    {
+      "id": "vocabulary",
+      "file": "02-vocabulary.png",
+      "what": "Vocabulary hub",
+      "chrome": "Screen title, section headers, card titles, and navigation. Chrome should match the interface language.",
+      "content": "Ignore list names, word counts, and any word or sentence examples shown on cards. Those are user or catalog content and may be in any language."
+    },
+    {
+      "id": "favorites",
+      "file": "03-favorites.png",
+      "what": "Favorites list",
+      "chrome": "Header, toolbar, filters, and empty-state chrome. Chrome should match the interface language.",
+      "content": "Ignore every saved word, translation, and example sentence in the list. User content may be in any language and may ellipsize."
+    },
+    {
+      "id": "settings",
+      "file": "04-settings.png",
+      "what": "Settings, top of the page",
+      "chrome": "Almost all visible text is chrome. Row labels, section headers, and the current interface-language value should match the interface language. Only the top of Settings is captured.",
+      "content": "Native language names in the interface-language row (Français, English, Español, Deutsch) are allowlisted. Do not flag account email or version numbers."
+    }
+  ],
+  "languages": [
+    {
+      "code": "fr",
+      "picker": "Français"
+    },
+    {
+      "code": "en",
+      "picker": "English"
+    },
+    {
+      "code": "es",
+      "picker": "Español"
+    },
+    {
+      "code": "de",
+      "picker": "Deutsch"
+    }
+  ]
+}

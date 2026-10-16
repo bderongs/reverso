@@ -1,0 +1,42 @@
+appId: com.softissimo.reverso.context
+name: Locale screens — home, vocabulary, favorites, settings
+tags:
+  - android
+  - locale
+  - screens
+# One Cloud run. Signs in when EMAIL is set, then snapshots every screen
+# in locale-screens/catalog.json. Add a language there; do not edit this loop.
+# Cloud cannot read the file, so pass it as CATALOG_JSON. Local runs read the file.
+# Each shot is stored as <code>/<file> inside the run's takeScreenshot folder,
+# for example fr/01-home.png.
+onFlowStart:
+  - runScript:
+      file: scripts/load-locale-catalog.js
+      label: Load the locale screen catalog
+---
+- launchApp:
+    appId: com.softissimo.reverso.context
+    clearState: false
+    stopApp: true
+    label: Launch Reverso
+
+- runFlow:
+    file: dismiss-ad.yaml
+
+- runFlow:
+    when:
+      true: ${EMAIL}
+    file: login.yaml
+    label: Sign in when credentials are provided
+
+- repeat:
+    while:
+      true: ${Number(output.langIndex) < output.localeLanguages.length}
+    commands:
+      - runScript:
+          file: scripts/set-locale-shots.js
+          label: Choose the next language and screenshot paths
+      - runFlow:
+          file: locale-capture.yaml
+          label: Capture screens in this language
+      - evalScript: ${output.langIndex = Number(output.langIndex) + 1}
