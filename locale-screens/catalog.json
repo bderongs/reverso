@@ -1,18 +1,33 @@
 {
   "reviewDir": "locale-screens",
   "artifactDir": "takeScreenshot",
-  "note": "Add a language by appending one object to languages. code is the folder name. picker is the exact label in the app's interface-language list. Each language folder then contains the files listed in screens. chrome and content notes guide the locale review script.",
+  "note": "Languages and screens are the global pair index: index = languageIndex * screens.length + screenIndex. Add a language or a first-level screen here. kind is home, menu, or favorites. menuId is the side-menu row. picker is the exact native label in the interface-language list. chrome and content notes guide the locale review script.",
   "allowlist": [
     "Reverso",
+    "Premium",
     "Français",
     "English",
     "Español",
-    "Deutsch"
+    "Deutsch",
+    "Italiano",
+    "Português",
+    "Nederlands",
+    "Dutch",
+    "Polski",
+    "Română",
+    "Türkçe",
+    "Русский",
+    "Українська",
+    "العربية",
+    "עברית",
+    "日本語",
+    "中文"
   ],
   "screens": [
     {
       "id": "home",
       "file": "01-home.png",
+      "kind": "home",
       "what": "Translate home",
       "chrome": "Menus, tabs, buttons, and the translation input placeholder. All chrome should match the interface language.",
       "content": "Language-pair names (e.g. French/English, Francés/Inglés, Französisch/Englisch, Français/Anglais) are localized forms of the selected translation languages — that is correct, not mixed_locale. Do not flag typed source text. Numbers, emails, and URLs are fine in any language."
@@ -20,6 +35,8 @@
     {
       "id": "vocabulary",
       "file": "02-vocabulary.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerVocabularyLayout",
       "what": "Vocabulary hub",
       "chrome": "Screen title, section headers, card titles, and navigation. Chrome should match the interface language.",
       "content": "Ignore list names, word counts, and any word or sentence examples shown on cards. Those are user or catalog content and may be in any language."
@@ -27,6 +44,8 @@
     {
       "id": "favorites",
       "file": "03-favorites.png",
+      "kind": "favorites",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerVocabularyLayout",
       "what": "Favorites list",
       "chrome": "Header, toolbar, filters, and empty-state chrome. Chrome should match the interface language.",
       "content": "Ignore every saved word, translation, and example sentence in the list. User content may be in any language and may ellipsize."
@@ -34,9 +53,74 @@
     {
       "id": "settings",
       "file": "04-settings.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerSettingsLayout",
       "what": "Settings, top of the page",
       "chrome": "Almost all visible text is chrome. Row labels, section headers, and the current interface-language value should match the interface language. Only the top of Settings is captured.",
-      "content": "Native language names in the interface-language row (Français, English, Español, Deutsch) are allowlisted. Do not flag account email or version numbers."
+      "content": "Native language names in the interface-language row are allowlisted. Do not flag account email or version numbers."
+    },
+    {
+      "id": "history",
+      "file": "05-history.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerHistoryLayout",
+      "what": "History",
+      "chrome": "Screen title, filters, and empty-state text. Chrome should match the interface language.",
+      "content": "Ignore past queries and result snippets. Those are user history and may be in any language."
+    },
+    {
+      "id": "define",
+      "file": "06-define.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerDefineLayout",
+      "what": "Dictionary",
+      "chrome": "Screen title, search field, and tabs. Chrome should match the interface language.",
+      "content": "Ignore dictionary headwords and definitions if a previous query is still shown."
+    },
+    {
+      "id": "synonyms",
+      "file": "07-synonyms.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerSynonmsLayout",
+      "what": "Synonyms",
+      "chrome": "Screen title, search field, and tabs. Chrome should match the interface language.",
+      "content": "Ignore synonym entries if a previous query is still shown."
+    },
+    {
+      "id": "conjugation",
+      "file": "08-conjugation.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerConjugationLayout",
+      "what": "Conjugation",
+      "chrome": "Screen title, search field, and tabs. Chrome should match the interface language.",
+      "content": "Ignore the verb and conjugated forms if a previous query is still shown."
+    },
+    {
+      "id": "rephrase",
+      "file": "09-rephrase.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerRephraseAiLayout",
+      "what": "Rephrase",
+      "chrome": "Screen title, input placeholder, and buttons. Chrome should match the interface language.",
+      "content": "Ignore any text already typed in the rephrase field."
+    },
+    {
+      "id": "quiz",
+      "file": "10-quiz.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerQuizLayout",
+      "what": "Quiz",
+      "chrome": "Screen title, buttons, and empty-state text. Chrome should match the interface language.",
+      "content": "Ignore quiz words and example sentences."
+    },
+    {
+      "id": "statistics",
+      "file": "11-statistics.png",
+      "kind": "menu",
+      "menuId": "com.softissimo.reverso.context:id/hamburgerStatisticsLayout",
+      "what": "Statistics",
+      "chrome": "Screen title, chart labels, and section headers. Chrome should match the interface language.",
+      "content": "Numbers and dates are fine in any language."
     }
   ],
   "languages": [
@@ -55,6 +139,54 @@
     {
       "code": "de",
       "picker": "Deutsch"
+    },
+    {
+      "code": "ar",
+      "picker": "العربية"
+    },
+    {
+      "code": "zh",
+      "picker": "中文"
+    },
+    {
+      "code": "nl",
+      "picker": "Dutch"
+    },
+    {
+      "code": "he",
+      "picker": "עברית"
+    },
+    {
+      "code": "it",
+      "picker": "Italiano"
+    },
+    {
+      "code": "ja",
+      "picker": "日本語"
+    },
+    {
+      "code": "pl",
+      "picker": "Polski"
+    },
+    {
+      "code": "pt",
+      "picker": "Português"
+    },
+    {
+      "code": "ro",
+      "picker": "Română"
+    },
+    {
+      "code": "ru",
+      "picker": "Русский"
+    },
+    {
+      "code": "tr",
+      "picker": "Türkçe"
+    },
+    {
+      "code": "uk",
+      "picker": "Українська"
     }
   ]
 }

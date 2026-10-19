@@ -1,5 +1,1144 @@
 window.LOCALE_REVIEW_RUNS = [
   {
+    "id": "2026-10-19T06-25-16Z",
+    "generatedAt": "2026-10-19T06:25:16.795Z",
+    "model": "gpt-4o",
+    "languages": [
+      {
+        "code": "fr",
+        "picker": "Français"
+      },
+      {
+        "code": "en",
+        "picker": "English"
+      },
+      {
+        "code": "es",
+        "picker": "Español"
+      },
+      {
+        "code": "de",
+        "picker": "Deutsch"
+      },
+      {
+        "code": "ar",
+        "picker": "العربية"
+      },
+      {
+        "code": "zh",
+        "picker": "中文"
+      },
+      {
+        "code": "nl",
+        "picker": "Dutch"
+      },
+      {
+        "code": "he",
+        "picker": "עברית"
+      },
+      {
+        "code": "it",
+        "picker": "Italiano"
+      },
+      {
+        "code": "ja",
+        "picker": "日本語"
+      },
+      {
+        "code": "pl",
+        "picker": "Polski"
+      },
+      {
+        "code": "pt",
+        "picker": "Português"
+      },
+      {
+        "code": "ro",
+        "picker": "Română"
+      },
+      {
+        "code": "ru",
+        "picker": "Русский"
+      },
+      {
+        "code": "tr",
+        "picker": "Türkçe"
+      },
+      {
+        "code": "uk",
+        "picker": "Українська"
+      }
+    ],
+    "screens": [
+      {
+        "id": "home",
+        "file": "01-home.png",
+        "what": "Translate home"
+      },
+      {
+        "id": "vocabulary",
+        "file": "02-vocabulary.png",
+        "what": "Vocabulary hub"
+      },
+      {
+        "id": "favorites",
+        "file": "03-favorites.png",
+        "what": "Favorites list"
+      },
+      {
+        "id": "settings",
+        "file": "04-settings.png",
+        "what": "Settings, top of the page"
+      },
+      {
+        "id": "history",
+        "file": "05-history.png",
+        "what": "History"
+      },
+      {
+        "id": "define",
+        "file": "06-define.png",
+        "what": "Dictionary"
+      },
+      {
+        "id": "synonyms",
+        "file": "07-synonyms.png",
+        "what": "Synonyms"
+      },
+      {
+        "id": "conjugation",
+        "file": "08-conjugation.png",
+        "what": "Conjugation"
+      },
+      {
+        "id": "rephrase",
+        "file": "09-rephrase.png",
+        "what": "Rephrase"
+      },
+      {
+        "id": "quiz",
+        "file": "10-quiz.png",
+        "what": "Quiz"
+      },
+      {
+        "id": "statistics",
+        "file": "11-statistics.png",
+        "what": "Statistics"
+      }
+    ],
+    "note": "Settings shots cover only the top of the page. Findings there do not cover the rest of Settings.",
+    "issueCount": 18,
+    "uxCount": 0,
+    "findingCount": 18,
+    "top5": [
+      {
+        "screen": "rephrase",
+        "screenFile": "09-rephrase.png",
+        "what": "Rephrase",
+        "kind": "mixed_locale",
+        "severity": "high",
+        "languages": [
+          "fr",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Next",
+        "where": "Button at the bottom",
+        "shots": [
+          "fr/09-rephrase.png",
+          "de/09-rephrase.png",
+          "ar/09-rephrase.png",
+          "zh/09-rephrase.png",
+          "nl/09-rephrase.png",
+          "he/09-rephrase.png",
+          "it/09-rephrase.png",
+          "ja/09-rephrase.png",
+          "pl/09-rephrase.png",
+          "pt/09-rephrase.png",
+          "ro/09-rephrase.png",
+          "ru/09-rephrase.png",
+          "tr/09-rephrase.png",
+          "uk/09-rephrase.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "settings",
+        "screenFile": "04-settings.png",
+        "what": "Settings, top of the page",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "fr",
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Upgrade to Premium",
+        "where": "Subscription row",
+        "shots": [
+          "fr/04-settings.png",
+          "es/04-settings.png",
+          "de/04-settings.png",
+          "ar/04-settings.png",
+          "zh/04-settings.png",
+          "nl/04-settings.png",
+          "he/04-settings.png",
+          "it/04-settings.png",
+          "ja/04-settings.png",
+          "pl/04-settings.png",
+          "pt/04-settings.png",
+          "ro/04-settings.png",
+          "ru/04-settings.png",
+          "tr/04-settings.png",
+          "uk/04-settings.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "vocabulary",
+        "screenFile": "02-vocabulary.png",
+        "what": "Vocabulary hub",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "In a Meeting",
+        "where": "Section headers and card titles",
+        "shots": [
+          "es/02-vocabulary.png",
+          "de/02-vocabulary.png",
+          "ar/02-vocabulary.png",
+          "zh/02-vocabulary.png",
+          "nl/02-vocabulary.png",
+          "he/02-vocabulary.png",
+          "it/02-vocabulary.png",
+          "ja/02-vocabulary.png",
+          "pl/02-vocabulary.png",
+          "pt/02-vocabulary.png",
+          "ro/02-vocabulary.png",
+          "ru/02-vocabulary.png",
+          "tr/02-vocabulary.png",
+          "uk/02-vocabulary.png"
+        ],
+        "score": 15
+      },
+      {
+        "screen": "define",
+        "screenFile": "06-define.png",
+        "what": "Dictionary",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "nl",
+          "he",
+          "tr",
+          "pl",
+          "ro"
+        ],
+        "evidence": "Search here...",
+        "where": "Search field placeholder",
+        "shots": [
+          "zh/06-define.png",
+          "nl/06-define.png",
+          "he/06-define.png",
+          "tr/06-define.png",
+          "pl/06-define.png",
+          "ro/06-define.png"
+        ],
+        "score": 7
+      },
+      {
+        "screen": "conjugation",
+        "screenFile": "08-conjugation.png",
+        "what": "Conjugation",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "tr",
+          "ro"
+        ],
+        "evidence": "Search for a verb",
+        "where": "Search field placeholder text",
+        "shots": [
+          "zh/08-conjugation.png",
+          "he/08-conjugation.png",
+          "tr/08-conjugation.png",
+          "ro/08-conjugation.png"
+        ],
+        "score": 5
+      }
+    ],
+    "issues": [
+      {
+        "screen": "rephrase",
+        "screenFile": "09-rephrase.png",
+        "what": "Rephrase",
+        "kind": "mixed_locale",
+        "severity": "high",
+        "languages": [
+          "fr",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Next",
+        "where": "Button at the bottom",
+        "shots": [
+          "fr/09-rephrase.png",
+          "de/09-rephrase.png",
+          "ar/09-rephrase.png",
+          "zh/09-rephrase.png",
+          "nl/09-rephrase.png",
+          "he/09-rephrase.png",
+          "it/09-rephrase.png",
+          "ja/09-rephrase.png",
+          "pl/09-rephrase.png",
+          "pt/09-rephrase.png",
+          "ro/09-rephrase.png",
+          "ru/09-rephrase.png",
+          "tr/09-rephrase.png",
+          "uk/09-rephrase.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "settings",
+        "screenFile": "04-settings.png",
+        "what": "Settings, top of the page",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "fr",
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Upgrade to Premium",
+        "where": "Subscription row",
+        "shots": [
+          "fr/04-settings.png",
+          "es/04-settings.png",
+          "de/04-settings.png",
+          "ar/04-settings.png",
+          "zh/04-settings.png",
+          "nl/04-settings.png",
+          "he/04-settings.png",
+          "it/04-settings.png",
+          "ja/04-settings.png",
+          "pl/04-settings.png",
+          "pt/04-settings.png",
+          "ro/04-settings.png",
+          "ru/04-settings.png",
+          "tr/04-settings.png",
+          "uk/04-settings.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "vocabulary",
+        "screenFile": "02-vocabulary.png",
+        "what": "Vocabulary hub",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "In a Meeting",
+        "where": "Section headers and card titles",
+        "shots": [
+          "es/02-vocabulary.png",
+          "de/02-vocabulary.png",
+          "ar/02-vocabulary.png",
+          "zh/02-vocabulary.png",
+          "nl/02-vocabulary.png",
+          "he/02-vocabulary.png",
+          "it/02-vocabulary.png",
+          "ja/02-vocabulary.png",
+          "pl/02-vocabulary.png",
+          "pt/02-vocabulary.png",
+          "ro/02-vocabulary.png",
+          "ru/02-vocabulary.png",
+          "tr/02-vocabulary.png",
+          "uk/02-vocabulary.png"
+        ],
+        "score": 15
+      },
+      {
+        "screen": "define",
+        "screenFile": "06-define.png",
+        "what": "Dictionary",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "nl",
+          "he",
+          "tr",
+          "pl",
+          "ro"
+        ],
+        "evidence": "Search here...",
+        "where": "Search field placeholder",
+        "shots": [
+          "zh/06-define.png",
+          "nl/06-define.png",
+          "he/06-define.png",
+          "tr/06-define.png",
+          "pl/06-define.png",
+          "ro/06-define.png"
+        ],
+        "score": 7
+      },
+      {
+        "screen": "conjugation",
+        "screenFile": "08-conjugation.png",
+        "what": "Conjugation",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "tr",
+          "ro"
+        ],
+        "evidence": "Search for a verb",
+        "where": "Search field placeholder text",
+        "shots": [
+          "zh/08-conjugation.png",
+          "he/08-conjugation.png",
+          "tr/08-conjugation.png",
+          "ro/08-conjugation.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "conjugation",
+        "screenFile": "08-conjugation.png",
+        "what": "Conjugation",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "tr",
+          "ro"
+        ],
+        "evidence": "POPULAR SEARCHES",
+        "where": "Popular searches label",
+        "shots": [
+          "zh/08-conjugation.png",
+          "he/08-conjugation.png",
+          "tr/08-conjugation.png",
+          "ro/08-conjugation.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "quiz",
+        "screenFile": "10-quiz.png",
+        "what": "Quiz",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "nl",
+          "tr",
+          "uk"
+        ],
+        "evidence": "My language:",
+        "where": "Language selection section",
+        "shots": [
+          "zh/10-quiz.png",
+          "nl/10-quiz.png",
+          "tr/10-quiz.png",
+          "uk/10-quiz.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "synonyms",
+        "screenFile": "07-synonyms.png",
+        "what": "Synonyms",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "ro",
+          "tr"
+        ],
+        "evidence": "Search here...",
+        "where": "Search field placeholder",
+        "shots": [
+          "zh/07-synonyms.png",
+          "he/07-synonyms.png",
+          "ro/07-synonyms.png",
+          "tr/07-synonyms.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "synonyms",
+        "screenFile": "07-synonyms.png",
+        "what": "Synonyms",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "ro",
+          "tr"
+        ],
+        "evidence": "POPULAR SEARCHES",
+        "where": "Popular searches label",
+        "shots": [
+          "zh/07-synonyms.png",
+          "he/07-synonyms.png",
+          "ro/07-synonyms.png",
+          "tr/07-synonyms.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "history",
+        "screenFile": "05-history.png",
+        "what": "History",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he",
+          "uk"
+        ],
+        "evidence": "Language",
+        "where": "Language filter button",
+        "shots": [
+          "he/05-history.png",
+          "uk/05-history.png"
+        ],
+        "score": 3
+      },
+      {
+        "screen": "quiz",
+        "screenFile": "10-quiz.png",
+        "what": "Quiz",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he",
+          "pt"
+        ],
+        "evidence": "Random items will be added in the game",
+        "where": "Learning strategy section",
+        "shots": [
+          "he/10-quiz.png",
+          "pt/10-quiz.png"
+        ],
+        "score": 3
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "ar"
+        ],
+        "evidence": "Premium Showing the last 40 saved terms",
+        "where": "Empty-state chrome",
+        "shots": [
+          "ar/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he"
+        ],
+        "evidence": "Language",
+        "where": "Toolbar",
+        "shots": [
+          "he/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "uk"
+        ],
+        "evidence": "Showing the last 40 saved terms Premium",
+        "where": "Empty-state chrome",
+        "shots": [
+          "uk/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "es"
+        ],
+        "evidence": "Francés ↔ Inglés",
+        "where": "Language selection",
+        "shots": [
+          "es/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "de"
+        ],
+        "evidence": "Französisch ↔ Englisch",
+        "where": "Language selection",
+        "shots": [
+          "de/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "nl"
+        ],
+        "evidence": "Nederlands ↔ Engels",
+        "where": "Language selection",
+        "shots": [
+          "nl/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "statistics",
+        "screenFile": "11-statistics.png",
+        "what": "Statistics",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "ro"
+        ],
+        "evidence": "Cautari",
+        "where": "Usage section header",
+        "shots": [
+          "ro/11-statistics.png"
+        ],
+        "score": 2
+      }
+    ],
+    "ux": [],
+    "findings": [
+      {
+        "screen": "rephrase",
+        "screenFile": "09-rephrase.png",
+        "what": "Rephrase",
+        "kind": "mixed_locale",
+        "severity": "high",
+        "languages": [
+          "fr",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Next",
+        "where": "Button at the bottom",
+        "shots": [
+          "fr/09-rephrase.png",
+          "de/09-rephrase.png",
+          "ar/09-rephrase.png",
+          "zh/09-rephrase.png",
+          "nl/09-rephrase.png",
+          "he/09-rephrase.png",
+          "it/09-rephrase.png",
+          "ja/09-rephrase.png",
+          "pl/09-rephrase.png",
+          "pt/09-rephrase.png",
+          "ro/09-rephrase.png",
+          "ru/09-rephrase.png",
+          "tr/09-rephrase.png",
+          "uk/09-rephrase.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "settings",
+        "screenFile": "04-settings.png",
+        "what": "Settings, top of the page",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "fr",
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "Upgrade to Premium",
+        "where": "Subscription row",
+        "shots": [
+          "fr/04-settings.png",
+          "es/04-settings.png",
+          "de/04-settings.png",
+          "ar/04-settings.png",
+          "zh/04-settings.png",
+          "nl/04-settings.png",
+          "he/04-settings.png",
+          "it/04-settings.png",
+          "ja/04-settings.png",
+          "pl/04-settings.png",
+          "pt/04-settings.png",
+          "ro/04-settings.png",
+          "ru/04-settings.png",
+          "tr/04-settings.png",
+          "uk/04-settings.png"
+        ],
+        "score": 16
+      },
+      {
+        "screen": "vocabulary",
+        "screenFile": "02-vocabulary.png",
+        "what": "Vocabulary hub",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "es",
+          "de",
+          "ar",
+          "zh",
+          "nl",
+          "he",
+          "it",
+          "ja",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "tr",
+          "uk"
+        ],
+        "evidence": "In a Meeting",
+        "where": "Section headers and card titles",
+        "shots": [
+          "es/02-vocabulary.png",
+          "de/02-vocabulary.png",
+          "ar/02-vocabulary.png",
+          "zh/02-vocabulary.png",
+          "nl/02-vocabulary.png",
+          "he/02-vocabulary.png",
+          "it/02-vocabulary.png",
+          "ja/02-vocabulary.png",
+          "pl/02-vocabulary.png",
+          "pt/02-vocabulary.png",
+          "ro/02-vocabulary.png",
+          "ru/02-vocabulary.png",
+          "tr/02-vocabulary.png",
+          "uk/02-vocabulary.png"
+        ],
+        "score": 15
+      },
+      {
+        "screen": "define",
+        "screenFile": "06-define.png",
+        "what": "Dictionary",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "nl",
+          "he",
+          "tr",
+          "pl",
+          "ro"
+        ],
+        "evidence": "Search here...",
+        "where": "Search field placeholder",
+        "shots": [
+          "zh/06-define.png",
+          "nl/06-define.png",
+          "he/06-define.png",
+          "tr/06-define.png",
+          "pl/06-define.png",
+          "ro/06-define.png"
+        ],
+        "score": 7
+      },
+      {
+        "screen": "conjugation",
+        "screenFile": "08-conjugation.png",
+        "what": "Conjugation",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "tr",
+          "ro"
+        ],
+        "evidence": "Search for a verb",
+        "where": "Search field placeholder text",
+        "shots": [
+          "zh/08-conjugation.png",
+          "he/08-conjugation.png",
+          "tr/08-conjugation.png",
+          "ro/08-conjugation.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "conjugation",
+        "screenFile": "08-conjugation.png",
+        "what": "Conjugation",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "tr",
+          "ro"
+        ],
+        "evidence": "POPULAR SEARCHES",
+        "where": "Popular searches label",
+        "shots": [
+          "zh/08-conjugation.png",
+          "he/08-conjugation.png",
+          "tr/08-conjugation.png",
+          "ro/08-conjugation.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "quiz",
+        "screenFile": "10-quiz.png",
+        "what": "Quiz",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "nl",
+          "tr",
+          "uk"
+        ],
+        "evidence": "My language:",
+        "where": "Language selection section",
+        "shots": [
+          "zh/10-quiz.png",
+          "nl/10-quiz.png",
+          "tr/10-quiz.png",
+          "uk/10-quiz.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "synonyms",
+        "screenFile": "07-synonyms.png",
+        "what": "Synonyms",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "ro",
+          "tr"
+        ],
+        "evidence": "Search here...",
+        "where": "Search field placeholder",
+        "shots": [
+          "zh/07-synonyms.png",
+          "he/07-synonyms.png",
+          "ro/07-synonyms.png",
+          "tr/07-synonyms.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "synonyms",
+        "screenFile": "07-synonyms.png",
+        "what": "Synonyms",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "zh",
+          "he",
+          "ro",
+          "tr"
+        ],
+        "evidence": "POPULAR SEARCHES",
+        "where": "Popular searches label",
+        "shots": [
+          "zh/07-synonyms.png",
+          "he/07-synonyms.png",
+          "ro/07-synonyms.png",
+          "tr/07-synonyms.png"
+        ],
+        "score": 5
+      },
+      {
+        "screen": "history",
+        "screenFile": "05-history.png",
+        "what": "History",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he",
+          "uk"
+        ],
+        "evidence": "Language",
+        "where": "Language filter button",
+        "shots": [
+          "he/05-history.png",
+          "uk/05-history.png"
+        ],
+        "score": 3
+      },
+      {
+        "screen": "quiz",
+        "screenFile": "10-quiz.png",
+        "what": "Quiz",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he",
+          "pt"
+        ],
+        "evidence": "Random items will be added in the game",
+        "where": "Learning strategy section",
+        "shots": [
+          "he/10-quiz.png",
+          "pt/10-quiz.png"
+        ],
+        "score": 3
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "ar"
+        ],
+        "evidence": "Premium Showing the last 40 saved terms",
+        "where": "Empty-state chrome",
+        "shots": [
+          "ar/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "he"
+        ],
+        "evidence": "Language",
+        "where": "Toolbar",
+        "shots": [
+          "he/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "favorites",
+        "screenFile": "03-favorites.png",
+        "what": "Favorites list",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "uk"
+        ],
+        "evidence": "Showing the last 40 saved terms Premium",
+        "where": "Empty-state chrome",
+        "shots": [
+          "uk/03-favorites.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "es"
+        ],
+        "evidence": "Francés ↔ Inglés",
+        "where": "Language selection",
+        "shots": [
+          "es/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "de"
+        ],
+        "evidence": "Französisch ↔ Englisch",
+        "where": "Language selection",
+        "shots": [
+          "de/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "home",
+        "screenFile": "01-home.png",
+        "what": "Translate home",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "nl"
+        ],
+        "evidence": "Nederlands ↔ Engels",
+        "where": "Language selection",
+        "shots": [
+          "nl/01-home.png"
+        ],
+        "score": 2
+      },
+      {
+        "screen": "statistics",
+        "screenFile": "11-statistics.png",
+        "what": "Statistics",
+        "kind": "mixed_locale",
+        "severity": "medium",
+        "languages": [
+          "ro"
+        ],
+        "evidence": "Cautari",
+        "where": "Usage section header",
+        "shots": [
+          "ro/11-statistics.png"
+        ],
+        "score": 2
+      }
+    ]
+  },
+  {
     "id": "2026-10-16T11-25-16Z",
     "generatedAt": "2026-10-16T11:25:16.482Z",
     "model": "gpt-4o",
