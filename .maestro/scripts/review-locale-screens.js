@@ -4,10 +4,16 @@
 //
 //   node .maestro/scripts/review-locale-screens.js
 //   node .maestro/scripts/review-locale-screens.js --zip /path/to/artifacts.zip
+//   node .maestro/scripts/review-locale-screens.js --lang ja,pl --screen rephrase
 //   node .maestro/scripts/review-locale-screens.js --rebuild-index
 //
+// Each screenshot is reviewed on its own: the model transcribes and classifies
+// every visible string, and untranslated chrome is derived from that list.
+// Per-shot transcripts are saved in the run folder (transcripts.json).
+//
 // Requires OPENAI_API_KEY (except --rebuild-index). Optional OPENAI_VISION_MODEL
-// (default gpt-4o). Open locale-screens/index.html to browse runs.
+// (default gpt-4o) and --concurrency N (default 6). Open locale-screens/index.html
+// to browse runs.
 
 const fs = require("fs");
 const path = require("path");
@@ -18,45 +24,69 @@ const catalogPath = path.join(repoRoot, "locale-screens/catalog.json");
 const localeScreensDir = path.join(repoRoot, "locale-screens");
 const runsDir = path.join(localeScreensDir, "runs");
 
-const ISSUE_KINDS = new Set(["truncated", "mixed_locale", "error"]);
+const ISSUE_KINDS = new Set(["truncated", "mixed_locale", "error", "spelling"]);
 const UX_KINDS = new Set(["too_small", "unclear"]);
 const ALL_KINDS = new Set([...ISSUE_KINDS, ...UX_KINDS]);
 const SEVERITIES = new Set(["high", "medium", "low"]);
 const SEVERITY_SCORE = { high: 3, medium: 2, low: 1 };
 
-const FINDINGS_SCHEMA = {
+// One request per screenshot. The model transcribes every visible text and
+// classifies it; the script (not the model) decides what is mixed_locale.
+const SHOT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["findings"],
+  required: ["texts", "findings"],
   properties: {
-    findings: {
+    texts: {
       type: "array",
+      description: "Every visible text element on the screen, top to bottom.",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["kind", "severity", "languages", "evidence", "where"],
+        required: ["text", "role", "where", "language", "acceptableInExpected"],
+        properties: {
+          text: { type: "string", description: "Exact visible text." },
+          role: {
+            type: "string",
+            enum: ["chrome", "content", "brand", "system"],
+            description:
+              "chrome = app UI text (titles, descriptions, buttons, labels, placeholders, banners, empty states). " +
+              "content = user data, saved words, list names, dictionary data, and sample/demo text inside illustrations or mockups. " +
+              "brand = product names (Reverso, AI Writer, Premium). " +
+              "system = Android status bar, keyboard, numbers, emails, URLs.",
+          },
+          where: { type: "string", description: "Short location, e.g. 'headline', 'bottom button'." },
+          language: {
+            type: "string",
+            description: "ISO 639-1 code of the language this text is written in, or 'none' if language-neutral.",
+          },
+          acceptableInExpected: {
+            type: "boolean",
+            description:
+              "True if a native speaker of the expected interface language would accept this exact text in their UI " +
+              "(including common loanwords such as Quiz, Premium, Flashcard, and language names written in the expected language).",
+          },
+        },
+      },
+    },
+    findings: {
+      type: "array",
+      description: "Defects other than untranslated text.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["kind", "severity", "evidence", "where"],
         properties: {
           kind: {
             type: "string",
-            enum: ["truncated", "mixed_locale", "error", "too_small", "unclear"],
+            enum: ["truncated", "error", "spelling", "too_small", "unclear"],
           },
-          severity: {
-            type: "string",
-            enum: ["high", "medium", "low"],
-          },
-          languages: {
-            type: "array",
-            items: { type: "string" },
-            minItems: 1,
-          },
+          severity: { type: "string", enum: ["high", "medium", "low"] },
           evidence: {
             type: "string",
             description: "Quoted visible text or a short description of the defect.",
           },
-          where: {
-            type: "string",
-            description: "Where on the screen the issue appears.",
-          },
+          where: { type: "string", description: "Where on the screen the issue appears." },
         },
       },
     },
@@ -197,7 +227,7 @@ function renderMarkdown(payload) {
 
   md.push("## Issues");
   md.push("");
-  md.push("Truncated text, mixed locale, and errors.");
+  md.push("Truncated text, mixed locale, errors, and spelling.");
   md.push("");
   if (!payload.issues.length) {
     md.push("None.");
@@ -223,13 +253,33 @@ function renderMarkdown(payload) {
   return md.join("\n");
 }
 
+function listArg(name) {
+  return arg(name)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function selectCatalog(catalog) {
+  const langs = listArg("--lang");
+  const screens = listArg("--screen");
+  return {
+    ...catalog,
+    languages: langs.length
+      ? catalog.languages.filter((l) => langs.includes(l.code))
+      : catalog.languages,
+    screens: screens.length
+      ? catalog.screens.filter((s) => screens.includes(s.id))
+      : catalog.screens,
+  };
+}
+
 function collectShots(catalog) {
   const reviewDir = path.join(repoRoot, catalog.reviewDir);
   const missing = [];
-  const byScreen = new Map();
+  const shots = [];
 
   for (const screen of catalog.screens) {
-    const shots = [];
     for (const language of catalog.languages) {
       const absolute = path.join(reviewDir, language.code, screen.file);
       if (!fs.existsSync(absolute)) {
@@ -237,148 +287,195 @@ function collectShots(catalog) {
         continue;
       }
       shots.push({
+        screen,
         code: language.code,
         picker: language.picker,
         absolute,
         relative: relativeShot(language.code, screen.file),
-        base64: fs.readFileSync(absolute).toString("base64"),
       });
     }
-    byScreen.set(screen.id, shots);
   }
 
-  return { missing, byScreen };
+  return { missing, shots };
 }
 
-function buildSystemPrompt(catalog) {
-  const allow = (catalog.allowlist || []).join(", ");
+function buildSystemPrompt() {
   return [
-    "You review Android screenshots of the Reverso app after the interface language was switched.",
-    "You receive several screenshots of the SAME screen, each labeled with its expected interface language.",
-    "Compare them side by side. Flag only real defects.",
+    "You review one Android screenshot of the Reverso app after its interface language was switched.",
+    "You are told the expected interface language. Your job is to transcribe and classify, not to judge translations as a whole.",
     "",
-    "Issue kinds:",
-    "- truncated: ellipsis, or a label cut by its row, button, or screen edge. Chrome that clips is high severity. Long user-content sentences that ellipsize are low severity.",
-    "- mixed_locale: interface chrome still in another language. Compare against the English shot. Identical non-allowlisted chrome across languages is untranslated.",
-    "- error: dialog, toast, error banner, blank screen, or wrong screen.",
+    "1. texts: list EVERY visible text element, including long headlines and description paragraphs. Do not skip or merge them.",
+    "   For each, give its role, its actual language, and whether it is acceptable in the expected interface language.",
+    "   - Onboarding headlines, feature descriptions, and buttons are chrome even when long.",
+    "   - Example sentences shown inside an illustration, demo card, or mockup are content, not chrome.",
+    "   - Language names written in the expected language (e.g. Inglés, Englisch, 英语) are acceptable.",
+    "   - Judge each string on its own. Do not assume a string is fine because nearby text is translated.",
     "",
-    "UX kinds:",
-    "- too_small: text that is hard to read on a phone (roughly below 12sp). Quote the string.",
-    "- unclear: low contrast, icon-only control, ambiguous label, or competing actions. Cite what is unclear.",
+    "2. findings: other defects only.",
+    "   - truncated: ellipsis or text cut by its container or the screen edge. High for chrome, low for user content.",
+    "   - error: error dialog, toast, banner, blank screen, or a screen that does not match the described screen.",
+    "   - spelling: misspelled chrome in the expected language, including missing diacritics (e.g. Romanian 'Cautari' for 'Căutări').",
+    "   - too_small: chrome text hard to read on a phone (roughly below 12sp). Quote it.",
+    "   - unclear: low contrast, icon-only control without obvious meaning, or ambiguous label. Cite it.",
+    "   Do not report untranslated text in findings; it is derived from texts.",
     "",
-    "Do not flag:",
-    "- User content called out in the screen's content note (saved words, examples, list names).",
-    `- Allowlisted strings: ${allow}.`,
-    "- Numbers, emails, URLs.",
-    "- Translation-pair language names shown in the UI language (e.g. English UI: French↔English; Spanish UI: Francés↔Inglés; German UI: Französisch↔Englisch; French UI: Français↔Anglais). Those are correct localization, not mixed_locale.",
-    "",
-    "Return JSON matching the schema. languages must be language codes from the labels (e.g. fr, en, es, de).",
-    "If there are no findings, return an empty findings array.",
+    "Return JSON matching the schema.",
   ].join("\n");
 }
 
-function buildUserContent(screen, shots, catalog) {
-  const parts = [
+function buildShotContent(shot, catalog) {
+  const { screen } = shot;
+  const base64 = fs.readFileSync(shot.absolute).toString("base64");
+  return [
     {
       type: "text",
       text: [
+        `Expected interface language: ${shot.picker} (code ${shot.code})`,
         `Screen: ${screen.id} — ${screen.what}`,
-        `Chrome to check: ${screen.chrome || "(all visible UI chrome)"}`,
-        `Content to ignore: ${screen.content || "(none)"}`,
-        `Allowlist: ${(catalog.allowlist || []).join(", ")}`,
-        "Images follow, one per language. Report findings for this screen only.",
+        `Chrome on this screen: ${screen.chrome || "(all visible UI text)"}`,
+        `Content to classify as content: ${screen.content || "(none)"}`,
+        `Brand / allowlisted strings: ${(catalog.allowlist || []).join(", ")}`,
       ].join("\n"),
     },
-  ];
-
-  for (const shot of shots) {
-    parts.push({
-      type: "text",
-      text: `Language code=${shot.code}, expected interface language=${shot.picker}, file=${shot.relative}`,
-    });
-    parts.push({
+    {
       type: "image_url",
-      image_url: {
-        url: `data:image/png;base64,${shot.base64}`,
-        detail: "high",
-      },
-    });
-  }
-
-  return parts;
+      image_url: { url: `data:image/png;base64,${base64}`, detail: "high" },
+    },
+  ];
 }
 
-async function reviewScreen(apiKey, model, systemPrompt, screen, shots, catalog) {
-  const upstream = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: buildUserContent(screen, shots, catalog) },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "locale_screen_findings",
-          strict: true,
-          schema: FINDINGS_SCHEMA,
-        },
+async function callOpenAI(apiKey, model, systemPrompt, userContent, label) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const upstream = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
-    }),
-  });
-
-  const text = await upstream.text();
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error(`OpenAI response was not JSON for ${screen.id}: ${text.slice(0, 400)}`);
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "locale_shot_review", strict: true, schema: SHOT_SCHEMA },
+        },
+      }),
+    });
+    const text = await upstream.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      lastError = new Error(`OpenAI response was not JSON for ${label}: ${text.slice(0, 400)}`);
+      continue;
+    }
+    if (!upstream.ok) {
+      const message = (data && data.error && data.error.message) || text.slice(0, 400);
+      lastError = new Error(`OpenAI ${upstream.status} for ${label}: ${message}`);
+      if (upstream.status === 429 || upstream.status >= 500) {
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      throw lastError;
+    }
+    const content = data.choices?.[0]?.message?.content || "";
+    try {
+      return JSON.parse(content);
+    } catch {
+      lastError = new Error(`Model returned non-JSON content for ${label}: ${String(content).slice(0, 400)}`);
+    }
   }
-  if (!upstream.ok) {
-    const message =
-      (data && data.error && data.error.message) || text.slice(0, 400);
-    throw new Error(`OpenAI ${upstream.status} for ${screen.id}: ${message}`);
-  }
+  throw lastError;
+}
 
-  const content = data.choices && data.choices[0] && data.choices[0].message
-    ? data.choices[0].message.content
-    : "";
-  let parsed;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error(`Model returned non-JSON content for ${screen.id}: ${String(content).slice(0, 400)}`);
-  }
+function isAllowlisted(text, catalog) {
+  const t = normalizeEvidence(text);
+  return (catalog.allowlist || []).some((a) => normalizeEvidence(a) === t);
+}
 
-  const knownCodes = new Set(shots.map((s) => s.code));
-  const findings = [];
+async function reviewShot(apiKey, model, systemPrompt, shot, catalog) {
+  const { screen } = shot;
+  const parsed = await callOpenAI(
+    apiKey,
+    model,
+    systemPrompt,
+    buildShotContent(shot, catalog),
+    `${shot.code}/${screen.file}`
+  );
+
+  const base = {
+    screen: screen.id,
+    screenFile: screen.file,
+    what: screen.what,
+    languages: [shot.code],
+    shots: [shot.relative],
+  };
+
+  // Untranslated chrome is decided here, from the per-string classification.
+  const untranslated = (parsed.texts || []).filter(
+    (t) =>
+      t.role === "chrome" &&
+      !t.acceptableInExpected &&
+      t.language !== "none" &&
+      t.language !== shot.code &&
+      String(t.text || "").trim() &&
+      !isAllowlisted(t.text, catalog)
+  );
+  const chromeCount = (parsed.texts || []).filter(
+    (t) => t.role === "chrome" && !isAllowlisted(t.text, catalog)
+  ).length;
+  const mostlyUntranslated =
+    untranslated.length >= 3 || (chromeCount > 0 && untranslated.length / chromeCount >= 0.5);
+
+  const findings = untranslated.map((t) => ({
+    ...base,
+    kind: "mixed_locale",
+    severity: mostlyUntranslated ? "high" : "medium",
+    evidence: String(t.text).trim(),
+    where: t.where,
+  }));
+
+  const untranslatedKeys = new Set(untranslated.map((t) => normalizeEvidence(t.text)));
+  const contentKeys = (parsed.texts || [])
+    .filter((t) => t.role !== "chrome")
+    .map((t) => normalizeEvidence(t.text).replace(/\.{3}|…/g, ""));
+
   for (const raw of parsed.findings || []) {
-    if (!ALL_KINDS.has(raw.kind)) continue;
-    if (!SEVERITIES.has(raw.severity)) continue;
-    const languages = (raw.languages || []).filter((code) => knownCodes.has(code));
-    if (!languages.length) continue;
+    if (!ALL_KINDS.has(raw.kind) || !SEVERITIES.has(raw.severity)) continue;
     const evidence = String(raw.evidence || "").trim();
     const where = String(raw.where || "").trim();
     if (!evidence || !where) continue;
-    findings.push({
-      screen: screen.id,
-      screenFile: screen.file,
-      what: screen.what,
-      kind: raw.kind,
-      severity: raw.severity,
-      languages,
-      evidence,
-      where,
-      shots: languages.map((code) => relativeShot(code, screen.file)),
-    });
+    const key = normalizeEvidence(evidence);
+    // The model sometimes re-reports untranslated chrome as unclear/spelling.
+    if (raw.kind !== "truncated" && untranslatedKeys.has(key)) continue;
+    let severity = raw.severity;
+    // Ellipsized user content is expected; keep it visible but low.
+    const stem = key.replace(/\.{3}|…/g, "");
+    if (raw.kind === "truncated" && stem && contentKeys.some((c) => c && (c.startsWith(stem) || stem.startsWith(c)))) {
+      severity = "low";
+    }
+    findings.push({ ...base, kind: raw.kind, severity, evidence, where });
   }
-  return findings;
+
+  return { findings, texts: parsed.texts || [], untranslated: untranslated.length, chromeCount };
+}
+
+async function mapLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 function collapseAndRank(findings) {
@@ -434,6 +531,8 @@ function actionLine(finding) {
       return `Localize “${finding.evidence}” on ${finding.what} for ${langs}: ${files}`;
     case "error":
       return `Investigate error “${finding.evidence}” on ${finding.what} (${langs}): ${files}`;
+    case "spelling":
+      return `Fix spelling of “${finding.evidence}” on ${finding.what} (${langs}): ${files}`;
     case "too_small":
       return `Increase size of “${finding.evidence}” on ${finding.what} (${langs}): ${files}`;
     case "unclear":
@@ -478,8 +577,10 @@ function writeReports(catalog, findings, meta) {
       file: s.file,
       what: s.what,
     })),
-    note:
+    note: [
+      meta.partial ? `Partial run: ${catalog.languages.map((l) => l.code).join(", ")} × ${catalog.screens.map((s) => s.id).join(", ")}.` : "",
       "Settings shots cover only the top of the page. Findings there do not cover the rest of Settings.",
+    ].filter(Boolean).join(" "),
     top5,
     issues,
     ux,
@@ -498,6 +599,12 @@ function writeReports(catalog, findings, meta) {
 
   fs.writeFileSync(runJsonPath, JSON.stringify(payload, null, 2) + "\n");
   fs.writeFileSync(runMdPath, md);
+  if (meta.transcripts) {
+    fs.writeFileSync(
+      path.join(runPath, "transcripts.json"),
+      JSON.stringify(meta.transcripts, null, 2) + "\n"
+    );
+  }
   fs.writeFileSync(latestJsonPath, JSON.stringify(payload, null, 2) + "\n");
   fs.writeFileSync(latestMdPath, md);
 
@@ -554,7 +661,11 @@ function archiveExistingLatest(catalog) {
 async function main() {
   loadEnvFile();
 
-  const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+  const fullCatalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+  const catalog = selectCatalog(fullCatalog);
+  const partial =
+    catalog.languages.length !== fullCatalog.languages.length ||
+    catalog.screens.length !== fullCatalog.screens.length;
 
   if (process.argv.includes("--rebuild-index")) {
     const archived = archiveExistingLatest(catalog);
@@ -587,7 +698,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { missing, byScreen } = collectShots(catalog);
+  const { missing, shots } = collectShots(catalog);
   if (missing.length) {
     console.error("Missing screenshots:");
     for (const item of missing) console.error("  " + item);
@@ -596,27 +707,29 @@ async function main() {
     );
     process.exit(1);
   }
-
-  const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
-  const systemPrompt = buildSystemPrompt(catalog);
-  const allFindings = [];
-
-  for (const screen of catalog.screens) {
-    const shots = byScreen.get(screen.id) || [];
-    console.log(`reviewing ${screen.id} (${shots.length} languages)…`);
-    const findings = await reviewScreen(
-      apiKey,
-      model,
-      systemPrompt,
-      screen,
-      shots,
-      catalog
-    );
-    console.log(`  ${findings.length} finding(s)`);
-    allFindings.push(...findings);
+  if (!shots.length) {
+    console.error("No screenshots match --lang / --screen.");
+    process.exit(1);
   }
 
-  const written = writeReports(catalog, allFindings, { model });
+  const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
+  const concurrency = Number(arg("--concurrency")) || 6;
+  const systemPrompt = buildSystemPrompt();
+  const allFindings = [];
+  const transcripts = {};
+
+  console.log(`reviewing ${shots.length} screenshot(s) with ${model}, ${concurrency} at a time…`);
+  await mapLimit(shots, concurrency, async (shot) => {
+    const label = `${shot.code}/${shot.screen.file}`;
+    const result = await reviewShot(apiKey, model, systemPrompt, shot, catalog);
+    transcripts[label] = result.texts;
+    allFindings.push(...result.findings);
+    console.log(
+      `  ${label}: ${result.untranslated}/${result.chromeCount} chrome untranslated, ${result.findings.length} finding(s)`
+    );
+  });
+
+  const written = writeReports(catalog, allFindings, { model, partial, transcripts });
   console.log(
     `wrote run ${written.id} → ${written.runDir} (issues=${written.issueCount}, ux=${written.uxCount}, top5=${written.top5Count})`
   );

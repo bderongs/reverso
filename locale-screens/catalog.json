@@ -4,6 +4,8 @@
   "note": "Languages and screens are the global pair index: index = languageIndex * screens.length + screenIndex. Add a language or a first-level screen here. kind is home, menu, or favorites. menuId is the side-menu row. picker is the exact native label in the interface-language list. chrome and content notes guide the locale review script.",
   "allowlist": [
     "Reverso",
+    "AI Rephrase",
+    "AI Writer",
     "Premium",
     "Français",
     "English",
@@ -101,8 +103,8 @@
       "kind": "menu",
       "menuId": "com.softissimo.reverso.context:id/hamburgerRephraseAiLayout",
       "what": "Rephrase",
-      "chrome": "Screen title, input placeholder, and buttons. Chrome should match the interface language.",
-      "content": "Ignore any text already typed in the rephrase field."
+      "chrome": "Screen title, onboarding headline and description, input placeholder, and buttons (e.g. Next). Chrome should match the interface language.",
+      "content": "The onboarding may show a demo card with example sentences (e.g. \"You can contact me any time.\" and its rephrasings) and an \"AI Rephrase\" label inside the illustration: that is sample content and may stay in English. Also ignore any text already typed in the rephrase field."
     },
     {
       "id": "quiz",
